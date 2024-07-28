@@ -12,6 +12,17 @@ files = [
 ]
 
 [[package]]
+name = "appdirs"
+version = "1.4.4"
+description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+optional = false
+python-versions = "*"
+files = [
+    {file = "appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
+    {file = "appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
+]
+
+[[package]]
 name = "applaunchservices"
 version = "0.3.0"
 description = "Simple package for registering an app with apple Launch Services to handle UTI and URL"
@@ -873,6 +884,21 @@ files = [
 devel = ["colorama", "json-spec", "jsonschema", "pylint", "pytest", "pytest-benchmark", "pytest-cache", "validictory"]
 
 [[package]]
+name = "fhconfparser"
+version = "2024.1"
+description = "Provides a config language independent way to read a config file."
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "fhconfparser-2024.1-py3-none-any.whl", hash = "sha256:f6048cb646e69a3422a581bc0102150c2b79fe7ff26b82233e5ef52f72820e3e"},
+    {file = "fhconfparser-2024.1.tar.gz", hash = "sha256:de8af019f0071e614d523985e1d93e0fce20a409d1c64dead03b1b665d4b2e4d"},
+]
+
+[package.dependencies]
+attrs = ">=23.2.0,<24"
+tomli = ">=2.0.1,<3"
+
+[[package]]
 name = "flake8"
 version = "7.0.0"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -1567,6 +1593,64 @@ files = [
     {file = "kiwisolver-1.4.5-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:11d011a7574eb3b82bcc9c1a1d35c1d7075677fdd15de527d91b46bd35e935ee"},
     {file = "kiwisolver-1.4.5.tar.gz", hash = "sha256:e57e563a57fb22a142da34f38acc2fc1a5c864bc29ca1517a88abc963e60d6ec"},
 ]
+
+[[package]]
+name = "licensecheck"
+version = "2024.2"
+description = "Output the licenses used by dependencies and check if these are compatible with the project license"
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "licensecheck-2024.2-py3-none-any.whl", hash = "sha256:09a9759a767e0a289ef5e7aa9a4f5c8e13ab813eb0189de9d9d5cbc523116821"},
+    {file = "licensecheck-2024.2.tar.gz", hash = "sha256:25c57d26a48a5a1dcf66171aa9d3dcadef84491fb128f4935a702a85f70c91e3"},
+]
+
+[package.dependencies]
+appdirs = ">=1.4.4,<2"
+fhconfparser = ">=2024.1,<2026"
+loguru = ">=0.7.2,<2"
+markdown = ">=3.6,<4"
+packaging = ">=24.0,<25"
+requests = ">=2.31.0,<3"
+requests-cache = ">=1.2.0,<2"
+rich = ">=13.7.1,<14"
+tomli = ">=2.0.1,<3"
+
+[[package]]
+name = "loguru"
+version = "0.7.2"
+description = "Python logging made (stupidly) simple"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "loguru-0.7.2-py3-none-any.whl", hash = "sha256:003d71e3d3ed35f0f8984898359d65b79e5b21943f78af86aa5491210429b8eb"},
+    {file = "loguru-0.7.2.tar.gz", hash = "sha256:e671a53522515f34fd406340ee968cb9ecafbc4b36c679da03c18fd8d0bd51ac"},
+]
+
+[package.dependencies]
+colorama = {version = ">=0.3.4", markers = "sys_platform == \"win32\""}
+win32-setctime = {version = ">=1.0.0", markers = "sys_platform == \"win32\""}
+
+[package.extras]
+dev = ["Sphinx (==7.2.5)", "colorama (==0.4.5)", "colorama (==0.4.6)", "exceptiongroup (==1.1.3)", "freezegun (==1.1.0)", "freezegun (==1.2.2)", "mypy (==v0.910)", "mypy (==v0.971)", "mypy (==v1.4.1)", "mypy (==v1.5.1)", "pre-commit (==3.4.0)", "pytest (==6.1.2)", "pytest (==7.4.0)", "pytest-cov (==2.12.1)", "pytest-cov (==4.1.0)", "pytest-mypy-plugins (==1.9.3)", "pytest-mypy-plugins (==3.0.0)", "sphinx-autobuild (==2021.3.14)", "sphinx-rtd-theme (==1.3.0)", "tox (==3.27.1)", "tox (==4.11.0)"]
+
+[[package]]
+name = "markdown"
+version = "3.6"
+description = "Python implementation of John Gruber's Markdown."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "Markdown-3.6-py3-none-any.whl", hash = "sha256:48f276f4d8cfb8ce6527c8f79e2ee29708508bf4d40aa410fbc3b4ee832c850f"},
+    {file = "Markdown-3.6.tar.gz", hash = "sha256:ed4f41f6daecbeeb96e576ce414c41d2d876daa9a16cb35fa8ed8c2ddfad0224"},
+]
+
+[package.dependencies]
+importlib-metadata = {version = ">=4.4", markers = "python_version < \"3.10\""}
+
+[package.extras]
+docs = ["mdx-gh-links (>=0.2)", "mkdocs (>=1.5)", "mkdocs-gen-files", "mkdocs-literate-nav", "mkdocs-nature (>=0.6)", "mkdocs-section-index", "mkdocstrings[python]"]
+testing = ["coverage", "pyyaml"]
 
 [[package]]
 name = "markdown-it-py"
@@ -4176,6 +4260,20 @@ files = [
 ]
 
 [[package]]
+name = "win32-setctime"
+version = "1.1.0"
+description = "A small Python utility to set file creation time on Windows"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "win32_setctime-1.1.0-py3-none-any.whl", hash = "sha256:231db239e959c2fe7eb1d7dc129f11172354f98361c4fa2d6d2d7e278baa8aad"},
+    {file = "win32_setctime-1.1.0.tar.gz", hash = "sha256:15cf5750465118d6929ae4de4eb46e8edae9a5634350c01ba582df868e932cb2"},
+]
+
+[package.extras]
+dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
+
+[[package]]
 name = "wurlitzer"
 version = "3.1.1"
 description = "Capture C-level output in context managers"
@@ -4220,4 +4318,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "2443a8a9a944a24d0861d26da1a41881df83cf3adc56d5674eecaaebd187129e"
+content-hash = "eab1b29ad449388b623227f1e2ad9a1fa0f0b927fc2e8a623eb016a4081396d2"
