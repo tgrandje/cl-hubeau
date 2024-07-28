@@ -3,6 +3,7 @@ name: publish
 on: 
   push:
     tags:
+      - '*'
 
 jobs:
   test:
@@ -44,6 +45,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --without dev
         
+# TODO
       # #----------------------------------------------
       # # add only pytest for tests (not the full dev dependencies to avoid installing spyder)
       # #----------------------------------------------
