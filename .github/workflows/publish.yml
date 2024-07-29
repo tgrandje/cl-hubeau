@@ -68,7 +68,7 @@ jobs:
     on: 
       push:
         tags:
-          - '*'
+        - '*'
     steps:
       #----------------------------------------------
       #       check-out repo and set-up python
