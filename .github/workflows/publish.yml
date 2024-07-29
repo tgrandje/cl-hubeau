@@ -1,5 +1,11 @@
 name: test_and_publish
-on: [push]
+
+on: 
+  push:
+    tags:
+      - '*'
+    branches:
+      - "main"
 
 jobs:
   test:
@@ -66,10 +72,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: test
-    on: 
-      push:
-        tags:
-        - '*'
     steps:
       #----------------------------------------------
       #       check-out repo and set-up python
