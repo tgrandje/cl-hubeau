@@ -1,9 +1,11 @@
-name: publish
+name: test_and_publish
 
 on: 
   push:
     tags:
       - '*'
+    branches:
+      - "main"
 
 jobs:
   test:
@@ -39,33 +41,33 @@ jobs:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       #----------------------------------------------
+
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --without dev
-        
-# TODO
-      # #----------------------------------------------
-      # # add only pytest for tests (not the full dev dependencies to avoid installing spyder)
-      # #----------------------------------------------
-      # - name: Add pytest
-      #   run: poetry run pip install pytest
-      
-      # #----------------------------------------------
-      # # add only pytest-cov for tests (not the full dev dependencies to avoid installing spyder)
-      # #----------------------------------------------
-      # - name: Add pytest-cov
-      #   run: poetry run pip install pytest-cov
 
-      # #----------------------------------------------
-      # #              run test suite
-      # #----------------------------------------------
-      # - name: Run tests
-      #   env:
-      #     insee_key: ${{secrets.INSEE_KEY}}
-      #     insee_secret: ${{secrets.INSEE_SECRET}}
-      #   run: poetry run pytest --cov
+      #----------------------------------------------
+      # add only pytest for tests (not the full dev dependencies to avoid installing spyder)
+      #----------------------------------------------
+      - name: Add pytest
+        run: poetry run pip install pytest
+
+      #----------------------------------------------
+      # add only pytest-cov for tests (not the full dev dependencies to avoid installing spyder)
+      #----------------------------------------------
+      - name: Add pytest-cov
+        run: poetry run pip install pytest-cov
+
+      #----------------------------------------------
+      #              run test suite
+      #----------------------------------------------
+      - name: Run tests
+        env:
+          insee_key: ${{secrets.INSEE_KEY}}
+          insee_secret: ${{secrets.INSEE_SECRET}}
+        run: poetry run pytest --cov
         
   publish:
     runs-on: ubuntu-latest
