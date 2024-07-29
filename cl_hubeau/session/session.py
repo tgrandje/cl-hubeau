@@ -4,6 +4,7 @@ from copy import deepcopy
 from datetime import datetime
 import logging
 import os
+import warnings
 
 import geopandas as gpd
 import pandas as pd
@@ -16,10 +17,11 @@ from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, DEFAULT_EXPIRE_AFTER
 
 class BaseHubeauSession(CachedSession):
 
-    THREADS = 1
+    THREADS = 20
     BASE_URL = "https://hubeau.eaufrance.fr/api"
     CACHE_NAME = os.path.join(DIR_CACHE, CACHE_NAME)
     SIZE = 1000
+    ALLOWABLE_CODES = [200, 206, 400]
 
     def __init__(
         self,
@@ -27,7 +29,10 @@ class BaseHubeauSession(CachedSession):
         **kwargs,
     ):
         super().__init__(
-            cache_name=self.CACHE_NAME, expire_after=expire_after, **kwargs
+            cache_name=self.CACHE_NAME,
+            expire_after=expire_after,
+            allowable_codes=self.ALLOWABLE_CODES,
+            **kwargs,
         )
 
     @staticmethod
@@ -109,12 +114,14 @@ class BaseHubeauSession(CachedSession):
             )
         return r
 
-    def get_result(self, method, url, params):
+    def get_result(self, method, url, params, **kwargs):
 
         copy_params = deepcopy(params)
         copy_params["size"] = 1
         copy_params["page"] = 1
-        js = self.request(method=method, url=url, params=copy_params).json()
+        js = self.request(
+            method=method, url=url, params=copy_params, **kwargs
+        ).json()
 
         logging.debug(js)
 
@@ -132,7 +139,7 @@ class BaseHubeauSession(CachedSession):
         threads = min(self.THREADS, count_pages)
 
         def func(params):
-            return self.request("GET", url=url, params=params)
+            return self.request("GET", url=url, params=params, **kwargs)
 
         results = []
         key = (
@@ -140,20 +147,31 @@ class BaseHubeauSession(CachedSession):
             if not ("format" in params and params["format"] == "geojson")
             else "features"
         )
-        with tqdm(desc="querying", total=count_pages) as pbar:
-            if threads > 1:
-                with pebble.ThreadPool(threads) as pool:
-                    future = pool.map(func, iterables)
-                    iterator = future.result()
-                    while True:
-                        try:
-                            result = next(iterator)
-                            result = result.json()[key]
-                            results += result
-                        except StopIteration:
-                            break
 
-                        pbar.update()
+        # Deactivate progress bar if less pages than available threads
+        disable = count_pages <= threads
+
+        with tqdm(
+            desc="querying", total=count_pages, leave=False, disable=disable
+        ) as pbar:
+            if threads > 1:
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore",
+                        ".*Connection pool is full, discarding connection.*",
+                    )
+                    with pebble.ThreadPool(threads) as pool:
+                        future = pool.map(func, iterables)
+                        iterator = future.result()
+                        while True:
+                            try:
+                                result = next(iterator)
+                                result = result.json()[key]
+                                results += result
+                            except StopIteration:
+                                break
+
+                            pbar.update()
             else:
                 for x in iterables:
                     result = func(params=x)
@@ -162,9 +180,15 @@ class BaseHubeauSession(CachedSession):
                     pbar.update()
 
         if "format" in params and params["format"] == "geojson":
-            results = gpd.GeoDataFrame.from_features(results, crs=4326)
+            if results:
+                results = gpd.GeoDataFrame.from_features(results, crs=4326)
+            else:
+                results = gpd.GeoDataFrame()
         else:
-            results = pd.DataFrame(results)
+            if results:
+                results = pd.DataFrame(results)
+            else:
+                results = pd.DataFrame()
         if not len(results) == count_rows:
             msg = (
                 "results do not match expected results - "

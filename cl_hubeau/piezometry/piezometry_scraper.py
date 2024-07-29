@@ -2,7 +2,7 @@
 """
 Created on Sun Jul 28 14:03:41 2024
 
-#TODO
+low level class to collect data from the piezometry API from hub'eau
 """
 
 import logging
@@ -27,9 +27,13 @@ class PiezometrySession(BaseHubeauSession):
         date_recherche: str = None,
         fields: List[str] = None,
         format: str = "json",
-        nb_mesures_pezo_min: int = None,
+        nb_mesures_piezo_min: int = None,
         srid: int = None,
     ):
+        """
+        Endpoint /v1/niveaux_nappes/stations
+        """
+
         params = {}
         if date_recherche:
             self.ensure_date_format_is_ok(date_recherche)
@@ -42,8 +46,8 @@ class PiezometrySession(BaseHubeauSession):
         if format:
             params["format"] = format
 
-        if nb_mesures_pezo_min:
-            params["nb_mesures_pezo_min"] = nb_mesures_pezo_min
+        if nb_mesures_piezo_min:
+            params["nb_mesures_piezo_min"] = nb_mesures_piezo_min
         if srid:
             params["srid"] = srid
 
@@ -72,7 +76,10 @@ class PiezometrySession(BaseHubeauSession):
         url = self.BASE_URL + "/v1/niveaux_nappes/stations"
 
         df = self.get_result(method, url, params=params)
-        df = df.drop_duplicates("bss_id", axis=1)
+        try:
+            df = df.drop_duplicates("bss_id")
+        except KeyError:
+            pass
 
         return df
 
@@ -84,6 +91,9 @@ class PiezometrySession(BaseHubeauSession):
         fields: str = None,
         sort: str = None,
     ):
+        """
+        Endpoint /v1/niveaux_nappes/chroniques
+        """
         if not code_bss:
             # reset to default hubeau value, which is set even when code_bss is
             # missing
@@ -136,6 +146,9 @@ class PiezometrySession(BaseHubeauSession):
         profondeur_min: float = None,
         sort: str = None,
     ):
+        """
+        Endpoint /v1/niveaux_nappes/chroniques_tr
+        """
         params = {}
         if bbox:
             params["bbox"] = self.list_to_str_param(bbox, 4)
@@ -183,7 +196,7 @@ class PiezometrySession(BaseHubeauSession):
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques_tr"
 
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(method, url, params=params, force_refresh=True)
         df = df.drop_duplicates(keep="first")
 
         try:
@@ -195,10 +208,10 @@ class PiezometrySession(BaseHubeauSession):
         return df
 
 
-if __name__ == "__main__":
-    import logging
+# if __name__ == "__main__":
+#     import logging
 
-    logging.basicConfig(level=logging.WARNING)
-    with PiezometrySession() as session:
-        df = session.get_chronicles(code_bss="07548X0009/F")
-        # df = session.get_chronicles_real_time()
+#     logging.basicConfig(level=logging.WARNING)
+#     with PiezometrySession() as session:
+#         # df = session.get_chronicles(code_bss="07548X0009/F")
+#         df = session.get_chronicles_real_time()
