@@ -31,6 +31,7 @@ class PiezometrySession(BaseHubeauSession):
         srid: int = None,
     ):
         """
+        lister les stations de mesure
         Endpoint /v1/niveaux_nappes/stations
         """
 
@@ -40,7 +41,7 @@ class PiezometrySession(BaseHubeauSession):
             params["date_recherche"] = date_recherche
         if format and format not in ("json", "geojson"):
             raise ValueError(
-                "format must be amont ('json', 'geojson'), "
+                "format must be among ('json', 'geojson'), "
                 f"found {format=} instead"
             )
         if format:
@@ -92,6 +93,7 @@ class PiezometrySession(BaseHubeauSession):
         sort: str = None,
     ):
         """
+        Lister les chroniques piézométriques
         Endpoint /v1/niveaux_nappes/chroniques
         """
         if not code_bss:
@@ -147,6 +149,7 @@ class PiezometrySession(BaseHubeauSession):
         sort: str = None,
     ):
         """
+        Lister les chroniques piézométriques en temps réel
         Endpoint /v1/niveaux_nappes/chroniques_tr
         """
         params = {}
