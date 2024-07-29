@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+Base Hub'eau session (derived from requests-cache's Session) to use across
+all APIs.
+"""
 
 from copy import deepcopy
 from datetime import datetime
@@ -16,6 +20,9 @@ from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, DEFAULT_EXPIRE_AFTER
 
 
 class BaseHubeauSession(CachedSession):
+    """
+    Base session class to use across cl_hubeau for querying APIs from Hub'Eau
+    """
 
     THREADS = 20
     BASE_URL = "https://hubeau.eaufrance.fr/api"
@@ -61,10 +68,9 @@ class BaseHubeauSession(CachedSession):
                 )
                 raise ValueError(msg)
             return ",".join(x)
-        elif isinstance(x, str):
+        if isinstance(x, str):
             return x
-        else:
-            ValueError(f"unexpected format for {x}")
+        raise ValueError(f"unexpected format for {x}")
 
     @staticmethod
     def ensure_date_format_is_ok(date_str: str) -> None:
@@ -114,7 +120,36 @@ class BaseHubeauSession(CachedSession):
             )
         return r
 
-    def get_result(self, method, url, params, **kwargs):
+    def get_result(
+        self, method: str, url: str, params: dict, **kwargs
+    ) -> pd.DataFrame:
+        """
+        Loop over API's results until last page is reached and aggregate
+        results.
+
+        Parameters
+        ----------
+        method : str
+            http method ("GET" or "POST" mostly)
+        url : str
+            url to query
+        params : dict
+            params to add to request
+        **kwargs :
+            other arguments are passed to CachedSession.request
+
+        Raises
+        ------
+        ValueError
+            When results length does not match the number of expected results.
+
+        Returns
+        -------
+        pd.DataFrame
+            API's results, which will be of (gpd.GeoDataFrame if format is
+            a geojson)
+
+        """
 
         copy_params = deepcopy(params)
         copy_params["size"] = 1
@@ -126,7 +161,8 @@ class BaseHubeauSession(CachedSession):
         logging.debug(js)
 
         count_rows = js["count"]
-        logging.info(f"{count_rows} exepcted results")
+        msg = f"{count_rows} expected results"
+        logging.info(msg)
         count_pages = count_rows // self.SIZE + (
             0 if count_rows % self.SIZE == 0 else 1
         )
