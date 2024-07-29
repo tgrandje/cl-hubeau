@@ -1,4 +1,5 @@
 name: test_and_publish
+on: [push]
 
 jobs:
   test:
