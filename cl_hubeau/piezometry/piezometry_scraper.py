@@ -6,7 +6,6 @@ low level class to collect data from the piezometry API from hub'eau
 """
 
 import logging
-from typing import List
 
 import pandas as pd
 
@@ -15,63 +14,78 @@ from cl_hubeau.session import BaseHubeauSession
 
 class PiezometrySession(BaseHubeauSession):
 
-    def get_stations(
-        self,
-        bbox: List[float] = None,
-        bss_id: List[str] = None,
-        code_bdlisa: List[str] = None,
-        code_bss: List[str] = None,
-        code_commune: List[str] = None,
-        code_departement: List[str] = None,
-        codes_masse_eau_edl: List[str] = None,
-        date_recherche: str = None,
-        fields: List[str] = None,
-        format: str = "json",
-        nb_mesures_piezo_min: int = None,
-        srid: int = None,
-    ):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
+
+        # Set default size for API queries, based on hub'eau piezo's doc
+        self.size = 5000
+
+    def get_stations(self, **kwargs):
         """
         lister les stations de mesure
         Endpoint /v1/niveaux_nappes/stations
+
+        Ce service permet de rechercher les stations de mesure des niveaux des
+        nappes d'eau (stations piézométriques).
+        Source de données : banque nationale d'Accès aux Données sur les Eaux
+        Souterraines (ADES) http://www.ades.eaufrance.fr/"
+        La taille de page par défaut : 5000, taille max de la page : 20000.
+        La profondeur d'accès aux résultats est : 20000, calcul de la
+        profondeur = numéro de la page * nombre maximum de résultats dans une
+        page.
         """
 
         params = {}
-        if date_recherche:
-            self.ensure_date_format_is_ok(date_recherche)
-            params["date_recherche"] = date_recherche
-        if format and format not in ("json", "geojson"):
-            raise ValueError(
-                "format must be among ('json', 'geojson'), "
-                f"found {format=} instead"
-            )
-        if format:
-            params["format"] = format
 
-        if nb_mesures_piezo_min:
-            params["nb_mesures_piezo_min"] = nb_mesures_piezo_min
-        if srid:
-            params["srid"] = srid
+        for arg in "date_recherche":
+            try:
+                variable = kwargs.pop(arg)
+                self.ensure_date_format_is_ok(variable)
+                params[arg] = variable
+            except KeyError:
+                continue
+        try:
+            variable = kwargs.pop("format")
+            if variable not in ("json", "geojson"):
+                raise ValueError(
+                    "format must be among ('json', 'geojson'), "
+                    f"found {format=} instead"
+                )
+            params["format"] = variable
+        except KeyError:
+            pass
 
-        if bbox:
-            params["bbox"] = self.list_to_str_param(bbox, 4)
-        if bss_id:
-            params["bss_id"] = self.list_to_str_param(bss_id, 200)
-        if code_bdlisa:
-            params["code_bdlisa"] = self.list_to_str_param(code_bdlisa, 200)
-        if code_bss:
-            params["code_bss"] = self.list_to_str_param(code_bss, 200)
-        if code_commune:
-            params["code_commune"] = self.list_to_str_param(code_commune, 200)
-        if code_departement:
-            params["code_departement"] = self.list_to_str_param(
-                code_departement, 100
+        try:
+            params["bbox"] = self.list_to_str_param(
+                kwargs.pop("bbox"), None, 4
             )
-        if codes_masse_eau_edl:
-            params["codes_masse_eau_edl"] = self.list_to_str_param(
-                codes_masse_eau_edl, 200
-            )
-        if fields:
-            params["fields"] = self.list_to_str_param(fields)
+        except KeyError:
+            pass
+
+        for arg in ("nb_mesures_piezo_min", "srid"):
+            try:
+                params[arg] = kwargs.pop(arg)
+            except KeyError:
+                continue
+
+        for arg in (
+            "bss_id",
+            "code_bdlisa",
+            "code_bss",
+            "code_commune",
+            "codes_masse_eau_edl",
+        ):
+            try:
+                variable = kwargs.pop(arg)
+                params[arg] = self.list_to_str_param(variable, 200)
+            except KeyError:
+                continue
+
+        try:
+            variable = kwargs.pop("code_departement")
+            params["code_departement"] = self.list_to_str_param(variable, 200)
+        except KeyError:
+            pass
 
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/stations"
@@ -84,42 +98,60 @@ class PiezometrySession(BaseHubeauSession):
 
         return df
 
-    def get_chronicles(
-        self,
-        code_bss: List[str] = "07548X0009/F",
-        date_debut_mesure: str = None,
-        date_fin_mesure: str = None,
-        fields: str = None,
-        sort: str = None,
-    ):
+    def get_chronicles(self, **kwargs):
         """
         Lister les chroniques piézométriques
         Endpoint /v1/niveaux_nappes/chroniques
+
+        Ce service permet de lister les niveaux des nappes d'eau (chroniques
+        piézométriques) d'une station de mesure des eaux souterraines.
+        Source de données : banque nationale d'Accès aux Données sur les Eaux
+        Souterraines (ADES) http://www.ades.eaufrance.fr/"
+
+        La taille de page par défaut : 5000, taille max de la page : 20000.
+        La profondeur d'accès aux résultats est : 20000, calcul de la
+        profondeur = numéro de la page * nombre maximum de résultats dans une
+        page.
         """
-        if not code_bss:
+
+        params = {}
+
+        try:
+            params["code_bss"] = self.list_to_str_param(
+                kwargs.pop("code_bss"), 200
+            )
+        except KeyError:
             # reset to default hubeau value, which is set even when code_bss is
             # missing
             code_bss = "07548X0009/F"
             msg = f"code_bss is missing, will be set to {code_bss=} by hubeau"
             logging.warning(msg)
-        else:
-            code_bss = self.list_to_str_param(code_bss)
-        params = {"code_bss": code_bss}
+            params["code_bss"] = code_bss
 
-        if date_debut_mesure:
-            self.ensure_date_format_is_ok(date_debut_mesure)
-            params["date_debut_mesure"] = date_debut_mesure
-        if date_fin_mesure:
-            self.ensure_date_format_is_ok(date_fin_mesure)
-            params["date_fin_mesure"] = date_fin_mesure
-        if sort and sort not in ("asc", "desc"):
-            raise ValueError(
-                f"sort must be amont ('asc', 'desc'), found {sort=} instead"
-            )
-        if sort:
-            params["sort"] = sort
-        if fields:
-            params["fields"] = self.list_to_str_param(fields)
+        for arg in "date_debut_mesure", "date_fin_mesure":
+            try:
+                variable = kwargs.pop(arg)
+                self.ensure_date_format_is_ok(variable)
+                params[arg] = variable
+            except KeyError:
+                continue
+
+        try:
+            variable = kwargs.pop("sort")
+            if variable not in ("asc", "desc"):
+                raise ValueError(
+                    "sort must be among ('asc', 'desc'), "
+                    f"found sort='{variable}' instead"
+                )
+            params["sort"] = variable
+        except KeyError:
+            pass
+
+        try:
+            params["fields"] = self.list_to_str_param(kwargs.pop("fields"))
+        except KeyError:
+            pass
+
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques"
 
@@ -134,67 +166,96 @@ class PiezometrySession(BaseHubeauSession):
             pass
         return df
 
-    def get_chronicles_real_time(
-        self,
-        bbox: List[float] = None,
-        bss_id: List[str] = None,
-        code_bss: List[str] = "07548X0009/F",
-        date_debut_mesure: str = None,
-        date_fin_mesure: str = None,
-        fields: str = None,
-        niveau_ngf_max: float = None,
-        niveau_ngf_min: float = None,
-        profondeur_max: float = None,
-        profondeur_min: float = None,
-        sort: str = None,
-    ):
+    def get_realtime_chronicles(self, **kwargs):
+        #     bbox: List[float] = None,
+        #     bss_id: List[str] = None,
+        #     code_bss: List[str] = "07548X0009/F",
+        #     date_debut_mesure: str = None,
+        #     date_fin_mesure: str = None,
+        #     fields: str = None,
+        #     niveau_ngf_max: float = None,
+        #     niveau_ngf_min: float = None,
+        #     profondeur_max: float = None,
+        #     profondeur_min: float = None,
+        #     sort: str = None,
+        # ):
         """
         Lister les chroniques piézométriques en temps réel
         Endpoint /v1/niveaux_nappes/chroniques_tr
+
+        Ce service permet de lister les niveaux des nappes d'eau (chroniques
+        piézométriques) d'une station de mesure des eaux souterraines en temps
+        réél.
+        Ce service diffuse des données brutes. Les données corrigées sont
+        diffusées par l’API « chroniques »
+        Source de données : BRGM http://www.brgm.fr/"
+        La taille de page par défaut : 5000, taille max de la page : 20000.
+        La profondeur d'accès aux résultats est : 20000, calcul de la
+        profondeur = numéro de la page * nombre maximum de résultats dans une
+        page.
         """
         params = {}
-        if bbox:
-            params["bbox"] = self.list_to_str_param(bbox, 4)
-        if bss_id:
-            params["bss_id"] = self.list_to_str_param(bss_id, 200)
-        if not code_bss:
+
+        try:
+            params["code_bss"] = self.list_to_str_param(
+                kwargs.pop("code_bss"), 200
+            )
+        except KeyError:
             # reset to default hubeau value, which is set even when code_bss is
             # missing
             code_bss = "07548X0009/F"
             msg = f"code_bss is missing, will be set to {code_bss=} by hubeau"
             logging.warning(msg)
-        else:
-            code_bss = self.list_to_str_param(code_bss)
-        params["code_bss"] = code_bss
+            params["code_bss"] = code_bss
 
-        if date_debut_mesure:
-            self.ensure_date_format_is_ok(date_debut_mesure)
-            params["date_debut_mesure"] = date_debut_mesure
-        if date_fin_mesure:
-            self.ensure_date_format_is_ok(date_fin_mesure)
-            params["date_fin_mesure"] = date_fin_mesure
-        if sort and sort not in ("asc", "desc"):
-            raise ValueError(
-                f"sort must be amont ('asc', 'desc'), found {sort=} instead"
+        try:
+            params["bss_id"] = self.list_to_str_param(
+                kwargs.pop("bss_id"), 200
             )
-        if sort:
-            params["sort"] = sort
-        if fields:
-            params["fields"] = self.list_to_str_param(fields)
-        if niveau_ngf_max:
-            params["niveau_ngf_max"] = niveau_ngf_max
-        if niveau_ngf_min:
-            params["niveau_ngf_min"] = niveau_ngf_min
-        if profondeur_max:
-            params["profondeur_max"] = profondeur_max
-        if profondeur_min:
-            params["profondeur_min"] = profondeur_min
-        if sort and sort not in ("asc", "desc"):
-            raise ValueError(
-                f"sort must be amont ('asc', 'desc'), found {sort=} instead"
+        except KeyError:
+            pass
+
+        try:
+            params["bbox"] = self.list_to_str_param(
+                kwargs.pop("bbox"), None, 4
             )
-        if sort:
-            params["sort"] = sort
+        except KeyError:
+            pass
+
+        for arg in "date_debut_mesure", "date_fin_mesure":
+            try:
+                variable = kwargs.pop(arg)
+                self.ensure_date_format_is_ok(variable)
+                params[arg] = variable
+            except KeyError:
+                continue
+
+        for arg in (
+            "niveau_ngf_max",
+            "niveau_ngf_min",
+            "profondeur_max",
+            "profondeur_min",
+        ):
+            try:
+                params[arg] = kwargs.pop(arg)
+            except KeyError:
+                continue
+
+        try:
+            variable = kwargs.pop("sort")
+            if variable not in ("asc", "desc"):
+                raise ValueError(
+                    "sort must be among ('asc', 'desc'), "
+                    f"found sort='{variable}' instead"
+                )
+            params["sort"] = variable
+        except KeyError:
+            pass
+
+        try:
+            params["fields"] = self.list_to_str_param(kwargs.pop("fields"))
+        except KeyError:
+            pass
 
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques_tr"
@@ -216,5 +277,5 @@ class PiezometrySession(BaseHubeauSession):
 
 #     logging.basicConfig(level=logging.WARNING)
 #     with PiezometrySession() as session:
-#         # df = session.get_chronicles(code_bss="07548X0009/F")
-#         df = session.get_chronicles_real_time()
+#         df = session.get_chronicles(code_bss="07548X0009/F")
+#         # df = session.get_realtime_chronicles()
