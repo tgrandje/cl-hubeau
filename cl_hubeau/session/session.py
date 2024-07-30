@@ -8,42 +8,161 @@ from copy import deepcopy
 from datetime import datetime
 import logging
 import os
+from typing import Callable
+from urllib.parse import urlparse, parse_qs
 import warnings
 
 import geopandas as gpd
 import pandas as pd
 import pebble
-from requests_cache import CachedSession
+from requests import Session
+from requests_cache import CacheMixin
+from requests_ratelimiter import LimiterMixin
 from tqdm import tqdm
 
-from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, DEFAULT_EXPIRE_AFTER
+from cl_hubeau.constants import (
+    DIR_CACHE,
+    CACHE_NAME,
+    DEFAULT_EXPIRE_AFTER,
+    SIZE,
+    RATE_LIMITER,
+)
 
 
-class BaseHubeauSession(CachedSession):
+def map_func(
+    threads: int,
+    func: Callable,
+    iterables: list,
+    disable: bool = False,
+) -> list:
+    """
+    Map a function against an iterable of arguments.
+
+    Map an API call, looping over pages, with a tqdm progressbar to track the
+    progress. This is meant to be used when the API's "cursor" is a simple
+    integer which can be computed beforehand. In case of hashed cursor returned
+    by the API, use map_func_recursive instead.
+
+    If threads > 1, this will use multithreading. If threads == 1, a simple
+    iteration over the arguments will be done.
+
+    Parameters
+    ----------
+    threads : int
+        Number of allowed threads.
+        If threads==1 will deactivate multithreading: use this for debugging.
+    func : Callable
+        Function do map
+    iterables : list
+        Collection of arguments for func
+    disable : bool, optional
+        Set to True do disable the tqdm progressbar. The default is False
+
+    Returns
+    -------
+    results : list
+        Collection of results
+
+    """
+
+    total = len(iterables)
+    results = []
+    with tqdm(
+        desc="querying", total=total, leave=False, disable=disable
+    ) as pbar:
+
+        if threads > 1:
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    ".*Connection pool is full, discarding connection.*",
+                )
+                with pebble.ThreadPool(threads) as pool:
+                    future = pool.map(func, iterables)
+                    iterator = future.result()
+                    while True:
+                        try:
+                            results += next(iterator)
+                        except StopIteration:
+                            break
+
+                        pbar.update()
+        else:
+            for x in iterables:
+                results += func(x)
+                pbar.update()
+
+    return results
+
+
+class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
     """
     Base session class to use across cl_hubeau for querying APIs from Hub'Eau
     """
 
-    THREADS = 20
+    THREADS = 10
     BASE_URL = "https://hubeau.eaufrance.fr/api"
     CACHE_NAME = os.path.join(DIR_CACHE, CACHE_NAME)
-    SIZE = 1000
     ALLOWABLE_CODES = [200, 206, 400]
 
     def __init__(
         self,
         expire_after: int = DEFAULT_EXPIRE_AFTER,
+        proxies: dict = None,
+        size: int = SIZE,
+        per_second=RATE_LIMITER,
         **kwargs,
     ):
+        """
+        Initialize a CachedSession object with optional proxies and a
+        ratelimiter of 10/sec. (cache excluded)
+
+        Parameters
+        ----------
+        expire_after : int, optional
+            Default expiration timeout. The default is DEFAULT_EXPIRE_AFTER.
+        proxies : dict, optional
+            Optional corporate proxies for internet connection.
+            The default is None.
+            For instance {"https": 'http://my-awesome-proxy:8888'}
+            If not set, will be infered from os environment variables
+            http_proxy and https_proxy (if set)
+        size : int, optional
+            Size set for each page. Default is SIZE.
+        **kwargs
+            Optional kwargs passed to the CachedSession class constructor.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        self.size = size
+
         super().__init__(
             cache_name=self.CACHE_NAME,
             expire_after=expire_after,
             allowable_codes=self.ALLOWABLE_CODES,
+            per_second=per_second,
             **kwargs,
         )
+        if proxies:
+            self.proxies.update(proxies)
+        else:
+            self.proxies.update(
+                {
+                    "https": os.environ.get("https_proxy", None),
+                    "http": os.environ.get("http_proxy", None),
+                }
+            )
 
     @staticmethod
-    def list_to_str_param(x: list, max_autorized_values: int = None) -> str:
+    def list_to_str_param(
+        x: list,
+        max_authorized_values: int = None,
+        exact_authorized_values: int = None,
+    ) -> str:
         """
         Join array of arguments to an accepted string format
 
@@ -51,8 +170,10 @@ class BaseHubeauSession(CachedSession):
         ----------
         x : list
             List of arguments
-        max_autorized_values : int, optional
+        max_authorized_values : int, optional
             Maximum authorized values in the list
+        exact_authorized_values : int, optional
+            Exact authorized values in the list
 
         Returns
         -------
@@ -61,12 +182,19 @@ class BaseHubeauSession(CachedSession):
 
         """
         if any(isinstance(x, y) for y in (list, tuple, set)):
-            if max_autorized_values and len(x) > max_autorized_values:
+            if max_authorized_values and len(x) > max_authorized_values:
                 msg = (
-                    f"Should not have more than {max_autorized_values}, "
+                    f"Should not have more than {max_authorized_values}, "
                     f"found {len(x)} instead"
                 )
                 raise ValueError(msg)
+            if exact_authorized_values and len(x) != exact_authorized_values:
+                msg = (
+                    f"Should have exactly {exact_authorized_values}, "
+                    f"found {len(x)} instead"
+                )
+                raise ValueError(msg)
+
             return ",".join(x)
         if isinstance(x, str):
             return x
@@ -106,6 +234,7 @@ class BaseHubeauSession(CachedSession):
         *args,
         **kwargs,
     ):
+        logging.info(f"{method=} {url=} {args=} {kwargs=}")
         r = super().request(
             method,
             url,
@@ -153,67 +282,85 @@ class BaseHubeauSession(CachedSession):
 
         copy_params = deepcopy(params)
         copy_params["size"] = 1
-        copy_params["page"] = 1
+        # copy_params["page"] = 1
         js = self.request(
             method=method, url=url, params=copy_params, **kwargs
         ).json()
 
         logging.debug(js)
 
+        page = "page" if "page" in js["first"] else "cursor"
+
         count_rows = js["count"]
         msg = f"{count_rows} expected results"
         logging.info(msg)
-        count_pages = count_rows // self.SIZE + (
-            0 if count_rows % self.SIZE == 0 else 1
+        count_pages = count_rows // self.size + (
+            0 if count_rows % self.size == 0 else 1
         )
 
-        params["size"] = self.SIZE
+        params["size"] = self.size
         iterables = [deepcopy(params) for x in range(count_pages)]
         for x in range(count_pages):
-            iterables[x].update({"page": x + 1})
+            iterables[x].update({page: x + 1})
 
-        threads = min(self.THREADS, count_pages)
+        # Multithreading only if page - mono-thread if cursor instead
+        threads = min(self.THREADS, count_pages) if page == "page" else 1
 
-        def func(params):
-            return self.request("GET", url=url, params=params, **kwargs)
-
-        results = []
         key = (
             "data"
             if not ("format" in params and params["format"] == "geojson")
             else "features"
         )
 
+        if page == "page":
+
+            def func(params):
+                """
+                Simple query to gather one result, every params are known
+                before consumming the API.
+                """
+                r = self.request("GET", url=url, params=params, **kwargs)
+                r = r.json()[key]
+                return r
+
+        else:
+
+            def func(params):
+                """
+                Recursive query to gather all results, each next url being
+                unkown beforehand: each query should be resolved to know the
+                next cursor value. Update the progressbar at each yield
+                """
+                r = self.request("GET", url=url, params=params, **kwargs)
+                result = r.json()[key]
+                try:
+                    next_url = r.json()["next"]
+                    cursor = parse_qs(urlparse(next_url).query)["cursor"]
+                except KeyError:
+                    return
+                pbar.update()
+                new_params = deepcopy(params)
+                new_params["cursor"] = cursor
+                yield from func(new_params)
+                yield result
+
         # Deactivate progress bar if less pages than available threads
         disable = count_pages <= threads
 
-        with tqdm(
-            desc="querying", total=count_pages, leave=False, disable=disable
-        ) as pbar:
-            if threads > 1:
-                with warnings.catch_warnings():
-                    warnings.filterwarnings(
-                        "ignore",
-                        ".*Connection pool is full, discarding connection.*",
-                    )
-                    with pebble.ThreadPool(threads) as pool:
-                        future = pool.map(func, iterables)
-                        iterator = future.result()
-                        while True:
-                            try:
-                                result = next(iterator)
-                                result = result.json()[key]
-                                results += result
-                            except StopIteration:
-                                break
-
-                            pbar.update()
-            else:
-                for x in iterables:
-                    result = func(params=x)
-                    result = result.json()[key]
-                    results += result
-                    pbar.update()
+        if page == "page":
+            # if integer cursor ("page" param), use multithreading to gather
+            # data faster
+            results = map_func(threads, func, iterables, disable)
+        else:
+            # if hashed cursor ("cursor" param), use recursive function to
+            # gather all results
+            with tqdm(
+                desc="querying",
+                total=count_pages,
+                leave=False,
+                disable=disable,
+            ) as pbar:
+                results = [y for x in func(params) for y in x]
 
         if "format" in params and params["format"] == "geojson":
             if results:
