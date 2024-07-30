@@ -10,6 +10,8 @@ DIR_CACHE = platformdirs.user_cache_dir(APP_NAME, ensure_exists=True)
 
 CACHE_NAME = "clhubeau_http_cache.sqlite"
 DEFAULT_EXPIRE_AFTER = timedelta(days=30)
+SIZE = 1000  # Default size for each API's result
+RATE_LIMITER = 10  # queries per second
 
 DEPARTEMENTS = [
     "01",
