@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jul 29 09:40:51 2024
+Convenience functions for piezometry consumption
 """
 
 import geopandas as gpd
@@ -31,11 +31,21 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     """
 
     with PiezometrySession() as session:
+
+        # def func(dep):
+        #     return session.get_stations(
+        #         code_departement=dep, format="geojson", **kwargs
+        #     )
+        # with pebble.ThreadPool(10) as pool:
+        #     future = pool.map(func, DEPARTEMENTS)
+        #     results = list(
+        #         tqdm(future.result(), desc="querying dep/dep", leave=False)
+        #     )
         results = [
             session.get_stations(
                 code_departement=dep, format="geojson", **kwargs
             )
-            for dep in tqdm(DEPARTEMENTS, desc="querying dep/dep", leave=False)
+            for dep in tqdm(DEPARTEMENTS, desc="querying dep/dep", leave=True)
         ]
     results = gpd.pd.concat(results, ignore_index=True)
     try:
@@ -101,10 +111,17 @@ def get_realtime_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
 
     with PiezometrySession() as session:
         results = [
-            session.get_chronicles_real_time(code_bss=code, **kwargs)
+            session.get_realtime_chronicles(code_bss=code, **kwargs)
             for code in tqdm(
                 codes_bss, desc="querying piezo/piezo", leave=False
             )
         ]
     results = pd.concat(results, ignore_index=True)
     return results
+
+
+if __name__ == "__main__":
+    import logging
+
+    logging.basicConfig(level=logging.WARNING)
+    df = get_all_stations()
