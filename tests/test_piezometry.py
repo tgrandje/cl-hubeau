@@ -9,7 +9,7 @@ Test only high level functions
 import geopandas as gpd
 import pandas as pd
 import pytest
-from requests_cache import CachedSession
+from requests_cache import CacheMixin
 
 from cl_hubeau import piezometry
 
@@ -37,6 +37,7 @@ def mock_get_data(monkeypatch):
                     "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"},
                 },
                 "count": 1,
+                "first": "blah_page",
                 "features": [
                     {
                         "type": "Feature",
@@ -70,6 +71,7 @@ def mock_get_data(monkeypatch):
         elif "chroniques_tr" in url:
             data = {
                 "count": 1,
+                "first": "blah_page",
                 "data": [
                     {
                         "code_bss": "dummy_code",
@@ -91,6 +93,7 @@ def mock_get_data(monkeypatch):
         elif "chroniques" in url:
             data = {
                 "count": 1,
+                "first": "blah_page",
                 "data": [
                     {
                         "code_bss": "dummy_code",
@@ -115,22 +118,22 @@ def mock_get_data(monkeypatch):
         return MockResponse(data)
 
     # init = CachedSession.request
-    monkeypatch.setattr(CachedSession, "request", mock_request)
+    monkeypatch.setattr(CacheMixin, "request", mock_request)
 
 
-def test_get_all_stations(mock_get_data):
+def test_get_all_stations_mocked(mock_get_data):
     data = piezometry.get_all_stations()
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 1
 
 
-def test_get_chronicles(mock_get_data):
+def test_get_chronicles_mocked(mock_get_data):
     data = piezometry.get_chronicles(codes_bss=["dummy_code"])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
 
-def test_get_chronicles_real_time(mock_get_data):
+def test_get_chronicles_real_time_mocked(mock_get_data):
     data = piezometry.get_realtime_chronicles(codes_bss=["dummy_code"])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
