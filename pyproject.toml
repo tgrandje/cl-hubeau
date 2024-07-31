@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cl-hubeau"
-version = "0.1.1"
+version = "0.2.0"
 description = "Hubeau client to collect data from the different APIs"
 authors = ["Thomas Grandjean <thomas.grandjean@developpement-durable.gouv.fr>"]
 license = "GPL-3.0-or-later"
@@ -10,7 +10,7 @@ repository = "https://github.com/tgrandje/cl-hubeau/"
 documentation = "https://github.com/tgrandje/cl-hubeau/"
 keywords = ["france", "water", "hydrology"]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 3 - Alpha",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering",
