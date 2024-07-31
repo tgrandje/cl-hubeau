@@ -15,7 +15,7 @@ from cl_hubeau.session import BaseHubeauSession
 class PiezometrySession(BaseHubeauSession):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, *kwargs)
+        super().__init__(*args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 5000
@@ -91,10 +91,6 @@ class PiezometrySession(BaseHubeauSession):
         url = self.BASE_URL + "/v1/niveaux_nappes/stations"
 
         df = self.get_result(method, url, params=params)
-        try:
-            df = df.drop_duplicates("bss_id")
-        except KeyError:
-            pass
 
         return df
 
@@ -156,7 +152,6 @@ class PiezometrySession(BaseHubeauSession):
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques"
 
         df = self.get_result(method, url, params=params)
-        df = df.drop_duplicates(keep="first")
 
         try:
             df["timestamp_mesure"] = pd.to_datetime(
@@ -164,6 +159,7 @@ class PiezometrySession(BaseHubeauSession):
             )
         except KeyError:
             pass
+
         return df
 
     def get_realtime_chronicles(self, **kwargs):
@@ -260,8 +256,11 @@ class PiezometrySession(BaseHubeauSession):
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques_tr"
 
-        df = self.get_result(method, url, params=params, force_refresh=True)
-        df = df.drop_duplicates(keep="first")
+        df = self.get_result(
+            method,
+            url,
+            params=params,
+        )
 
         try:
             df["timestamp_mesure"] = pd.to_datetime(
@@ -269,6 +268,7 @@ class PiezometrySession(BaseHubeauSession):
             )
         except KeyError:
             pass
+
         return df
 
 

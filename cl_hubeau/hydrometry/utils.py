@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from cl_hubeau.hydrometry.hydrometry_scraper import HydrometrySession
 from cl_hubeau.constants import DEPARTEMENTS
+from cl_hubeau import _config
 
 
 def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
@@ -37,11 +38,17 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
             session.get_stations(
                 code_departement=dep, format="geojson", **kwargs
             )
-            for dep in tqdm(DEPARTEMENTS, desc="querying dep/dep", leave=True)
+            for dep in tqdm(
+                DEPARTEMENTS,
+                desc="querying dep/dep",
+                leave=_config["TQDM_LEAVE"],
+                position=tqdm._get_free_pos(),
+            )
         ]
-    results = [x for x in results if not x.empty]
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = gpd.pd.concat(results, ignore_index=True)
     try:
+        results["code_station"]
         results = results.drop_duplicates("code_station")
     except KeyError:
         pass
@@ -69,85 +76,102 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
     with HydrometrySession() as session:
         results = [
             session.get_sites(code_departement=dep, format="geojson", **kwargs)
-            for dep in tqdm(DEPARTEMENTS, desc="querying dep/dep", leave=True)
+            for dep in tqdm(
+                DEPARTEMENTS,
+                desc="querying dep/dep",
+                leave=_config["TQDM_LEAVE"],
+                position=tqdm._get_free_pos(),
+            )
         ]
-    results = [x for x in results if not x.empty]
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
 
     results = gpd.pd.concat(results, ignore_index=True)
     try:
-        results = results.drop_duplicates("code_station")
+        results["code_site"]
+        results = results.drop_duplicates("code_site")
     except KeyError:
         pass
     return results
 
 
-# def get_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
-#     """
-#     Retrieve chronicles from multiple piezometers.
+def get_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
+    """
+    Retrieve observations from multiple sites/stations.
 
-#     Use an inner loop for multiple piezometers to avoid reaching 20k results
-#     threshold from hub'eau API.
+    Use an inner loop for multiple piezometers to avoid reaching 20k results
+    threshold from hub'eau API.
 
-#     Parameters
-#     ----------
-#     codes_bss : list
-#         List of code_bss codes for piezometers
-#     **kwargs :
-#         kwargs passed to PiezometrySession.get_chronicles (hence mostly
-#         intended for hub'eau API's arguments). Do not use `code_bss` as they
-#         are set by the current function.
+    Parameters
+    ----------
+    codes_entites : list
+        List of site or station codes for hydrometry
+    **kwargs :
+        kwargs passed to PiezometrySession.get_chronicles (hence mostly
+        intended for hub'eau API's arguments). Do not use `code_entite` as they
+        are set by the current function.
 
-#     Returns
-#     -------
-#     results : pd.dataFrame
-#         DataFrame of results
+    Returns
+    -------
+    results : pd.dataFrame
+        DataFrame of results
 
-#     """
+    """
 
-#     with PiezometrySession() as session:
-#         results = [
-#             session.get_chronicles(code_bss=code, **kwargs)
-#             for code in tqdm(
-#                 codes_bss, desc="querying piezo/piezo", leave=False
-#             )
-#         ]
-#     results = pd.concat(results, ignore_index=True)
-#     return results
+    with HydrometrySession() as session:
+        results = [
+            session.get_observations(code_entite=code, **kwargs)
+            for code in tqdm(
+                codes_entites,
+                desc="querying entite/entite",
+                leave=_config["TQDM_LEAVE"],
+                position=tqdm._get_free_pos(),
+            )
+        ]
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    results = pd.concat(results, ignore_index=True)
+    return results
 
 
-# def get_realtime_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
-#     """
-#     Retrieve realtimes chronicles from multiple piezometers.
+def get_realtime_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
+    """
+    Retrieve realtimes observations from multiple sites/stations.
+    Uses a reduced timeout for cache expiration.
 
-#     Parameters
-#     ----------
-#     codes_bss : list
-#         List of code_bss codes for piezometers
-#     **kwargs :
-#         kwargs passed to PiezometrySession.get_chronicles (hence mostly
-#         intended for hub'eau API's arguments). Do not use `code_bss` as they
-#         are set by the current function.
+    Parameters
+    ----------
+    codes_entites : list
+        List of site or station codes for hydrometry
+    **kwargs :
+        kwargs passed to PiezometrySession.get_chronicles (hence mostly
+        intended for hub'eau API's arguments). Do not use `code_entite` as they
+        are set by the current function.
 
-#     Returns
-#     -------
-#     results : pd.dataFrame
-#         DataFrame of results
+    Returns
+    -------
+    results : pd.dataFrame
+        DataFrame of results
 
-#     """
+    """
 
-#     with PiezometrySession() as session:
-#         results = [
-#             session.get_realtime_chronicles(code_bss=code, **kwargs)
-#             for code in tqdm(
-#                 codes_bss, desc="querying piezo/piezo", leave=False
-#             )
-#         ]
-#     results = pd.concat(results, ignore_index=True)
-#     return results
+    with HydrometrySession(
+        expire_after=_config["DEFAULT_EXPIRE_AFTER_REALTIME"]
+    ) as session:
+        results = [
+            session.get_realtime_observations(code_entite=code, **kwargs)
+            for code in tqdm(
+                codes_entites,
+                desc="querying entite/entite",
+                leave=_config["TQDM_LEAVE"],
+                position=tqdm._get_free_pos(),
+            )
+        ]
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    results = pd.concat(results, ignore_index=True)
+    return results
 
 
 if __name__ == "__main__":
     import logging
 
     # logging.basicConfig(level=logging.WARNING)
-    df = get_all_sites()
+    df = get_realtime_observations(codes_entites=["K437311001"])

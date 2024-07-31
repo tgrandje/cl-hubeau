@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from cl_hubeau.piezometry.piezometry_scraper import PiezometrySession
 from cl_hubeau.constants import DEPARTEMENTS
+from cl_hubeau import _config
 
 
 def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
@@ -45,10 +46,17 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
             session.get_stations(
                 code_departement=dep, format="geojson", **kwargs
             )
-            for dep in tqdm(DEPARTEMENTS, desc="querying dep/dep", leave=True)
+            for dep in tqdm(
+                DEPARTEMENTS,
+                desc="querying dep/dep",
+                leave=_config["TQDM_LEAVE"],
+                position=tqdm._get_free_pos(),
+            )
         ]
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = gpd.pd.concat(results, ignore_index=True)
     try:
+        results["code_bss"]
         results = results.drop_duplicates("code_bss")
     except KeyError:
         pass
@@ -82,9 +90,13 @@ def get_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
         results = [
             session.get_chronicles(code_bss=code, **kwargs)
             for code in tqdm(
-                codes_bss, desc="querying piezo/piezo", leave=False
+                codes_bss,
+                desc="querying piezo/piezo",
+                leave=_config["TQDM_LEAVE"],
+                position=tqdm._get_free_pos(),
             )
         ]
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
     return results
 
@@ -92,6 +104,7 @@ def get_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
 def get_realtime_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
     """
     Retrieve realtimes chronicles from multiple piezometers.
+    Uses a reduced timeout for cache expiration.
 
     Parameters
     ----------
@@ -109,19 +122,25 @@ def get_realtime_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
 
     """
 
-    with PiezometrySession() as session:
+    with PiezometrySession(
+        expire_after=_config["DEFAULT_EXPIRE_AFTER_REALTIME"]
+    ) as session:
         results = [
             session.get_realtime_chronicles(code_bss=code, **kwargs)
             for code in tqdm(
-                codes_bss, desc="querying piezo/piezo", leave=False
+                codes_bss,
+                desc="querying piezo/piezo",
+                leave=_config["TQDM_LEAVE"],
+                position=tqdm._get_free_pos(),
             )
         ]
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
     return results
 
 
-if __name__ == "__main__":
-    import logging
+# if __name__ == "__main__":
+#     import logging
 
-    logging.basicConfig(level=logging.WARNING)
-    df = get_all_stations()
+#     logging.basicConfig(level=logging.WARNING)
+#     df = get_all_stations()

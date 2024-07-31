@@ -20,13 +20,8 @@ from requests_cache import CacheMixin
 from requests_ratelimiter import LimiterMixin
 from tqdm import tqdm
 
-from cl_hubeau.constants import (
-    DIR_CACHE,
-    CACHE_NAME,
-    DEFAULT_EXPIRE_AFTER,
-    SIZE,
-    RATE_LIMITER,
-)
+from cl_hubeau.constants import DIR_CACHE, CACHE_NAME
+from cl_hubeau import _config
 
 
 def map_func(
@@ -68,7 +63,11 @@ def map_func(
     total = len(iterables)
     results = []
     with tqdm(
-        desc="querying", total=total, leave=False, disable=disable
+        desc="querying",
+        total=total,
+        leave=_config["TQDM_LEAVE"],
+        disable=disable,
+        position=tqdm._get_free_pos(),
     ) as pbar:
 
         if threads > 1:
@@ -100,17 +99,16 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
     Base session class to use across cl_hubeau for querying APIs from Hub'Eau
     """
 
-    THREADS = 10
     BASE_URL = "https://hubeau.eaufrance.fr/api"
     CACHE_NAME = os.path.join(DIR_CACHE, CACHE_NAME)
     ALLOWABLE_CODES = [200, 206, 400]
 
     def __init__(
         self,
-        expire_after: int = DEFAULT_EXPIRE_AFTER,
+        expire_after: int = _config["DEFAULT_EXPIRE_AFTER"],
         proxies: dict = None,
-        size: int = SIZE,
-        per_second=RATE_LIMITER,
+        size: int = _config["SIZE"],
+        per_second: int = _config["RATE_LIMITER"],
         **kwargs,
     ):
         """
@@ -120,7 +118,8 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         Parameters
         ----------
         expire_after : int, optional
-            Default expiration timeout. The default is DEFAULT_EXPIRE_AFTER.
+            Default expiration timeout. The default is DEFAULT_EXPIRE_AFTER
+            from config file.
         proxies : dict, optional
             Optional corporate proxies for internet connection.
             The default is None.
@@ -128,7 +127,10 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             If not set, will be infered from os environment variables
             http_proxy and https_proxy (if set)
         size : int, optional
-            Size set for each page. Default is SIZE.
+            Size set for each page. Default is SIZE from config file.
+        per_second : int, optional
+            Max authorized rate of requests per second. Default is RATE_LIMITER
+            from config file.
         **kwargs
             Optional kwargs passed to the CachedSession class constructor.
 
@@ -304,7 +306,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             iterables[x].update({page: x + 1})
 
         # Multithreading only if page - mono-thread if cursor instead
-        threads = min(self.THREADS, count_pages) if page == "page" else 1
+        threads = min(_config["THREADS"], count_pages) if page == "page" else 1
 
         key = (
             "data"
@@ -333,16 +335,20 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                 """
                 r = self.request("GET", url=url, params=params, **kwargs)
                 result = r.json()[key]
+
                 try:
                     next_url = r.json()["next"]
-                    cursor = parse_qs(urlparse(next_url).query)["cursor"]
+                    cursor = parse_qs(urlparse(next_url).query)["cursor"][0]
                 except KeyError:
-                    return
+                    yield result
                 pbar.update()
-                new_params = deepcopy(params)
-                new_params["cursor"] = cursor
-                yield from func(new_params)
-                yield result
+                try:
+                    new_params = deepcopy(params)
+                    new_params["cursor"] = cursor
+                    yield from func(new_params)
+                    yield result
+                except UnboundLocalError:
+                    pass
 
         # Deactivate progress bar if less pages than available threads
         disable = count_pages <= threads
@@ -357,8 +363,9 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             with tqdm(
                 desc="querying",
                 total=count_pages,
-                leave=False,
+                leave=_config["TQDM_LEAVE"],
                 disable=disable,
+                position=tqdm._get_free_pos(),
             ) as pbar:
                 results = [y for x in func(params) for y in x]
 
@@ -373,9 +380,12 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             else:
                 results = pd.DataFrame()
         if not len(results) == count_rows:
+            # Note that for "big" realtime datasets, the result's length may
+            # differ at the end from what was expected at the start of
+            # iterations
             msg = (
-                "results do not match expected results - "
+                f"results do not match expected results for {url} {params} - "
                 f"expected {count_rows}, got {len(results)} instead"
             )
-            raise ValueError(msg)
+            warnings.warn(msg)
         return results

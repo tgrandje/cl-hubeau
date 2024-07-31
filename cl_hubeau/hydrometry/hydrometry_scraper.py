@@ -13,7 +13,8 @@ from cl_hubeau.session import BaseHubeauSession
 class HydrometrySession(BaseHubeauSession):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, *kwargs)
+
+        super().__init__(*args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 1000
@@ -87,10 +88,6 @@ class HydrometrySession(BaseHubeauSession):
         method = "GET"
         url = self.BASE_URL + "/v1/hydrometrie/referentiel/stations"
         df = self.get_result(method, url, params=params)
-        try:
-            df = df.drop_duplicates("code_station")
-        except KeyError:
-            pass
 
         return df
 
@@ -150,10 +147,6 @@ class HydrometrySession(BaseHubeauSession):
         method = "GET"
         url = self.BASE_URL + "/v1/hydrometrie/referentiel/sites"
         df = self.get_result(method, url, params=params)
-        try:
-            df = df.drop_duplicates("code_site")
-        except KeyError:
-            pass
 
         return df
 
@@ -217,7 +210,6 @@ class HydrometrySession(BaseHubeauSession):
         url = self.BASE_URL + "/v1/hydrometrie/obs_elab"
 
         df = self.get_result(method, url, params=params)
-        df = df.drop_duplicates(keep="first")
 
         try:
             df["date_obs_elab"] = pd.to_datetime(
@@ -324,7 +316,6 @@ class HydrometrySession(BaseHubeauSession):
         url = self.BASE_URL + "/v1/hydrometrie/observations_tr"
 
         df = self.get_result(method, url, params=params)
-        df = df.drop_duplicates(keep="first")
 
         try:
             df["date_obs"] = pd.to_datetime(df["date_obs"])
