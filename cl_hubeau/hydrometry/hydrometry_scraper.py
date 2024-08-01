@@ -2,7 +2,7 @@
 """
 Created on Sun Jul 28 14:03:41 2024
 
-low level class to collect data from the piezometry API from hub'eau
+low level class to collect data from the hydrometry API from hub'eau
 """
 
 import pandas as pd
@@ -11,6 +11,9 @@ from cl_hubeau.session import BaseHubeauSession
 
 
 class HydrometrySession(BaseHubeauSession):
+    """
+    Base session class to handle the hydrometry API
+    """
 
     def __init__(self, *args, **kwargs):
 
@@ -336,11 +339,11 @@ class HydrometrySession(BaseHubeauSession):
                         "timestep can only be set for one 'code_entite', "
                         f"found code_entite='{params['code_entite']}' instead"
                     )
-            except KeyError:
+            except KeyError as exc:
                 raise ValueError(
                     "timestep can only be set for one 'code_entite', "
                     "found code_entite=None instead"
-                )
+                ) from exc
 
         except KeyError:
             pass
