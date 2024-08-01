@@ -13,9 +13,12 @@ from cl_hubeau.session import BaseHubeauSession
 
 
 class PiezometrySession(BaseHubeauSession):
+    """
+    Base session class to handle the piezometry API
+    """
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(version="1.4.1", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 5000
@@ -33,6 +36,8 @@ class PiezometrySession(BaseHubeauSession):
         La profondeur d'accès aux résultats est : 20000, calcul de la
         profondeur = numéro de la page * nombre maximum de résultats dans une
         page.
+
+        Doc: https://hubeau.eaufrance.fr/page/api-piezometrie
         """
 
         params = {}
@@ -160,21 +165,16 @@ class PiezometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        if kwargs:
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-piezometrie"
+            )
+
         return df
 
     def get_realtime_chronicles(self, **kwargs):
-        #     bbox: List[float] = None,
-        #     bss_id: List[str] = None,
-        #     code_bss: List[str] = "07548X0009/F",
-        #     date_debut_mesure: str = None,
-        #     date_fin_mesure: str = None,
-        #     fields: str = None,
-        #     niveau_ngf_max: float = None,
-        #     niveau_ngf_min: float = None,
-        #     profondeur_max: float = None,
-        #     profondeur_min: float = None,
-        #     sort: str = None,
-        # ):
         """
         Lister les chroniques piézométriques en temps réel
         Endpoint /v1/niveaux_nappes/chroniques_tr
@@ -189,6 +189,8 @@ class PiezometrySession(BaseHubeauSession):
         La profondeur d'accès aux résultats est : 20000, calcul de la
         profondeur = numéro de la page * nombre maximum de résultats dans une
         page.
+
+        Doc: https://hubeau.eaufrance.fr/page/api-piezometrie
         """
         params = {}
 
@@ -268,6 +270,13 @@ class PiezometrySession(BaseHubeauSession):
             )
         except KeyError:
             pass
+
+        if kwargs:
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-piezometrie"
+            )
 
         return df
 

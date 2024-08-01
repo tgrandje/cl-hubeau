@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cl-hubeau"
-version = "0.2.0"
+version = "0.3.0"
 description = "Hubeau client to collect data from the different APIs"
 authors = ["Thomas Grandjean <thomas.grandjean@developpement-durable.gouv.fr>"]
 license = "GPL-3.0-or-later"
@@ -28,6 +28,8 @@ pandas = "^2.2.2"
 tqdm = "^4.66.4"
 geopandas = "^1.0.1"
 requests-ratelimiter = "^0.7.0"
+pynsee = "^0.1.8"
+python-dotenv = "^1.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
