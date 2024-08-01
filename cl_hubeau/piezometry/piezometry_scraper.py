@@ -13,6 +13,9 @@ from cl_hubeau.session import BaseHubeauSession
 
 
 class PiezometrySession(BaseHubeauSession):
+    """
+    Base session class to handle the piezometry API
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
