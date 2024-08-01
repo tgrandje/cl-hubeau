@@ -23,6 +23,19 @@ class HydrometrySession(BaseHubeauSession):
         """
         Lister les stations hydrométriques
         Endpoint /v1/hydrometrie/referentiel/stations
+
+        Ce service permet d'interroger les stations du référentiel
+        hydrométrique. Une station peut porter des observations de hauteur
+        et/ou de débit (directement mesurés ou calculés à partir d'une courbe
+        de tarage).
+        Si la valeur du paramètre size n'est pas renseignée, la taille de page
+        par défaut : 1000, taille max de la page : 10000.
+        La profondeur d'accès aux résultats est : 20000, calcul de la
+        profondeur = numéro de la page * nombre maximum de résultats dans une
+        page.
+        Trie par défaut : code_station asc
+
+        Doc: https://hubeau.eaufrance.fr/page/api-hydrometrie
         """
 
         params = {}
@@ -39,7 +52,7 @@ class HydrometrySession(BaseHubeauSession):
             if variable not in ("json", "geojson"):
                 raise ValueError(
                     "format must be among ('json', 'geojson'), "
-                    f"found {format=} instead"
+                    f"found format='{variable}' instead"
                 )
             params["format"] = variable
         except KeyError:
@@ -83,7 +96,11 @@ class HydrometrySession(BaseHubeauSession):
                 continue
 
         if kwargs:
-            raise ValueError(f"found unexpected arguments {kwargs}")
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-hydrometrie"
+            )
 
         method = "GET"
         url = self.BASE_URL + "/v1/hydrometrie/referentiel/stations"
@@ -95,6 +112,19 @@ class HydrometrySession(BaseHubeauSession):
         """
         Lister les sites hydrométriques
         Endpoint /v1/hydrometrie/referentiel/sites
+
+        Ce service permet d'interroger les sites du référentiel hydrométrique
+        (tronçon de cours d'eau sur lequel les mesures de débit sont réputées
+        homogènes et comparables entre elles). Un site peut posséder une ou
+        plusieurs stations ; il est support de données de débit (Q)
+        Si la valeur du paramètre size n'est pas renseignée, la taille de page
+        par défaut : 1000, taille max de la page : 10000.
+        La profondeur d'accès aux résultats est : 20000, calcul de la
+        profondeur = numéro de la page * nombre maximum de résultats dans une
+        page.
+        Trie par défaut : code_site asc
+
+        Doc: https://hubeau.eaufrance.fr/page/api-hydrometrie
         """
 
         params = {}
@@ -142,7 +172,11 @@ class HydrometrySession(BaseHubeauSession):
                 continue
 
         if kwargs:
-            raise ValueError(f"found unexpected arguments {kwargs}")
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-hydrometrie"
+            )
 
         method = "GET"
         url = self.BASE_URL + "/v1/hydrometrie/referentiel/sites"
@@ -154,6 +188,12 @@ class HydrometrySession(BaseHubeauSession):
         """
         Lister les observations hydrométriques élaborées
         Endpoint /v1/hydrometrie/obs_elab
+
+        Grandeurs hydrométriques élaborées disponibles : débits moyens
+        journaliers (QmJ), débits moyens mensuels (QmM)
+        Trie par défaut : code_station,date_obs_elab asc
+
+        Doc: https://hubeau.eaufrance.fr/page/api-hydrometrie
         """
 
         params = {}
@@ -204,7 +244,11 @@ class HydrometrySession(BaseHubeauSession):
                 continue
 
         if kwargs:
-            raise ValueError(f"found unexpected arguments {kwargs}")
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-hydrometrie"
+            )
 
         method = "GET"
         url = self.BASE_URL + "/v1/hydrometrie/obs_elab"
@@ -223,6 +267,16 @@ class HydrometrySession(BaseHubeauSession):
         """
         Lister les observations hydrométriques
         Endpoint /v1/hydrometrie/observations_tr
+
+        Ce service permet de lister les observations dites "temps réel" portées
+        par le référentiel (sites et stations hydrométriques), à savoir les
+        séries de données de hauteur d'eau (H) et de débit (Q).
+        Si la valeur du paramètre size n'est pas renseignée, la taille de page
+        par défaut : 1000, taille max de la page : 20000.
+        Il n'y a pas de limitation sur la profondeur d'accès aux résultats.
+        Trie par défaut : date_obs desc
+
+        Doc: https://hubeau.eaufrance.fr/page/api-hydrometrie
         """
 
         params = {}
@@ -310,7 +364,11 @@ class HydrometrySession(BaseHubeauSession):
                 continue
 
         if kwargs:
-            raise ValueError(f"found unexpected arguments {kwargs}")
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-hydrometrie"
+            )
 
         method = "GET"
         url = self.BASE_URL + "/v1/hydrometrie/observations_tr"
