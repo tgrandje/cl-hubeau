@@ -5,6 +5,7 @@ Clean all cache
 """
 
 import os
+import pynsee.utils
 
 from cl_hubeau.constants import (
     DIR_CACHE,
@@ -14,7 +15,7 @@ from cl_hubeau.constants import (
 
 def clean_all_cache(cache_name: str = os.path.join(DIR_CACHE, CACHE_NAME)):
     """
-    Clean http(s) cache
+    Clean http(s) cache, then pynsee's cache
 
     Parameters
     ----------
@@ -30,3 +31,6 @@ def clean_all_cache(cache_name: str = os.path.join(DIR_CACHE, CACHE_NAME)):
         os.unlink(cache_name)
     except FileNotFoundError:
         pass
+
+    # Clear pynsee's cache:
+    pynsee.utils.clear_all_cache()

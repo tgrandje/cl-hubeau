@@ -11,8 +11,8 @@ import pandas as pd
 from tqdm import tqdm
 
 from cl_hubeau.hydrometry.hydrometry_scraper import HydrometrySession
-from cl_hubeau.constants import DEPARTEMENTS
 from cl_hubeau import _config
+from cl_hubeau.utils import get_departements
 
 
 def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
@@ -33,13 +33,15 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
+    deps = get_departements().unique().tolist()
+
     with HydrometrySession() as session:
         results = [
             session.get_stations(
                 code_departement=dep, format="geojson", **kwargs
             )
             for dep in tqdm(
-                DEPARTEMENTS,
+                deps,
                 desc="querying dep/dep",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
@@ -73,11 +75,13 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
+    deps = get_departements().unique().tolist()
+
     with HydrometrySession() as session:
         results = [
             session.get_sites(code_departement=dep, format="geojson", **kwargs)
             for dep in tqdm(
-                DEPARTEMENTS,
+                deps,
                 desc="querying dep/dep",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
@@ -168,10 +172,3 @@ def get_realtime_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
     return results
-
-
-if __name__ == "__main__":
-    import logging
-
-    # logging.basicConfig(level=logging.WARNING)
-    df = get_realtime_observations(codes_entites=["K437311001"])

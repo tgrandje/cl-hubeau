@@ -65,7 +65,7 @@ jobs:
         env:
           insee_key: ${{secrets.INSEE_KEY}}
           insee_secret: ${{secrets.INSEE_SECRET}}
-        run: poetry run pytest --cov
+        run: poetry run pytest --cov -W error
         
   publish:
     runs-on: ubuntu-latest

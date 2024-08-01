@@ -5,7 +5,7 @@ Created on Sun Jul 28 14:03:41 2024
 low level class to collect data from the drinking water quality API from
 hub'eau
 """
-
+import pandas as pd
 from cl_hubeau.session import BaseHubeauSession
 
 
@@ -16,12 +16,12 @@ class DrinkingWaterQualitySession(BaseHubeauSession):
 
     def __init__(self, *args, **kwargs):
 
-        super().__init__(*args, **kwargs)
+        super().__init__(version="v1", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 5000
 
-    def get_cities_districts(self, **kwargs):
+    def get_cities_networks(self, **kwargs):
         """
         Liens entre UDI (Unités de distribution, ou réseaux) et communes.
         Endpoint /v1/qualite_eau_potable/communes_udi
@@ -46,7 +46,10 @@ class DrinkingWaterQualitySession(BaseHubeauSession):
 
         try:
             years = kwargs.pop("annee")
-            years = [str(x) for x in years]
+            if any(isinstance(years, x) for x in (list, tuple, set)):
+                years = [str(x) for x in years]
+            else:
+                years = [str(years)]
             params["annee"] = self.list_to_str_param(years, 10)
         except KeyError:
             pass
@@ -79,8 +82,9 @@ class DrinkingWaterQualitySession(BaseHubeauSession):
 
     def get_control_results(self, **kwargs):
         """
-        Lister les sites hydrométriques
-        Endpoint /v1/hydrometrie/referentiel/sites
+        Lister les analyses d'une ou plusieurs UDI
+        Endpoint /v1/qualite_eau_potable/resultats_dis
+
 
         Prélèvements, résultats d'analyses et conclusions sanitaires issus du
         contrôle sanitaire de l'eau distribuée commune par commune.
@@ -173,8 +177,13 @@ class DrinkingWaterQualitySession(BaseHubeauSession):
             )
 
         method = "GET"
-        url = self.BASE_URL + "/v1/hydrometrie/referentiel/sites"
+        url = self.BASE_URL + "/v1/qualite_eau_potable/resultats_dis"
         df = self.get_result(method, url, params=params)
+
+        try:
+            df["date_prelevement"] = pd.to_datetime(df["date_prelevement"])
+        except KeyError:
+            pass
 
         return df
 

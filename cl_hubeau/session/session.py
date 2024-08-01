@@ -16,6 +16,7 @@ import geopandas as gpd
 import pandas as pd
 import pebble
 from requests import Session
+from requests.exceptions import JSONDecodeError
 from requests_cache import CacheMixin
 from requests_ratelimiter import LimiterMixin
 from tqdm import tqdm
@@ -109,6 +110,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         proxies: dict = None,
         size: int = _config["SIZE"],
         per_second: int = _config["RATE_LIMITER"],
+        version: str = None,
         **kwargs,
     ):
         """
@@ -131,6 +133,9 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         per_second : int, optional
             Max authorized rate of requests per second. Default is RATE_LIMITER
             from config file.
+        version : str, optional
+            API's version. If set and not coherent with the current API's
+            version returned by hubeau, will trigger a warning.
         **kwargs
             Optional kwargs passed to the CachedSession class constructor.
 
@@ -141,6 +146,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         """
 
         self.size = size
+        self.version = version
 
         super().__init__(
             cache_name=self.CACHE_NAME,
@@ -244,7 +250,10 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             **kwargs,
         )
         if not r.ok:
-            error = r.json()
+            try:
+                error = r.json()
+            except JSONDecodeError:
+                error = str(r.content)
             raise ValueError(
                 f"Connection error on {method=} {url=} with {kwargs=}, "
                 f"got {error}"
@@ -288,6 +297,17 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         js = self.request(
             method=method, url=url, params=copy_params, **kwargs
         ).json()
+
+        if self.version:
+            try:
+                if not self.version == js["api_version"]:
+                    warnings.warn(
+                        "This API's version is not consistent with the "
+                        "expected one from cl_hubeau package: "
+                        "unexpected behaviour may occur."
+                    )
+            except KeyError:
+                logging.warning("api_version not found among API response")
 
         logging.debug(js)
 

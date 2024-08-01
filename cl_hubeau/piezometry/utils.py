@@ -9,8 +9,8 @@ import pandas as pd
 from tqdm import tqdm
 
 from cl_hubeau.piezometry.piezometry_scraper import PiezometrySession
-from cl_hubeau.constants import DEPARTEMENTS
 from cl_hubeau import _config
+from cl_hubeau.utils import get_departements
 
 
 def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
@@ -33,21 +33,13 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     with PiezometrySession() as session:
 
-        # def func(dep):
-        #     return session.get_stations(
-        #         code_departement=dep, format="geojson", **kwargs
-        #     )
-        # with pebble.ThreadPool(10) as pool:
-        #     future = pool.map(func, DEPARTEMENTS)
-        #     results = list(
-        #         tqdm(future.result(), desc="querying dep/dep", leave=False)
-        #     )
+        deps = get_departements().unique().tolist()
         results = [
             session.get_stations(
                 code_departement=dep, format="geojson", **kwargs
             )
             for dep in tqdm(
-                DEPARTEMENTS,
+                deps,
                 desc="querying dep/dep",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
@@ -139,8 +131,6 @@ def get_realtime_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
     return results
 
 
-# if __name__ == "__main__":
-#     import logging
+if __name__ == "__main__":
 
-#     logging.basicConfig(level=logging.WARNING)
-#     df = get_all_stations()
+    df = get_all_stations()

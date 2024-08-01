@@ -18,7 +18,7 @@ class PiezometrySession(BaseHubeauSession):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(version="1.4.1", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 5000
