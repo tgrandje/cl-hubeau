@@ -264,6 +264,7 @@ class HydrometrySession(BaseHubeauSession):
             )
         except KeyError:
             pass
+
         return df
 
     def get_realtime_observations(self, **kwargs):
@@ -382,6 +383,7 @@ class HydrometrySession(BaseHubeauSession):
             df["date_obs"] = pd.to_datetime(df["date_obs"])
         except KeyError:
             pass
+
         return df
 
 
