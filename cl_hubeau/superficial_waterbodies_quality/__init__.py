@@ -1,14 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from .superficial_waterbodies_quality import (
+from .superficial_waterbodies_quality_scraper import (
     SuperficialWaterbodiesQualitySession,
 )
 
-# from .utils import get_all_water_networks, get_control_results
+from .utils import (
+    get_stations,
+    get_operations,
+    get_environmental_conditions,
+    get_analysis,
+)
 
 
-# __all__ = [
-#     "get_all_water_networks",
-#     "get_control_results",
-#     "DrinkingWaterQualitySession",
-# ]
+__all__ = [
+    "get_stations",
+    "get_operations",
+    "get_environmental_conditions",
+    "get_analysis",
+    "SuperficialWaterbodiesQualitySession",
+]
