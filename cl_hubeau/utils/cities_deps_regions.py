@@ -16,6 +16,9 @@ def init_pynsee_connection():
     """
     keys = ["insee_key", "insee_secret", "http_proxy", "https_proxy"]
     kwargs = {x: os.environ[x] for x in keys if x in os.environ}
+    kwargs.update(
+        {x: os.environ[x.upper()] for x in keys if x.upper() in os.environ}
+    )
     init_conn(**kwargs)
 
 
@@ -23,6 +26,50 @@ def get_cities():
     init_pynsee_connection()
     cities = get_area_list("communes", "*", silent=True)
     return cities["CODE"].unique().tolist()
+
+
+def get_regions():
+    try:
+        init_pynsee_connection()
+        regs = get_area_list("regions", "*", silent=True)
+        return regs["CODE"].unique().tolist()
+    except Exception:
+        return [
+            "01",
+            "02",
+            "03",
+            "04",
+            "06",
+            "11",
+            "21",
+            "22",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "31",
+            "32",
+            "41",
+            "42",
+            "43",
+            "44",
+            "52",
+            "53",
+            "54",
+            "72",
+            "73",
+            "74",
+            "75",
+            "76",
+            "82",
+            "83",
+            "84",
+            "91",
+            "93",
+            "94",
+        ]
 
 
 def get_departements():
@@ -136,3 +183,7 @@ def get_departements():
             "974",
             "976",
         ]
+
+
+if __name__ == "__main__":
+    regs = get_regions()
