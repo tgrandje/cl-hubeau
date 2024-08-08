@@ -33,7 +33,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    deps = get_departements().unique().tolist()
+    deps = get_departements()
 
     with HydrometrySession() as session:
         results = [
@@ -75,7 +75,7 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    deps = get_departements().unique().tolist()
+    deps = get_departements()
 
     with HydrometrySession() as session:
         results = [
