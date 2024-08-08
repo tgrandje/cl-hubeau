@@ -19,7 +19,7 @@ from cl_hubeau import _config
 from cl_hubeau.utils import get_departements
 
 
-def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
+def get_stations(**kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve all stations for physical/chemical analysis on superficial
     waterbodies
@@ -63,9 +63,9 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
+def get_operations(**kwargs) -> gpd.GeoDataFrame:
     """
-    Retrieve all operations for measures.
+    Retrieve operations for measures.
 
     Should only be used with additional arguments to avoid reaching the 20k
     threshold, in conjonction with the built-in loop (which will operate
@@ -146,9 +146,9 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
+def get_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     """
-    Retrieve all environmental conditions for measures.
+    Retrieve environmental conditions for measures.
 
     Should only be used with additional arguments to avoid reaching the 20k
     threshold, in conjonction with the built-in loop (which will operate
@@ -230,9 +230,9 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
+def get_analysis(**kwargs) -> gpd.GeoDataFrame:
     """
-    Retrieve all analysis results from measures.
+    Retrieve analysis results from measures.
 
     Should only be used with additional arguments to avoid reaching the 20k
     threshold, in conjonction with the built-in loop (which will operate
