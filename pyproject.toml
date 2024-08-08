@@ -7,7 +7,7 @@ license = "GPL-3.0-or-later"
 readme = "README.md"
 homepage = "https://github.com/tgrandje/cl-hubeau/"
 repository = "https://github.com/tgrandje/cl-hubeau/"
-documentation = "https://github.com/tgrandje/cl-hubeau/"
+documentation = "https://tgrandje.github.io/cl-hubeau"
 keywords = ["france", "water", "hydrology"]
 classifiers = [
     "Development Status :: 3 - Alpha",
