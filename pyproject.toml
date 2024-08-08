@@ -40,6 +40,8 @@ pyqt5-qt5 = "5.15.2"
 pyqtwebengine-qt5 = "5.15.2"
 matplotlib = "^3.9.1"
 licensecheck = "^2024.2"
+jupyter = "^1.0.0"
+pyproj = "^3.6.1"
 
 [build-system]
 requires = ["poetry-core"]

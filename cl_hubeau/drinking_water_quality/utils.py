@@ -36,7 +36,7 @@ def get_all_water_networks(**kwargs) -> pd.DataFrame:
 
     """
 
-    city_codes = get_cities().tolist()
+    city_codes = get_cities()
 
     # Split by 20-something chunks
     city_codes = [
@@ -157,11 +157,11 @@ def get_control_results(
     return results
 
 
-if __name__ == "__main__":
-    df = get_control_results(
-        codes_communes="59350",
-        code_parametre="1340",
-        date_min_prelevement="2023-01-01",
-        date_max_prelevement="2023-12-31",
-    )
-    print(df)
+# if __name__ == "__main__":
+#     df = get_control_results(
+#         codes_communes="59350",
+#         code_parametre="1340",
+#         date_min_prelevement="2023-01-01",
+#         date_max_prelevement="2023-12-31",
+#     )
+#     print(df)

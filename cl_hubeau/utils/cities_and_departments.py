@@ -5,34 +5,134 @@ Get list of cities' and departements' codes
 """
 
 import os
-from pathlib import Path
 
 from pynsee import get_area_list
 from pynsee.utils.init_conn import init_conn
-
-from cl_hubeau.utils.clean_cache import clean_all_cache
 
 
 def init_pynsee_connection():
     """
     Initiate an INSEE API connection with tokens and proxies.
     """
-    home = str(Path.home())
-    pynsee_credentials_file = os.path.join(home, "pynsee_credentials.csv")
-    if not os.path.exists(pynsee_credentials_file):
-        clean_all_cache()
-        keys = ["insee_key", "insee_secret", "http_proxy", "https_proxy"]
-        kwargs = {x: os.environ[x] for x in keys if x in os.environ}
-        init_conn(**kwargs)
+    keys = ["insee_key", "insee_secret", "http_proxy", "https_proxy"]
+    kwargs = {x: os.environ[x] for x in keys if x in os.environ}
+    init_conn(**kwargs)
 
 
 def get_cities():
     init_pynsee_connection()
     cities = get_area_list("communes", "*", silent=True)
-    return cities["CODE"]
+    return cities["CODE"].unique().tolist()
 
 
 def get_departements():
-    init_pynsee_connection()
-    deps = get_area_list("departements", "*", silent=True)
-    return deps["CODE"]
+    try:
+        init_pynsee_connection()
+        deps = get_area_list("departements", "*", silent=True)
+        return deps["CODE"].unique().tolist()
+    except Exception:
+        # pynsee not working, return a simple constant
+        return [
+            "01",
+            "02",
+            "03",
+            "04",
+            "05",
+            "06",
+            "07",
+            "08",
+            "09",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "22",
+            "23",
+            "24",
+            "25",
+            "26",
+            "27",
+            "28",
+            "29",
+            "2A",
+            "2B",
+            "30",
+            "31",
+            "32",
+            "33",
+            "34",
+            "35",
+            "36",
+            "37",
+            "38",
+            "39",
+            "40",
+            "41",
+            "42",
+            "43",
+            "44",
+            "45",
+            "46",
+            "47",
+            "48",
+            "49",
+            "50",
+            "51",
+            "52",
+            "53",
+            "54",
+            "55",
+            "56",
+            "57",
+            "58",
+            "59",
+            "60",
+            "61",
+            "62",
+            "63",
+            "64",
+            "65",
+            "66",
+            "67",
+            "68",
+            "69",
+            "70",
+            "71",
+            "72",
+            "73",
+            "74",
+            "75",
+            "76",
+            "77",
+            "78",
+            "79",
+            "80",
+            "81",
+            "82",
+            "83",
+            "84",
+            "85",
+            "86",
+            "87",
+            "88",
+            "89",
+            "90",
+            "91",
+            "92",
+            "93",
+            "94",
+            "95",
+            "971",
+            "972",
+            "973",
+            "974",
+            "976",
+        ]

@@ -199,12 +199,7 @@ class PiezometrySession(BaseHubeauSession):
                 kwargs.pop("code_bss"), 200
             )
         except KeyError:
-            # reset to default hubeau value, which is set even when code_bss is
-            # missing
-            code_bss = "07548X0009/F"
-            msg = f"code_bss is missing, will be set to {code_bss=} by hubeau"
-            logging.warning(msg)
-            params["code_bss"] = code_bss
+            pass
 
         try:
             params["bss_id"] = self.list_to_str_param(

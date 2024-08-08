@@ -203,7 +203,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                 )
                 raise ValueError(msg)
 
-            return ",".join(x)
+            return ",".join([str(y) for y in x])
         if isinstance(x, str):
             return x
         raise ValueError(f"unexpected format for {x}")
