@@ -92,6 +92,13 @@ class PiezometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        if kwargs:
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-piezometrie"
+            )
+
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/stations"
 
@@ -153,6 +160,13 @@ class PiezometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        if kwargs:
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-piezometrie"
+            )
+
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques"
 
@@ -164,13 +178,6 @@ class PiezometrySession(BaseHubeauSession):
             )
         except KeyError:
             pass
-
-        if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-piezometrie"
-            )
 
         return df
 
@@ -250,6 +257,13 @@ class PiezometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        if kwargs:
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-piezometrie"
+            )
+
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques_tr"
 
@@ -265,13 +279,6 @@ class PiezometrySession(BaseHubeauSession):
             )
         except KeyError:
             pass
-
-        if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-piezometrie"
-            )
 
         return df
 
