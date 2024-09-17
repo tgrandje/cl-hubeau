@@ -57,17 +57,30 @@ class WatercoursesFlowSession(BaseHubeauSession):
             "libelle_commune",
             "code_region",
             "libelle_region",
-            "code_bassin",
-            "libelle_bassin",
             "code_cours_eau",
             "libelle_cours_eau",
-            "fields",
         ):
             try:
                 variable = kwargs.pop(arg)
-                params[arg] = self.list_to_str_param(variable)
+                params[arg] = self.list_to_str_param(variable, 200)
             except KeyError:
                 continue
+
+        for arg in (
+            "code_bassin",
+            "libelle_bassin",
+        ):
+            try:
+                variable = kwargs.pop(arg)
+                params[arg] = self.list_to_str_param(variable, 15)
+            except KeyError:
+                continue
+
+        try:
+            fields = kwargs.pop("fields")
+            params["fields"] = self.list_to_str_param(fields)
+        except KeyError:
+            pass
 
         for arg in ("distance", "latitude", "longitude"):
             try:
@@ -141,8 +154,6 @@ class WatercoursesFlowSession(BaseHubeauSession):
             "libelle_commune",
             "code_region",
             "libelle_region",
-            "code_bassin",
-            "libelle_bassin",
             "code_cours_eau",
             "libelle_cours_eau",
             "code_campagne",
@@ -150,13 +161,28 @@ class WatercoursesFlowSession(BaseHubeauSession):
             "libelle_reseau",
             "code_ecoulement",
             "libelle_ecoulement",
-            "fields",
         ):
             try:
                 variable = kwargs.pop(arg)
-                params[arg] = self.list_to_str_param(variable)
+                params[arg] = self.list_to_str_param(variable, 200)
             except KeyError:
                 continue
+
+        for arg in (
+            "code_bassin",
+            "libelle_bassin",
+        ):
+            try:
+                variable = kwargs.pop(arg)
+                params[arg] = self.list_to_str_param(variable, 15)
+            except KeyError:
+                continue
+
+        try:
+            fields = kwargs.pop("fields")
+            params["fields"] = self.list_to_str_param(fields)
+        except KeyError:
+            pass
 
         for arg in ("distance", "latitude", "longitude"):
             try:
@@ -205,21 +231,43 @@ class WatercoursesFlowSession(BaseHubeauSession):
             except KeyError:
                 continue
 
+        try:
+            code_campagne = kwargs.pop("code_campagne")
+            params["code_campagne"] = self.list_to_str_param(code_campagne, 20)
+        except KeyError:
+            pass
+
         for arg in (
-            "code_campagne",
-            "code_type_campagne",
-            "libelle_type_campagne",
             "code_reseau",
             "libelle_reseau",
             "code_departement",
             "libelle_departement",
-            "fields",
         ):
             try:
                 variable = kwargs.pop(arg)
-                params[arg] = self.list_to_str_param(variable)
+                params[arg] = self.list_to_str_param(variable, 200)
             except KeyError:
                 continue
+
+        try:
+            code_campagne = kwargs.pop("code_campagne")
+            if str(code_campagne) in ["1", "2"]:
+                params["code_campagne"] = code_campagne
+        except KeyError:
+            pass
+
+        try:
+            libelle_type_campagne = kwargs.pop("libelle_type_campagne")
+            if libelle_type_campagne.capitalize() in ["Usuelle", "Complémentaire"]:
+                params["libelle_type_campagne"] = libelle_type_campagne.capitalize()
+        except KeyError:
+            pass
+
+        try:
+            fields = kwargs.pop("fields")
+            params["fields"] = self.list_to_str_param(fields)
+        except KeyError:
+            pass
 
         try:
             params["sort"] = kwargs.pop("sort")
