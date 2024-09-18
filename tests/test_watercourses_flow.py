@@ -9,6 +9,7 @@ Test mostly high level functions
 import geopandas as gpd
 import pandas as pd
 import pytest
+
 from requests_cache import CacheMixin
 
 from cl_hubeau import watercourses_flow
@@ -49,6 +50,16 @@ def mock_get_data(monkeypatch):
                         },
                     }
                 ],
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "code_station": "dummy_code",
+                            "libelle_station": "dummy",
+                        },
+                        "geometry": {"type": "Point", "coordinates": [0, 0]},
+                    }
+                ],
             }
         elif "campagnes" in url:
             data = {
@@ -80,4 +91,10 @@ def test_get_one_campagne_live():
     with WatercoursesFlowSession() as session:
         data = session.get_campagnes(code_campagne=[12])
     assert isinstance(data, pd.DataFrame)
+    assert len(data) == 1
+
+
+def test_get_all_stations_mocked(mock_get_data):
+    data = watercourses_flow.get_all_stations()
+    assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 1

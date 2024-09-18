@@ -19,6 +19,7 @@ class WatercoursesFlowSession(BaseHubeauSession):
 
         super().__init__(version="1.0.0", *args, **kwargs)
 
+        # TODO où trouve-t-on cette taille dans la doc ?
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 1000
 
@@ -295,7 +296,8 @@ class WatercoursesFlowSession(BaseHubeauSession):
 
 # if __name__ == "__main__":
 #     with WatercoursesFlowSession() as session:
-#         df = session.get_stations(code_departement="59", format="geojson")
+#         # df = session.get_stations(code_departement="59", format="geojson")
 #         # df = session.get_campagnes(code_campagne=[12])
+#         df = session.get_observations(code_station="F6640008")
 
-#         print(type(df))
+#         print(df)
