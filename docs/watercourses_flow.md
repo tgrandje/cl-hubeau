@@ -49,6 +49,26 @@ from cl_hubeau import watercourses_flow
 gdf = watercourses_flow.get_all_stations(code_cours_eau="D0110600")
 ```
 
+### Récupération de la totalité des observations
+
+Cette fonction permet de récupérer les observations de la France entière.
+
+```python
+from cl_hubeau import watercourses_flow
+gdf = watercourses_flow.get_all_observations()
+```
+
+Il est également possible de spécifier des arguments à la fonction, parmi ceux supportés
+par le point de sortie "stations" de l'API, à l'exception de :
+* `format` (fixé par défaut au format geojson pour retourner un geodataframe)
+* `code_departement` (utilisé pour boucler sur les données nationales)
+
+Par exemple :
+```python
+from cl_hubeau import watercourses_flow
+gdf = watercourses_flow.get_all_observations(code_cours_eau="D0110600")
+```
+
 ## Fonctions de bas niveau
 
 Un objet session est défini pour consommer l'API à l'aide de méthodes de bas niveau.

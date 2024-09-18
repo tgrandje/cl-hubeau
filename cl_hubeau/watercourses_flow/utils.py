@@ -1,6 +1,8 @@
 import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
+from datetime import date, datetime
+from itertools import product
 
 from cl_hubeau.watercourses_flow.watercourses_flow_scraper import (
     WatercoursesFlowSession,
@@ -49,5 +51,76 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
+def get_all_observations(**kwargs) -> gpd.GeoDataFrame:
+    """
+    Retrieve all observsations from France.
+
+    Parameters
+    ----------
+    **kwargs :
+        kwargs passed to WatercoursesFlowSession.get_observations (hence mostly intended
+        for hub'eau API's arguments). Do not use `format` or `code_departement`
+        as they are set by the current function.
+
+    Returns
+    -------
+    results : gpd.GeoDataFrame
+        GeoDataFrame of observations
+    """
+
+    deps = get_departements()
+
+    # Set a loop for yearly querying as dataset are big
+    start_auto_determination = False
+    if "date_observation_min" not in kwargs:
+        start_auto_determination = True
+        kwargs["date_observation_min"] = "2016-01-01"
+    if "date_observation_max" not in kwargs:
+        kwargs["date_observation_max"] = date.today().strftime("%Y-%m-%d")
+
+    ranges = pd.date_range(
+        start=datetime.strptime(kwargs.pop("date_observation_min"), "%Y-%m-%d").date(),
+        end=datetime.strptime(kwargs.pop("date_observation_max"), "%Y-%m-%d").date(),
+    )
+    dates = pd.Series(ranges).to_frame("date")
+    dates["year"] = dates["date"].dt.year
+    dates = dates.groupby("year")["date"].agg(["min", "max"])
+    for d in "min", "max":
+        dates[d] = dates[d].dt.strftime("%Y-%m-%d")
+    if start_auto_determination:
+        dates = pd.concat(
+            [
+                dates,
+                pd.DataFrame([{"min": "1900-01-01", "max": "2015-12-31"}]),
+            ],
+            ignore_index=False,
+        ).sort_index()
+
+    args = list(product(deps, dates.values.tolist()))
+
+    with WatercoursesFlowSession() as session:
+
+        results = [
+            session.get_observations(
+                format="geojson",
+                date_observation_min=date_min,
+                date_observation_max=date_max,
+                **{"code_departement": chunk},
+                **kwargs,
+            )
+            for chunk, (date_min, date_max) in tqdm(
+                args,
+                desc="querying station/station and year/year",
+                leave=_config["TQDM_LEAVE"],
+                position=tqdm._get_free_pos(),
+            )
+        ]
+
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    results = pd.concat(results, ignore_index=True)
+    return results
+
+
 # if __name__ == "__main__":
-#     print(get_all_stations())
+#     # print(get_all_stations())
+#     print(get_all_observations())

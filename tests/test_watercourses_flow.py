@@ -31,7 +31,7 @@ def mock_get_data(monkeypatch):
     def mock_request(*args, **kwargs):
         self, method, url, *args = args
 
-        if "stations" in url:
+        if "stations" in url or "observations" in url:
             data = {
                 "count": 1,
                 "first": "blah_page",
@@ -96,5 +96,11 @@ def test_get_one_campagne_live():
 
 def test_get_all_stations_mocked(mock_get_data):
     data = watercourses_flow.get_all_stations()
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) == 1
+
+
+def test_get_all_observations_mocked(mock_get_data):
+    data = watercourses_flow.get_all_observations()
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 1
