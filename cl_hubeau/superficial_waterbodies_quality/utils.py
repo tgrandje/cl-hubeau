@@ -311,21 +311,3 @@ def get_analysis(**kwargs) -> gpd.GeoDataFrame:
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
     return results
-
-
-# if __name__ == "__main__":
-#     # df = get_all_operations(code_region="32")
-
-#     # df = get_control_results(
-#     #     codes_communes="59350",
-#     #     code_parametre="1340",
-#     #     date_min_prelevement="2023-01-01",
-#     #     date_max_prelevement="2023-12-31",
-#     # )
-#     # print(df)
-
-#     df = get_all_analysis(
-#         code_departement="02",
-#         date_debut_prelevement="2000-01-01",
-#         code_parametre="1340",
-#     )
