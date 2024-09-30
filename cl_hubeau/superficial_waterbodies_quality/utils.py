@@ -19,7 +19,7 @@ from cl_hubeau import _config
 from cl_hubeau.utils import get_departements
 
 
-def get_stations(**kwargs) -> gpd.GeoDataFrame:
+def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve all stations for physical/chemical analysis on superficial
     waterbodies
@@ -63,7 +63,7 @@ def get_stations(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def get_operations(**kwargs) -> gpd.GeoDataFrame:
+def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve operations for measures.
 
@@ -89,7 +89,7 @@ def get_operations(**kwargs) -> gpd.GeoDataFrame:
     if not kwargs:
         warnings.warn(
             "get_all_operations should only be used with "
-            "kwargs, for instance `get_all_operations(code_departement='02')`"
+            "kwargs, for instance `get_operations(code_departement='02')`"
         )
 
     # Set a loop for yearly querying as dataset are big
@@ -146,7 +146,7 @@ def get_operations(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def get_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
+def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve environmental conditions for measures.
 
@@ -230,7 +230,7 @@ def get_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def get_analysis(**kwargs) -> gpd.GeoDataFrame:
+def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve analysis results from measures.
 

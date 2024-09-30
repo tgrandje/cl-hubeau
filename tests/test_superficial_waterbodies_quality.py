@@ -92,13 +92,13 @@ def mock_get_data(monkeypatch):
 
 
 def test_get_stations(mock_get_data):
-    data = superficial_waterbodies_quality.get_stations()
+    data = superficial_waterbodies_quality.get_all_stations()
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 102
 
 
 def test_get_operations(mock_get_data):
-    data = superficial_waterbodies_quality.get_operations(
+    data = superficial_waterbodies_quality.get_all_operations(
         code_station="dummy_code",
         date_debut_prelevement="2020-01-01",
         date_fin_prelevement="2020-12-31",
@@ -109,7 +109,7 @@ def test_get_operations(mock_get_data):
 
 
 def test_get_environmental_conditions(mock_get_data):
-    data = superficial_waterbodies_quality.get_environmental_conditions(
+    data = superficial_waterbodies_quality.get_all_environmental_conditions(
         code_station="dummy_code",
         date_debut_prelevement="2020-01-01",
         date_fin_prelevement="2020-12-31",
@@ -120,7 +120,7 @@ def test_get_environmental_conditions(mock_get_data):
 
 
 def test_get_analysis(mock_get_data):
-    data = superficial_waterbodies_quality.get_analysis(
+    data = superficial_waterbodies_quality.get_all_analysis(
         code_station="dummy_code",
         date_debut_prelevement="2020-01-01",
         date_fin_prelevement="2020-12-31",

@@ -5,17 +5,17 @@ from .superficial_waterbodies_quality_scraper import (
 )
 
 from .utils import (
-    get_stations,
-    get_operations,
-    get_environmental_conditions,
-    get_analysis,
+    get_all_stations,
+    get_all_operations,
+    get_all_environmental_conditions,
+    get_all_analysis,
 )
 
 
 __all__ = [
-    "get_stations",
-    "get_operations",
-    "get_environmental_conditions",
-    "get_analysis",
+    "get_all_stations",
+    "get_all_operations",
+    "get_all_environmental_conditions",
+    "get_all_analysis",
     "SuperficialWaterbodiesQualitySession",
 ]

@@ -151,7 +151,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         Lister les opérations physicochimique
         Endpoint /v2/qualite_rivieres/operation_pc
 
-        Ce service permet de rechercher des opérations physicochimique sur des
+        Ce service permet de rechercher des opérations physicochimiques sur des
         cours d'eau et plan d'eau en France et les DROM.
 
         Doc: https://hubeau.eaufrance.fr/page/api-qualite-cours-deau
