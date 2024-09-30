@@ -38,7 +38,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             variable = kwargs.pop("sort")
             if variable not in ("asc", "desc"):
                 raise ValueError(
-                    "format must be among ('asc', 'sort'), "
+                    "sort must be among ('asc', 'sort'), "
                     f"found sort='{variable}' instead"
                 )
             params["sort"] = variable
@@ -163,7 +163,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             variable = kwargs.pop("sort")
             if variable not in ("asc", "desc"):
                 raise ValueError(
-                    "format must be among ('asc', 'sort'), "
+                    "sort must be among ('asc', 'sort'), "
                     f"found sort='{variable}' instead"
                 )
             params["sort"] = variable
@@ -296,7 +296,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             variable = kwargs.pop("sort")
             if variable not in ("asc", "desc"):
                 raise ValueError(
-                    "format must be among ('asc', 'sort'), "
+                    "sort must be among ('asc', 'sort'), "
                     f"found sort='{variable}' instead"
                 )
             params["sort"] = variable
@@ -415,7 +415,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             variable = kwargs.pop("sort")
             if variable not in ("asc", "desc"):
                 raise ValueError(
-                    "format must be among ('asc', 'sort'), "
+                    "sort must be among ('asc', 'sort'), "
                     f"found sort='{variable}' instead"
                 )
             params["sort"] = variable
@@ -527,12 +527,12 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         return df
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    with SuperficialWaterbodiesQualitySession() as session:
-        gdf0 = session.get_operations(
-            format="geojson", date_fin_prelevement="1970-01-01"
-        )
+#     with SuperficialWaterbodiesQualitySession() as session:
+#         gdf0 = session.get_operations(
+#             format="geojson", date_fin_prelevement="1970-01-01"
+#         )
 #         gdf1 = session.get_stations(code_region="32", format="geojson")
 #         gdf2 = session.get_operations(
 #             code_region="32",
