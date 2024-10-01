@@ -92,6 +92,13 @@ class PiezometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        if kwargs:
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-piezometrie"
+            )
+
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/stations"
 
@@ -122,12 +129,7 @@ class PiezometrySession(BaseHubeauSession):
                 kwargs.pop("code_bss"), 200
             )
         except KeyError:
-            # reset to default hubeau value, which is set even when code_bss is
-            # missing
-            code_bss = "07548X0009/F"
-            msg = f"code_bss is missing, will be set to {code_bss=} by hubeau"
-            logging.warning(msg)
-            params["code_bss"] = code_bss
+            pass
 
         for arg in "date_debut_mesure", "date_fin_mesure":
             try:
@@ -153,6 +155,13 @@ class PiezometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        if kwargs:
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-piezometrie"
+            )
+
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques"
 
@@ -164,13 +173,6 @@ class PiezometrySession(BaseHubeauSession):
             )
         except KeyError:
             pass
-
-        if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-piezometrie"
-            )
 
         return df
 
@@ -250,6 +252,13 @@ class PiezometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        if kwargs:
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "https://hubeau.eaufrance.fr/page/api-piezometrie"
+            )
+
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques_tr"
 
@@ -265,13 +274,6 @@ class PiezometrySession(BaseHubeauSession):
             )
         except KeyError:
             pass
-
-        if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-piezometrie"
-            )
 
         return df
 

@@ -4,7 +4,7 @@
 Convenience functions for hydrometry consumption
 """
 
-from datetime import date, datetime
+from datetime import date
 from itertools import product
 
 import pandas as pd
@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from cl_hubeau.drinking_water_quality import DrinkingWaterQualitySession
 from cl_hubeau import _config
-from cl_hubeau.utils import get_cities
+from cl_hubeau.utils import get_cities, prepare_kwargs_loops
 
 
 def get_all_water_networks(**kwargs) -> pd.DataFrame:
@@ -66,8 +66,8 @@ def get_control_results(
     Retrieve sanitary controls' results.
 
     Uses a loop to avoid reaching 20k results threshold.
-    As queries may induce big datasets, loops are based on networks and years,
-    even if date_min_prelevement/date_max_prelevement are not set.
+    As queries may induce big datasets, loops are based on networks and 6 month
+    timeranges, even if date_min_prelevement/date_max_prelevement are not set.
 
     Note that `codes_reseaux` and `codes_communes` are mutually exclusive!
 
@@ -112,41 +112,26 @@ def get_control_results(
     if "date_max_prelevement" not in kwargs:
         kwargs["date_max_prelevement"] = date.today().strftime("%Y-%m-%d")
 
-    ranges = pd.date_range(
-        start=datetime.strptime(
-            kwargs.pop("date_min_prelevement"), "%Y-%m-%d"
-        ).date(),
-        end=datetime.strptime(
-            kwargs.pop("date_max_prelevement"), "%Y-%m-%d"
-        ).date(),
+    kwargs_loop = prepare_kwargs_loops(
+        "date_min_prelevement",
+        "date_max_prelevement",
+        kwargs,
+        start_auto_determination,
     )
-    dates = pd.Series(ranges).to_frame("date")
-    dates["year"] = dates["date"].dt.year
-    dates = dates.groupby("year")["date"].agg(["min", "max"])
-    for d in "min", "max":
-        dates[d] = dates[d].dt.strftime("%Y-%m-%d")
-    if start_auto_determination:
-        dates = pd.concat(
-            [
-                dates,
-                pd.DataFrame([{"min": "1900-01-01", "max": "2015-12-31"}]),
-            ],
-            ignore_index=False,
-        ).sort_index()
 
-    args = list(product(codes, dates.values.tolist()))
+    kwargs_loop = list(product(codes, kwargs_loop))
+    [kwargs.update({codes_names: chunk}) for chunk, kwargs in kwargs_loop]
+    kwargs_loop = [x[1] for x in kwargs_loop]
 
     with DrinkingWaterQualitySession() as session:
 
         results = [
             session.get_control_results(
-                date_min_prelevement=date_min,
-                date_max_prelevement=date_max,
-                **{codes_names: chunk},
-                **kwargs
+                **kwargs,
+                **kw_loop,
             )
-            for chunk, (date_min, date_max) in tqdm(
-                args,
+            for kw_loop in tqdm(
+                kwargs_loop,
                 desc="querying network/network and year/year",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
@@ -155,13 +140,3 @@ def get_control_results(
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
     return results
-
-
-# if __name__ == "__main__":
-#     df = get_control_results(
-#         codes_communes="59350",
-#         code_parametre="1340",
-#         date_min_prelevement="2023-01-01",
-#         date_max_prelevement="2023-12-31",
-#     )
-#     print(df)

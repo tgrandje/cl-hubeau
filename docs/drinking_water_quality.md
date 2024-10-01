@@ -68,8 +68,8 @@ la probabilité d'atteindre le seuil maximal de 20 000 résultats est élevé.
 
 En l'état, cette fonction implémente déjà une double boucle :
 * sur les codes UDI
-* sur les périodes, en requêtant par années calendaires (ce qui permet une scalabilité de l'algorithme dans le temps
-et optimise l'usage du cache).
+* sur les périodes, en requêtant par plage de 6 mois calendaires (ce qui permet
+une scalabilité de l'algorithme dans le temps et optimise l'usage du cache).
 
 Il est également possible de spécifier des arguments à la fonction, parmi ceux supportés
 par le point de sortie "chroniques" de l'API, à l'exception de `code_reseau`.
