@@ -525,30 +525,3 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             pass
 
         return df
-
-
-# if __name__ == "__main__":
-
-#     with SuperficialWaterbodiesQualitySession() as session:
-#         gdf0 = session.get_operations(
-#             format="geojson", date_fin_prelevement="1970-01-01"
-#         )
-#         gdf1 = session.get_stations(code_region="32", format="geojson")
-#         gdf2 = session.get_operations(
-#             code_region="32",
-#             format="geojson",
-#             code_parametre="1340",
-#             date_debut_prelevement="2023-01-01",
-#         )
-#         gdf3 = session.get_environmental_conditions(
-#             code_region="32",
-#             format="geojson",
-#             # code_parametre="1340",
-#             date_debut_prelevement="2024-01-01",
-#         )
-#         gdf4 = session.get_analysis(
-#             code_departement="59",
-#             format="geojson",
-#             code_parametre="1340",
-#             date_debut_prelevement="2015-01-01",
-#         )

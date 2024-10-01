@@ -16,7 +16,11 @@ from cl_hubeau.superficial_waterbodies_quality import (
     SuperficialWaterbodiesQualitySession,
 )
 from cl_hubeau import _config
-from cl_hubeau.utils import get_departements
+from cl_hubeau.utils import (
+    get_departements,
+    get_departements_from_regions,
+    prepare_kwargs_loops,
+)
 
 
 def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
@@ -101,42 +105,34 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
     if "date_fin_prelevement" not in kwargs:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
-    ranges = pd.date_range(
-        start=datetime.strptime(
-            kwargs.pop("date_debut_prelevement"), "%Y-%m-%d"
-        ).date(),
-        end=datetime.strptime(
-            kwargs.pop("date_fin_prelevement"), "%Y-%m-%d"
-        ).date(),
-    )
-    dates = pd.Series(ranges).to_frame("date")
-    dates["year"] = dates["date"].dt.year
-    dates = dates.groupby("year")["date"].agg(["min", "max"])
-    for d in "min", "max":
-        dates[d] = dates[d].dt.strftime("%Y-%m-%d")
-    if start_auto_determination:
-        dates = pd.concat(
-            [
-                dates,
-                pd.DataFrame([{"min": "1900-01-01", "max": "1960-01-01"}]),
-            ],
-            ignore_index=False,
-        ).sort_index()
+    if "code_region" in kwargs:
+        # let's downcast to departemental loops
+        reg = kwargs.pop("code_region")
+        if isinstance(reg, (list, tuple, set)):
+            deps = [
+                dep for r in get_departements_from_regions(reg) for dep in r
+            ]
+        else:
+            deps = get_departements_from_regions(reg)
+        kwargs["code_departement"] = deps
 
-    dates = dates.values.tolist()
+    desc = "querying year/year" + (
+        " & dep/dep" if "code_departement" in kwargs else ""
+    )
+
+    kwargs_loop = prepare_kwargs_loops(kwargs, start_auto_determination)
 
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
             session.get_operations(
-                date_debut_prelevement=date_min,
-                date_fin_prelevement=date_max,
                 format="geojson",
                 **kwargs,
+                **kw_loop,
             )
-            for date_min, date_max in tqdm(
-                dates,
-                desc="querying year/year",
+            for kw_loop in tqdm(
+                kwargs_loop,
+                desc=desc,
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
@@ -185,42 +181,32 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     if "date_fin_prelevement" not in kwargs:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
-    ranges = pd.date_range(
-        start=datetime.strptime(
-            kwargs.pop("date_debut_prelevement"), "%Y-%m-%d"
-        ).date(),
-        end=datetime.strptime(
-            kwargs.pop("date_fin_prelevement"), "%Y-%m-%d"
-        ).date(),
-    )
-    dates = pd.Series(ranges).to_frame("date")
-    dates["year"] = dates["date"].dt.year
-    dates = dates.groupby("year")["date"].agg(["min", "max"])
-    for d in "min", "max":
-        dates[d] = dates[d].dt.strftime("%Y-%m-%d")
-    if start_auto_determination:
-        dates = pd.concat(
-            [
-                dates,
-                pd.DataFrame([{"min": "1900-01-01", "max": "1960-01-01"}]),
-            ],
-            ignore_index=False,
-        ).sort_index()
+    if "code_region" in kwargs:
+        # let's downcast to departemental loops
+        reg = kwargs.pop("code_region")
+        if isinstance(reg, (list, tuple, set)):
+            deps = [
+                dep for r in get_departements_from_regions(reg) for dep in r
+            ]
+        else:
+            deps = get_departements_from_regions(reg)
+        kwargs["code_departement"] = deps
 
-    dates = dates.values.tolist()
+    desc = "querying year/year" + (
+        " & dep/dep" if "code_departement" in kwargs else ""
+    )
+
+    kwargs_loop = prepare_kwargs_loops(kwargs, start_auto_determination)
 
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
             session.get_environmental_conditions(
-                date_debut_prelevement=date_min,
-                date_fin_prelevement=date_max,
-                format="geojson",
-                **kwargs,
+                format="geojson", **kwargs, **kw_loop
             )
-            for date_min, date_max in tqdm(
-                dates,
-                desc="querying year/year",
+            for kw_loop in tqdm(
+                kwargs_loop,
+                desc=desc,
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
@@ -268,42 +254,30 @@ def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
     if "date_fin_prelevement" not in kwargs:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
-    ranges = pd.date_range(
-        start=datetime.strptime(
-            kwargs.pop("date_debut_prelevement"), "%Y-%m-%d"
-        ).date(),
-        end=datetime.strptime(
-            kwargs.pop("date_fin_prelevement"), "%Y-%m-%d"
-        ).date(),
-    )
-    dates = pd.Series(ranges).to_frame("date")
-    dates["year"] = dates["date"].dt.year
-    dates = dates.groupby("year")["date"].agg(["min", "max"])
-    for d in "min", "max":
-        dates[d] = dates[d].dt.strftime("%Y-%m-%d")
-    if start_auto_determination:
-        dates = pd.concat(
-            [
-                dates,
-                pd.DataFrame([{"min": "1900-01-01", "max": "1960-01-01"}]),
-            ],
-            ignore_index=False,
-        ).sort_index()
+    if "code_region" in kwargs:
+        # let's downcast to departemental loops
+        reg = kwargs.pop("code_region")
+        if isinstance(reg, (list, tuple, set)):
+            deps = [
+                dep for r in get_departements_from_regions(reg) for dep in r
+            ]
+        else:
+            deps = get_departements_from_regions(reg)
+        kwargs["code_departement"] = deps
 
-    dates = dates.values.tolist()
+    desc = "querying year/year" + (
+        " & dep/dep" if "code_departement" in kwargs else ""
+    )
+
+    kwargs_loop = prepare_kwargs_loops(kwargs, start_auto_determination)
 
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
-            session.get_analysis(
-                date_debut_prelevement=date_min,
-                date_fin_prelevement=date_max,
-                format="geojson",
-                **kwargs,
-            )
-            for date_min, date_max in tqdm(
-                dates,
-                desc="querying year/year",
+            session.get_analysis(format="geojson", **kwargs, **kw_loop)
+            for kw_loop in tqdm(
+                kwargs_loop,
+                desc=desc,
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
@@ -311,3 +285,7 @@ def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
     return results
+
+
+if __name__ == "__main__":
+    gdf = get_all_analysis(code_departement="32", code_parametre="1313")
