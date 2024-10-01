@@ -4,7 +4,7 @@
 Convenience functions for superficial waterbodies quality inspections
 """
 
-from datetime import date, datetime
+from datetime import date
 import warnings
 
 import geopandas as gpd
@@ -120,7 +120,12 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
         " & dep/dep" if "code_departement" in kwargs else ""
     )
 
-    kwargs_loop = prepare_kwargs_loops(kwargs, start_auto_determination)
+    kwargs_loop = prepare_kwargs_loops(
+        "date_debut_prelevement",
+        "date_fin_prelevement",
+        kwargs,
+        start_auto_determination,
+    )
 
     with SuperficialWaterbodiesQualitySession() as session:
 
@@ -196,7 +201,12 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
         " & dep/dep" if "code_departement" in kwargs else ""
     )
 
-    kwargs_loop = prepare_kwargs_loops(kwargs, start_auto_determination)
+    kwargs_loop = prepare_kwargs_loops(
+        "date_debut_prelevement",
+        "date_fin_prelevement",
+        kwargs,
+        start_auto_determination,
+    )
 
     with SuperficialWaterbodiesQualitySession() as session:
 
@@ -269,7 +279,12 @@ def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
         " & dep/dep" if "code_departement" in kwargs else ""
     )
 
-    kwargs_loop = prepare_kwargs_loops(kwargs, start_auto_determination)
+    kwargs_loop = prepare_kwargs_loops(
+        "date_debut_prelevement",
+        "date_fin_prelevement",
+        kwargs,
+        start_auto_determination,
+    )
 
     with SuperficialWaterbodiesQualitySession() as session:
 
@@ -285,7 +300,3 @@ def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
     return results
-
-
-if __name__ == "__main__":
-    gdf = get_all_analysis(code_departement="32", code_parametre="1313")

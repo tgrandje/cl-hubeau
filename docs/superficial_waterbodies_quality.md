@@ -56,7 +56,7 @@ en France métropolitaine et DROM.
 
 ```python
 from cl_hubeau import superficial_waterbodies_quality
-df = superficial_waterbodies_quality.get_all_stations()
+df = superficial_waterbodies_quality.get_all_operations()
 ```
 
 {: .warning }
