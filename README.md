@@ -9,7 +9,8 @@ due time.
 At this stage, the following APIs are covered by cl-hubeau:
 * [piezometry/piézométrie](https://hubeau.eaufrance.fr/page/api-piezometrie)
 * [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
-* [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable#/qualite_eau_potable/communes)
+* [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable)
+* [superficial waterbodies quality/qualité physico-chimique des cours d'eau'](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
 
 For any help on available kwargs for each endpoint, please refer 
 directly to the documentation on hubeau (this will not be covered
@@ -159,11 +160,6 @@ Note that this query is heavy, even if this was already restricted to nitrates.
 In theory, you could also query the API without specifying the substance you're tracking,
 but you may hit the 20k threshold and trigger an exception.
 
-As it is, the `get_control_results` function already implements a double loop:
-
-* on networks' codes (20 codes maximum) ;
-* on periods, requesting only yearly datasets (which should be scalable over time **and** should work nicely with the cache algorithm).
-
 You can also call the same function, using official city codes directly:
 ```python
 df = drinking_water_quality.get_control_results(
@@ -184,5 +180,76 @@ Note that :
 with drinking_water_quality.DrinkingWaterQualitySession() as session:
     df = session.get_cities_networks(nom_commune="LILLE")
     df = session.get_control_results(code_departement='02', code_parametre="1340")
+
+```
+
+### Superficial waterbodies quality
+
+4 high level functions are available (and one class for low level operations).
+
+
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import superficial_waterbodies_quality 
+df = superficial_waterbodies_quality.get_all_stations()
+```
+
+Get all operations (uses a 30 days caching):
+
+```python
+from cl_hubeau import superficial_waterbodies_quality
+df = superficial_waterbodies_quality.get_all_operations()
+```
+
+Note that this query is heavy, users should restrict it to a given territory.
+For instance, you could use :
+```python
+df = superficial_waterbodies_quality.get_all_operations(code_region="11")
+```
+
+Get all environmental conditions:
+
+```python
+from cl_hubeau import superficial_waterbodies_quality
+df = superficial_waterbodies_quality.get_all_environmental_conditions()
+```
+
+Note that this query is heavy, users should restrict it to a given territory.
+For instance, you could use :
+```python
+df = superficial_waterbodies_quality.get_all_environmental_conditions(code_region="11")
+```
+
+Get all physicochemical analysis:
+```python
+from cl_hubeau import superficial_waterbodies_quality
+df = superficial_waterbodies_quality.get_all_analysis()
+```
+
+Note that this query is heavy, users should restrict it to a given territory
+and given parameters. For instance, you could use :
+```python
+df = superficial_waterbodies_quality.get_all_analysis(
+    code_departement="59", 
+    code_parametre="1313"
+    )
+```
+
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility
+
+```python
+with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as session:
+    df = session.get_stations(code_commune="59183")
+    df = session.get_operations(code_commune="59183")
+    df = session.get_environmental_conditions(code_commune="59183")
+    df = session.get_analysis(code_commune='59183', code_parametre="1340")
 
 ```

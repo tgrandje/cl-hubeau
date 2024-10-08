@@ -256,7 +256,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                 error = str(r.content)
             raise ValueError(
                 f"Connection error on {method=} {url=} with {kwargs=}, "
-                f"got {error}"
+                f"got {error} : got result {r.status_code}"
             )
         return r
 
@@ -314,6 +314,11 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         page = "page" if "page" in js["first"] else "cursor"
 
         count_rows = js["count"]
+        if count_rows > 20_000:
+            raise ValueError(
+                "this request won't be handled by hubeau "
+                f"( {count_rows} > 20k results)"
+            )
         msg = f"{count_rows} expected results"
         logging.info(msg)
         count_pages = count_rows // self.size + (
