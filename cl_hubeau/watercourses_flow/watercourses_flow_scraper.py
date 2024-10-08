@@ -90,12 +90,13 @@ class WatercoursesFlowSession(BaseHubeauSession):
                 continue
 
         try:
-            params["sort"] = kwargs.pop("sort")
-        except KeyError:
-            pass
-
-        try:
-            params["Accept"] = kwargs.pop("Accept")
+            variable = kwargs.pop("sort")
+            if variable not in ("asc", "desc"):
+                raise ValueError(
+                    "format must be among ('asc', 'sort'), "
+                    f"found sort='{variable}' instead"
+                )
+            params["sort"] = variable
         except KeyError:
             pass
 
@@ -160,8 +161,6 @@ class WatercoursesFlowSession(BaseHubeauSession):
             "code_campagne",
             "code_reseau",
             "libelle_reseau",
-            "code_ecoulement",
-            "libelle_ecoulement",
         ):
             try:
                 variable = kwargs.pop(arg)
@@ -179,6 +178,16 @@ class WatercoursesFlowSession(BaseHubeauSession):
             except KeyError:
                 continue
 
+        for arg in (
+            "code_ecoulement",
+            "libelle_ecoulement",
+        ):
+            try:
+                variable = kwargs.pop(arg)
+                params[arg] = self.list_to_str_param(variable, 5)
+            except KeyError:
+                continue
+
         try:
             fields = kwargs.pop("fields")
             params["fields"] = self.list_to_str_param(fields)
@@ -192,12 +201,13 @@ class WatercoursesFlowSession(BaseHubeauSession):
                 continue
 
         try:
-            params["sort"] = kwargs.pop("sort")
-        except KeyError:
-            pass
-
-        try:
-            params["Accept"] = kwargs.pop("Accept")
+            variable = kwargs.pop("sort")
+            if variable not in ("asc", "desc"):
+                raise ValueError(
+                    "format must be among ('asc', 'sort'), "
+                    f"found sort='{variable}' instead"
+                )
+            params["sort"] = variable
         except KeyError:
             pass
 
@@ -251,16 +261,26 @@ class WatercoursesFlowSession(BaseHubeauSession):
                 continue
 
         try:
-            code_campagne = kwargs.pop("code_campagne")
+            variable = kwargs.pop("code_campagne")
             if str(code_campagne) in ["1", "2"]:
-                params["code_campagne"] = code_campagne
+                params["code_campagne"] = variable
+            else:
+                raise ValueError(
+                    "code_campagne must be among ('1', '2'), "
+                    f"found sort='{variable}' instead"
+                )
         except KeyError:
             pass
 
         try:
-            libelle_type_campagne = kwargs.pop("libelle_type_campagne")
-            if libelle_type_campagne.capitalize() in ["Usuelle", "Complémentaire"]:
-                params["libelle_type_campagne"] = libelle_type_campagne.capitalize()
+            variable = kwargs.pop("libelle_type_campagne")
+            if variable.capitalize() in ["Usuelle", "Complémentaire"]:
+                params["libelle_type_campagne"] = variable.capitalize()
+            else:
+                raise ValueError(
+                    "libelle_type_campagne must be among ('Usuelle', 'Complémentaire'), "
+                    f"found sort='{variable}' instead"
+                )
         except KeyError:
             pass
 
@@ -271,12 +291,13 @@ class WatercoursesFlowSession(BaseHubeauSession):
             pass
 
         try:
-            params["sort"] = kwargs.pop("sort")
-        except KeyError:
-            pass
-
-        try:
-            params["Accept"] = kwargs.pop("Accept")
+            variable = kwargs.pop("sort")
+            if variable not in ("asc", "desc"):
+                raise ValueError(
+                    "format must be among ('asc', 'sort'), "
+                    f"found sort='{variable}' instead"
+                )
+            params["sort"] = variable
         except KeyError:
             pass
 
