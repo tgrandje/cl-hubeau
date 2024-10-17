@@ -15,13 +15,14 @@ import warnings
 import geopandas as gpd
 import pandas as pd
 import pebble
+from pyrate_limiter import SQLiteBucket
 from requests import Session
 from requests.exceptions import JSONDecodeError
 from requests_cache import CacheMixin
 from requests_ratelimiter import LimiterMixin
 from tqdm import tqdm
 
-from cl_hubeau.constants import DIR_CACHE, CACHE_NAME
+from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, RATELIMITER_NAME
 from cl_hubeau import _config
 
 
@@ -102,6 +103,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
 
     BASE_URL = "https://hubeau.eaufrance.fr/api"
     CACHE_NAME = os.path.join(DIR_CACHE, CACHE_NAME)
+    RATELIMITER_PATH = os.path.join(DIR_CACHE, RATELIMITER_NAME)
     ALLOWABLE_CODES = [200, 206, 400]
 
     def __init__(
@@ -148,11 +150,25 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         self.size = size
         self.version = version
 
+        for key in ["bucket_class", "bucket_kwargs"]:
+            try:
+                del kwargs[key]
+            except KeyError:
+                pass
+        bucket_class = SQLiteBucket
+        bucket_kwargs = {
+            "path": self.RATELIMITER_PATH,
+            "isolation_level": "EXCLUSIVE",
+            "check_same_thread": False,
+        }
+
         super().__init__(
             cache_name=self.CACHE_NAME,
             expire_after=expire_after,
             allowable_codes=self.ALLOWABLE_CODES,
             per_second=per_second,
+            bucket_class=bucket_class,
+            bucket_kwargs=bucket_kwargs,
             **kwargs,
         )
         if proxies:

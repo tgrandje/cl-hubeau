@@ -71,6 +71,9 @@ callouts:
   warning:
     title: 💡 Remarque
     color: blue
+  critical:
+    title: ⚠️ Attention
+    color: red
 
 
 sass:

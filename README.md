@@ -21,6 +21,20 @@ it's hub'eau counterpart, with the exception of the `size` and
 `page` or `cursor` arguments (those will be set automatically by
 cl-hubeau to crawl allong the results).
 
+## Parallelization
+
+`cl-hubeau` already uses simple multithreading pools to perform requests.
+In order not to endanger the webservers and share ressources amont users, a 
+rate limiter is set to 10 queries per second. This limiter should work fine on 
+any given machine, whatever the context (even with a new parallelization 
+overlay).
+
+However `cl-hubeau` should **NOT** be used in containers or pods with
+parallelization. There is currently no way of tracking the rate of querying
+amont multiple machines and greedy queries may end  up blacklisted by the
+team managing Hub'eau.
+
+
 ## Configuration
 
 First of all, you will need API keys from INSEE to use some high level operations, 
