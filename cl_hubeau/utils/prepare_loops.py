@@ -8,7 +8,11 @@ from datetime import datetime, timedelta
 
 
 def prepare_kwargs_loops(
-    key_start: str, key_end: str, kwargs: dict, start_auto_determination: bool
+    key_start: str,
+    key_end: str,
+    kwargs: dict,
+    start_auto_determination: bool,
+    split_months: int = 6,
 ) -> dict:
     """
     Prepare a list of kwargs of arguments to prepare a temporal loop.
@@ -27,6 +31,8 @@ def prepare_kwargs_loops(
         kwargs passed to a higher level function.
     start_auto_determination : bool
         Whether the dates were automatically set by the algorithm.
+    split_months : int
+        Number of consecutive months to split the data into
 
     Returns
     -------
@@ -39,10 +45,12 @@ def prepare_kwargs_loops(
     """
     start = datetime.strptime(kwargs.pop(key_start), "%Y-%m-%d").date()
     end = datetime.strptime(kwargs.pop(key_end), "%Y-%m-%d").date()
-    ranges = pd.date_range(start, end=end, freq="6ME")
-    dates = pd.Series(ranges).to_frame("max")
-    dates["min"] = dates["max"].shift(1) + timedelta(days=1)
-    dates = dates.dropna().loc[:, ["min", "max"]]
+
+    ranges = pd.date_range(start, end=end, freq=f"{split_months}MS")
+    dates = pd.Series(ranges).to_frame("min")
+    dates["max"] = dates["min"].shift(-1) - timedelta(days=1)
+    dates.at[dates.index.max(), "max"] = pd.Timestamp(end)
+
     for d in "min", "max":
         dates[d] = dates[d].dt.strftime("%Y-%m-%d")
     dates = dates.reset_index(drop=True)
