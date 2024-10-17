@@ -3,7 +3,7 @@ layout: default
 title: A propos
 language: fr
 handle: /about
-nav_order: 9
+nav_order: 30
 
 ---
 
