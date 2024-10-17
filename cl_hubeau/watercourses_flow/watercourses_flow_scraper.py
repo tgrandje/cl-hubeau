@@ -45,7 +45,9 @@ class WatercoursesFlowSession(BaseHubeauSession):
             pass
 
         try:
-            params["bbox"] = self.list_to_str_param(kwargs.pop("bbox"), None, 4)
+            params["bbox"] = self.list_to_str_param(
+                kwargs.pop("bbox"), None, 4
+            )
         except KeyError:
             pass
 
@@ -135,7 +137,9 @@ class WatercoursesFlowSession(BaseHubeauSession):
             pass
 
         try:
-            params["bbox"] = self.list_to_str_param(kwargs.pop("bbox"), None, 4)
+            params["bbox"] = self.list_to_str_param(
+                kwargs.pop("bbox"), None, 4
+            )
         except KeyError:
             pass
 
