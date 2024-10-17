@@ -12,5 +12,5 @@ _config = {
     "SIZE": 1000,  # Default size for each API's result
     "RATE_LIMITER": 10,  # queries per second
     "TQDM_LEAVE": None,  # keep tqdm progressbar after completion
-    "THREADS": 10,  # Max number of threads to permform one request to an endpoint
+    "THREADS": 10,  # Max number of threads to perform a request to an endpoint
 }

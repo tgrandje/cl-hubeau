@@ -1,11 +1,10 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Fri Sep 13 10:57:00 2024
 
 low level class to collect data from the watercourses-flow API from hub'eau
 """
-
-import pandas as pd
 
 from cl_hubeau.session import BaseHubeauSession
 
@@ -19,7 +18,6 @@ class WatercoursesFlowSession(BaseHubeauSession):
 
         super().__init__(version="1.0.0", *args, **kwargs)
 
-        # TODO où trouve-t-on cette taille dans la doc ?
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 1000
 
@@ -45,7 +43,9 @@ class WatercoursesFlowSession(BaseHubeauSession):
             pass
 
         try:
-            params["bbox"] = self.list_to_str_param(kwargs.pop("bbox"), None, 4)
+            params["bbox"] = self.list_to_str_param(
+                kwargs.pop("bbox"), None, 4
+            )
         except KeyError:
             pass
 
@@ -135,7 +135,9 @@ class WatercoursesFlowSession(BaseHubeauSession):
             pass
 
         try:
-            params["bbox"] = self.list_to_str_param(kwargs.pop("bbox"), None, 4)
+            params["bbox"] = self.list_to_str_param(
+                kwargs.pop("bbox"), None, 4
+            )
         except KeyError:
             pass
 
@@ -278,7 +280,8 @@ class WatercoursesFlowSession(BaseHubeauSession):
                 params["libelle_type_campagne"] = variable.capitalize()
             else:
                 raise ValueError(
-                    "libelle_type_campagne must be among ('Usuelle', 'Complémentaire'), "
+                    "libelle_type_campagne must be among "
+                    "('Usuelle', 'Complémentaire'), "
                     f"found sort='{variable}' instead"
                 )
         except KeyError:
