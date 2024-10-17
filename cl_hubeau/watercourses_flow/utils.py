@@ -33,7 +33,9 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
         deps = get_departements()
         results = [
-            session.get_stations(code_departement=dep, format="geojson", **kwargs)
+            session.get_stations(
+                code_departement=dep, format="geojson", **kwargs
+            )
             for dep in tqdm(
                 deps,
                 desc="querying dep/dep",
@@ -116,7 +118,9 @@ def get_all_observations(**kwargs) -> gpd.GeoDataFrame:
     #         )
     #     ]
 
-    desc = "querying year/year" + (" & dep/dep" if "code_departement" in kwargs else "")
+    desc = "querying year/year" + (
+        " & dep/dep" if "code_departement" in kwargs else ""
+    )
 
     kwargs_loop = prepare_kwargs_loops(
         "date_observation_min",
@@ -178,12 +182,14 @@ def get_all_campagnes(**kwargs) -> gpd.GeoDataFrame:
                     position=tqdm._get_free_pos(),
                 )
             ]
-            results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+            results = [
+                x.dropna(axis=1, how="all") for x in results if not x.empty
+            ]
             results = gpd.pd.concat(results, ignore_index=True)
         return results
 
 
-# if __name__ == "__main__":
-#     # print(get_all_stations())
-#     # print(get_all_observations())
-#     print(get_all_campagnes())
+if __name__ == "__main__":
+    # print(get_all_stations())
+    print(get_all_observations())
+    # print(get_all_campagnes())
