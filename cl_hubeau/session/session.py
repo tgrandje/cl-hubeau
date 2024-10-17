@@ -22,7 +22,6 @@ from requests_cache import CacheMixin
 from requests_ratelimiter import LimiterMixin
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from tqdm import tqdm
 
 from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, RATELIMITER_NAME
 from cl_hubeau import _config
@@ -32,7 +31,6 @@ def map_func(
     threads: int,
     func: Callable,
     iterables: list,
-    disable: bool = False,
 ) -> list:
     """
     Map a function against an iterable of arguments.
@@ -54,8 +52,6 @@ def map_func(
         Function do map
     iterables : list
         Collection of arguments for func
-    disable : bool, optional
-        Set to True do disable the tqdm progressbar. The default is False
 
     Returns
     -------
@@ -64,36 +60,26 @@ def map_func(
 
     """
 
-    total = len(iterables)
     results = []
-    with tqdm(
-        desc="querying",
-        total=total,
-        leave=_config["TQDM_LEAVE"],
-        disable=disable,
-        position=tqdm._get_free_pos(),
-    ) as pbar:
 
-        if threads > 1:
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    "ignore",
-                    ".*Connection pool is full, discarding connection.*",
-                )
-                with pebble.ThreadPool(threads) as pool:
-                    future = pool.map(func, iterables)
-                    iterator = future.result()
-                    while True:
-                        try:
-                            results += next(iterator)
-                        except StopIteration:
-                            break
+    if threads > 1:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                ".*Connection pool is full, discarding connection.*",
+            )
+            with pebble.ThreadPool(threads) as pool:
+                future = pool.map(func, iterables)
+                iterator = future.result()
+                while True:
+                    try:
+                        results += next(iterator)
+                    except StopIteration:
+                        break
 
-                        pbar.update()
-        else:
-            for x in iterables:
-                results += func(x)
-                pbar.update()
+    else:
+        for x in iterables:
+            results += func(x)
 
     return results
 
@@ -391,7 +377,6 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     cursor = parse_qs(urlparse(next_url).query)["cursor"][0]
                 except KeyError:
                     yield result
-                pbar.update()
                 try:
                     new_params = deepcopy(params)
                     new_params["cursor"] = cursor
@@ -400,24 +385,14 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                 except UnboundLocalError:
                     pass
 
-        # Deactivate progress bar if less pages than available threads
-        disable = count_pages <= threads
-
         if page == "page":
             # if integer cursor ("page" param), use multithreading to gather
             # data faster
-            results = map_func(threads, func, iterables, disable)
+            results = map_func(threads, func, iterables)
         else:
             # if hashed cursor ("cursor" param), use recursive function to
             # gather all results
-            with tqdm(
-                desc="querying",
-                total=count_pages,
-                leave=_config["TQDM_LEAVE"],
-                disable=disable,
-                position=tqdm._get_free_pos(),
-            ) as pbar:
-                results = [y for x in func(params) for y in x]
+            results = [y for x in func(params) for y in x]
 
         if "format" in params and params["format"] == "geojson":
             if results:
