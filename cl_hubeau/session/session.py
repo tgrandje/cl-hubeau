@@ -20,6 +20,8 @@ from requests import Session
 from requests.exceptions import JSONDecodeError
 from requests_cache import CacheMixin
 from requests_ratelimiter import LimiterMixin
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from tqdm import tqdm
 
 from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, RATELIMITER_NAME
@@ -180,6 +182,13 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     "http": os.environ.get("http_proxy", None),
                 }
             )
+
+        retry = Retry(
+            10, backoff_factor=1, status_forcelist=[500, 502, 503, 504]
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        self.mount("http://", adapter)
+        self.mount("https://", adapter)
 
     @staticmethod
     def list_to_str_param(
