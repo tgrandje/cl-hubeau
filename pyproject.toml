@@ -1,16 +1,22 @@
 [tool.poetry]
 name = "cl-hubeau"
-version = "0.4.0"
+version = "0.5.0"
 description = "Hubeau client to collect data from the different APIs"
-authors = ["Thomas Grandjean <thomas.grandjean@developpement-durable.gouv.fr>"]
+authors = [
+    "Thomas Grandjean <thomas.grandjean@developpement-durable.gouv.fr>",
+    "Alica Burlot <alica.burlot@developpement-durable.gouv.fr>"
+    ]
+maintainers = [
+    "Thomas Grandjean <thomas.grandjean@developpement-durable.gouv.fr>",
+    ]
 license = "GPL-3.0-or-later"
 readme = "README.md"
-homepage = "https://github.com/tgrandje/cl-hubeau/"
+homepage = "https://tgrandje.github.io/cl-hubeau"
 repository = "https://github.com/tgrandje/cl-hubeau/"
 documentation = "https://tgrandje.github.io/cl-hubeau"
 keywords = ["france", "water", "hydrology"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering",
