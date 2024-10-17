@@ -3,7 +3,7 @@ layout: default
 title: Configuration
 language: fr
 handle: /config
-nav_order: 3
+nav_order: 4
 
 ---
 # Configuration
