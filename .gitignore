@@ -158,3 +158,6 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Making python conda env like if package metadata were installed
+cl_hubeau/cl_hubeau-0.4.0.dist-info/
