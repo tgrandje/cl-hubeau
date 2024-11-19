@@ -50,6 +50,7 @@ jupyter = "^1.0.0"
 pyproj = "^3.6.1"
 debugpy = "1.8.2"
 seaborn = "^0.13.2"
+aiohappyeyeballs = "^2.4.3"
 
 [build-system]
 requires = ["poetry-core"]
