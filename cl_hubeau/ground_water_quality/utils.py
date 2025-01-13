@@ -36,7 +36,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
         deps = get_departements()
         results = [
             session.get_stations(
-                code_departement=dep, format="geojson", **kwargs
+                num_departement=dep, format="geojson", **kwargs
             )
             for dep in tqdm(
                 deps,
@@ -55,7 +55,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def get_analyses(codes_bss: list, **kwargs) -> pd.DataFrame:
+def get_analyses(bss_ids: list, **kwargs) -> pd.DataFrame:
     """
     Retrieve analyses from multiple piezometers.
 
@@ -64,11 +64,11 @@ def get_analyses(codes_bss: list, **kwargs) -> pd.DataFrame:
 
     Parameters
     ----------
-    codes_bss : list
-        List of code_bss codes for piezometers
+    bss_ids : list
+        List of bss_id codes for qualitometers
     **kwargs :
         kwargs passed to GroundWaterQualitySession.get_analyses (hence mostly
-        intended for hub'eau API's arguments). Do not use `code_bss` as they
+        intended for hub'eau API's arguments). Do not use `bss_id` as they
         are set by the current function.
 
     Returns
@@ -80,10 +80,10 @@ def get_analyses(codes_bss: list, **kwargs) -> pd.DataFrame:
 
     with GroundWaterQualitySession() as session:
         results = [
-            session.get_analyses(code_bss=code, **kwargs)
+            session.get_analyses(bss_id=code, **kwargs)
             for code in tqdm(
-                codes_bss,
-                desc="querying piezo/piezo",
+                bss_ids,
+                desc="querying qualito/qualito",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
@@ -91,3 +91,8 @@ def get_analyses(codes_bss: list, **kwargs) -> pd.DataFrame:
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
     return results
+
+
+if __name__ == "__main__":
+    gdf = get_all_stations()
+    df = get_analyses(gdf["bss_id"].head(20))
