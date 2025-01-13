@@ -5,6 +5,8 @@ Created on Sun Jul 28 14:03:41 2024
 low level class to collect data from the hydrometry API from hub'eau
 """
 
+# TODO : update docstrings + contrôler les datetimes des retours
+
 import pandas as pd
 
 from cl_hubeau.session import BaseHubeauSession
@@ -17,7 +19,7 @@ class HydrometrySession(BaseHubeauSession):
 
     def __init__(self, *args, **kwargs):
 
-        super().__init__(version="1.0.1", *args, **kwargs)
+        super().__init__(version="2.0.1", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 1000
@@ -25,12 +27,12 @@ class HydrometrySession(BaseHubeauSession):
     def get_stations(self, **kwargs):
         """
         Lister les stations hydrométriques
-        Endpoint /v1/hydrometrie/referentiel/stations
+        Endpoint /api/v2/hydrometrie/referentiel/stations
 
         Ce service permet d'interroger les stations du référentiel
-        hydrométrique. Une station peut porter des observations de hauteur
-        et/ou de débit (directement mesurés ou calculés à partir d'une courbe
-        de tarage).
+        hydrométrique.
+        Une station peut porter des observations de hauteur et/ou de débit
+        (directement mesurés ou calculés à partir d'une courbe de tarage).
         Si la valeur du paramètre size n'est pas renseignée, la taille de page
         par défaut : 1000, taille max de la page : 10000.
         La profondeur d'accès aux résultats est : 20000, calcul de la
@@ -62,7 +64,14 @@ class HydrometrySession(BaseHubeauSession):
             pass
 
         try:
-            params["en_service"] = int(kwargs.pop("en_service"))
+
+            variable = int(kwargs.pop("en_service"))
+            if variable not in {0, 1}:
+                raise ValueError(
+                    "en_service must be among (0, 1), "
+                    f"found en_service='{variable}' instead"
+                )
+            params["en_service"] = variable
         except KeyError:
             pass
 
@@ -74,6 +83,9 @@ class HydrometrySession(BaseHubeauSession):
             pass
 
         for arg in (
+            # TODO : vérifier que les codes fonctionnent toujours sous
+            # forme de liste concaténée, et pas sous forme de
+            # "&code_departement=02&code_departement=59
             "code_commune_station",
             "code_cours_eau",
             "code_departement",
@@ -151,6 +163,9 @@ class HydrometrySession(BaseHubeauSession):
             pass
 
         for arg in (
+            # TODO : vérifier que les codes fonctionnent toujours sous
+            # forme de liste concaténée, et pas sous forme de
+            # "&code_departement=02&code_departement=59
             "code_commune_site",
             "code_cours_eau",
             "code_departement",
@@ -219,7 +234,13 @@ class HydrometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
-        for arg in ("code_entite", "fields"):
+        try:
+            variable = kwargs.pop("code_entite")
+            params["code_entite"] = self.list_to_str_param(variable, 100)
+        except KeyError:
+            pass
+
+        for arg in "fields":
             try:
                 variable = kwargs.pop(arg)
                 params[arg] = self.list_to_str_param(variable)
@@ -293,17 +314,6 @@ class HydrometrySession(BaseHubeauSession):
             pass
 
         try:
-            variable = kwargs.pop("grandeur_hydro_elab")
-            if variable not in ("QmJ", "QmM"):
-                raise ValueError(
-                    "grandeur_hydro_elab must be among ('QmJ', 'QmM'), "
-                    f"found grandeur_hydro_elab='{variable}' instead"
-                )
-            params["grandeur_hydro_elab "] = variable
-        except KeyError:
-            pass
-
-        try:
             variable = kwargs.pop("sort")
             if variable not in ("asc", "desc"):
                 raise ValueError(
@@ -325,7 +335,7 @@ class HydrometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
-        for arg in ("code_entite", "fields"):
+        for arg in ("code_entite", "fields", "code_statut"):
             try:
                 variable = kwargs.pop(arg)
                 params[arg] = self.list_to_str_param(variable)
