@@ -172,3 +172,7 @@ def get_realtime_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
     return results
+
+
+if __name__ == "__main__":
+    gdf = get_all_sites()

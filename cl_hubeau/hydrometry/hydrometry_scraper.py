@@ -5,7 +5,8 @@ Created on Sun Jul 28 14:03:41 2024
 low level class to collect data from the hydrometry API from hub'eau
 """
 
-# TODO : update docstrings + contrôler les datetimes des retours
+# TODO : update docstrings
+# TODO : dans la doc, montrer comment faire un explode des données COG sur les sites
 
 import pandas as pd
 
@@ -83,9 +84,6 @@ class HydrometrySession(BaseHubeauSession):
             pass
 
         for arg in (
-            # TODO : vérifier que les codes fonctionnent toujours sous
-            # forme de liste concaténée, et pas sous forme de
-            # "&code_departement=02&code_departement=59
             "code_commune_station",
             "code_cours_eau",
             "code_departement",
@@ -120,6 +118,19 @@ class HydrometrySession(BaseHubeauSession):
         method = "GET"
         url = self.BASE_URL + "/v1/hydrometrie/referentiel/stations"
         df = self.get_result(method, url, params=params)
+
+        for f in (
+            "date_maj_ref_alti_station",
+            "date_fermeture_station",
+            "date_activation_ref_alti_station",
+            "date_debut_ref_alti_station",
+            "date_ouverture_station",
+            "date_maj_station",
+        ):
+            try:
+                df[f] = pd.to_datetime(df[f])
+            except KeyError:
+                continue
 
         return df
 
@@ -163,9 +174,6 @@ class HydrometrySession(BaseHubeauSession):
             pass
 
         for arg in (
-            # TODO : vérifier que les codes fonctionnent toujours sous
-            # forme de liste concaténée, et pas sous forme de
-            # "&code_departement=02&code_departement=59
             "code_commune_site",
             "code_cours_eau",
             "code_departement",
@@ -199,6 +207,15 @@ class HydrometrySession(BaseHubeauSession):
         method = "GET"
         url = self.BASE_URL + "/v1/hydrometrie/referentiel/sites"
         df = self.get_result(method, url, params=params)
+
+        for f in (
+            "date_premiere_donnee_dispo_site",
+            "date_maj_site",
+        ):
+            try:
+                df[f] = pd.to_datetime(df[f])
+            except KeyError:
+                continue
 
         return df
 
@@ -279,12 +296,11 @@ class HydrometrySession(BaseHubeauSession):
 
         df = self.get_result(method, url, params=params)
 
-        try:
-            df["date_obs_elab"] = pd.to_datetime(
-                df["date_obs_elab"], format="%Y-%m-%d"
-            )
-        except KeyError:
-            pass
+        for f in "date_obs_elab", "date_prod":
+            try:
+                df[f] = pd.to_datetime(df[f])
+            except KeyError:
+                continue
 
         return df
 
@@ -389,10 +405,11 @@ class HydrometrySession(BaseHubeauSession):
 
         df = self.get_result(method, url, params=params)
 
-        try:
-            df["date_obs"] = pd.to_datetime(df["date_obs"])
-        except KeyError:
-            pass
+        for f in "date_debut_serie", "date_fin_serie", "date_obs":
+            try:
+                df[f] = pd.to_datetime(df[f])
+            except KeyError:
+                continue
 
         return df
 
@@ -402,7 +419,10 @@ class HydrometrySession(BaseHubeauSession):
 
 #     # logging.basicConfig(level=logging.WARNING)
 #     with HydrometrySession() as session:
-#         gdf = session.get_sites(code_departement="02", format="geojson")
+#         # gdf = session.get_stations(code_departement="02", format="geojson")
+#         # gdf = session.get_sites(
+#         #     code_departement=["02", "59"], format="geojson"
+#         # )
 #         # df = session.get_observations(code_entite="K437311001")
 
 #         df = session.get_realtime_observations(
@@ -410,6 +430,6 @@ class HydrometrySession(BaseHubeauSession):
 #             grandeur_hydro="Q",
 #             # date_debut_obs="2010-01-01",
 #         )
-#         df.pivot_table(
-#             index="date_obs", columns="grandeur_hydro", values="resultat_obs"
-#         ).plot()
+#         # df.pivot_table(
+#         #     index="date_obs", columns="grandeur_hydro", values="resultat_obs"
+#         # ).plot()
