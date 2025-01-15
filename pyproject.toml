@@ -36,10 +36,11 @@ geopandas = "^1.0.1"
 requests-ratelimiter = "^0.7.0"
 pynsee = "^0.1.8"
 python-dotenv = "^1.0.1"
+setuptools = "^75.8.0"
 
 
 [tool.poetry.group.dev.dependencies]
-spyder = "^6.0.1"
+spyder = "^6.0.3"
 pytest = "^8.2.2"
 black = "^24.4.2"
 pyqt5-qt5 = "5.15.2"
