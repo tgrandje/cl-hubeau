@@ -11,6 +11,8 @@ At this stage, the following APIs are covered by cl-hubeau:
 * [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
 * [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable)
 * [superficial waterbodies quality/qualité physico-chimique des cours d'eau'](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
+* [watercourses flow/écoulement des cours d'eau'](https://hubeau.eaufrance.fr/page/api-ecoulement)
+
 
 For any help on available kwargs for each endpoint, please refer 
 directly to the documentation on hubeau (this will not be covered
@@ -265,5 +267,56 @@ with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as s
     df = session.get_operations(code_commune="59183")
     df = session.get_environmental_conditions(code_commune="59183")
     df = session.get_analysis(code_commune='59183', code_parametre="1340")
+
+```
+
+### Watercourses flow
+
+3 high level functions are available (and one class for low level operations).
+
+
+
+get_all_campaigns
+
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import watercourses_flow 
+df = watercourses_flow.get_all_stations()
+```
+
+Get all observations (uses a 30 days caching):
+
+```python
+from cl_hubeau import watercourses_flow
+df = watercourses_flow.get_all_observations()
+```
+
+Note that this query is heavy, users should restrict it to a given territory when possible.
+For instance, you could use :
+```python
+df = watercourses_flow.get_all_observations(code_region="11")
+```
+
+Get all campagins:
+
+```python
+from cl_hubeau import watercourses_flow
+df = watercourses_flow.get_all_campaigns()
+```
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility
+
+```python
+with watercourses_flow.WatercoursesFlowSession() as session:
+    df = session.get_stations(code_departement="59")
+    df = session.get_campaigns(code_campagne=[12])
+    df = session.get_observations(code_station="F6640008")
 
 ```
