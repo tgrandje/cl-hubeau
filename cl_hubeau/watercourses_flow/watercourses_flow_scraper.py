@@ -224,7 +224,7 @@ class WatercoursesFlowSession(BaseHubeauSession):
 
         return df
 
-    def get_campagnes(self, **kwargs):
+    def get_campaigns(self, **kwargs):
         """
         Lister les campagnes
         Endpoint /v1/ecoulement/campagnes
@@ -318,7 +318,7 @@ class WatercoursesFlowSession(BaseHubeauSession):
 # if __name__ == "__main__":
 #     with WatercoursesFlowSession() as session:
 #         # df = session.get_stations(code_departement="59", format="geojson")
-#         # df = session.get_campagnes(code_campagne=[12])
+#         # df = session.get_campaigns(code_campagne=[12])
 #         df = session.get_observations(code_station="F6640008")
 
 #         print(df)

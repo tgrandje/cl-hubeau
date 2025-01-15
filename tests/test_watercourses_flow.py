@@ -87,9 +87,9 @@ def test_get_one_station_live():
     assert len(data) == 1
 
 
-def test_get_one_campagne_live():
+def test_get_one_campaign_live():
     with WatercoursesFlowSession() as session:
-        data = session.get_campagnes(code_campagne=[12])
+        data = session.get_campaigns(code_campagne=[12])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
