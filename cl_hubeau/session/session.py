@@ -243,7 +243,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError as exc:
             raise ValueError(
-                "hubeau date should respect yyyy-MM-dd format"
+                "cl-hubeau date should respect yyyy-MM-dd format"
             ) from exc
 
     def request(

@@ -17,7 +17,7 @@ class HydrometrySession(BaseHubeauSession):
 
     def __init__(self, *args, **kwargs):
 
-        super().__init__(version="1.0.1", *args, **kwargs)
+        super().__init__(version="2.0.1", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 1000
@@ -25,12 +25,12 @@ class HydrometrySession(BaseHubeauSession):
     def get_stations(self, **kwargs):
         """
         Lister les stations hydrométriques
-        Endpoint /v1/hydrometrie/referentiel/stations
+        Endpoint /api/v2/hydrometrie/referentiel/stations
 
         Ce service permet d'interroger les stations du référentiel
-        hydrométrique. Une station peut porter des observations de hauteur
-        et/ou de débit (directement mesurés ou calculés à partir d'une courbe
-        de tarage).
+        hydrométrique.
+        Une station peut porter des observations de hauteur et/ou de débit
+        (directement mesurés ou calculés à partir d'une courbe de tarage).
         Si la valeur du paramètre size n'est pas renseignée, la taille de page
         par défaut : 1000, taille max de la page : 10000.
         La profondeur d'accès aux résultats est : 20000, calcul de la
@@ -42,7 +42,7 @@ class HydrometrySession(BaseHubeauSession):
         """
 
         params = {}
-        for arg in "date_fermeture_station", "date_ouverture_station":
+        for arg in ("date_fermeture_station", "date_ouverture_station"):
             try:
                 variable = kwargs.pop(arg)
                 self.ensure_date_format_is_ok(variable)
@@ -62,7 +62,14 @@ class HydrometrySession(BaseHubeauSession):
             pass
 
         try:
-            params["en_service"] = int(kwargs.pop("en_service"))
+
+            variable = int(kwargs.pop("en_service"))
+            if variable not in {0, 1}:
+                raise ValueError(
+                    "en_service must be among (0, 1), "
+                    f"found en_service='{variable}' instead"
+                )
+            params["en_service"] = variable
         except KeyError:
             pass
 
@@ -106,19 +113,32 @@ class HydrometrySession(BaseHubeauSession):
             )
 
         method = "GET"
-        url = self.BASE_URL + "/v1/hydrometrie/referentiel/stations"
+        url = self.BASE_URL + "/v2/hydrometrie/referentiel/stations"
         df = self.get_result(method, url, params=params)
+
+        for f in (
+            "date_maj_ref_alti_station",
+            "date_fermeture_station",
+            "date_activation_ref_alti_station",
+            "date_debut_ref_alti_station",
+            "date_ouverture_station",
+            "date_maj_station",
+        ):
+            try:
+                df[f] = pd.to_datetime(df[f])
+            except KeyError:
+                continue
 
         return df
 
     def get_sites(self, **kwargs):
         """
         Lister les sites hydrométriques
-        Endpoint /v1/hydrometrie/referentiel/sites
+        Endpoint /api/v2/hydrometrie/referentiel/sites
 
         Ce service permet d'interroger les sites du référentiel hydrométrique
         (tronçon de cours d'eau sur lequel les mesures de débit sont réputées
-        homogènes et comparables entre elles). Un site peut posséder une ou
+         homogènes et comparables entre elles). Un site peut posséder une ou
         plusieurs stations ; il est support de données de débit (Q)
         Si la valeur du paramètre size n'est pas renseignée, la taille de page
         par défaut : 1000, taille max de la page : 10000.
@@ -182,18 +202,32 @@ class HydrometrySession(BaseHubeauSession):
             )
 
         method = "GET"
-        url = self.BASE_URL + "/v1/hydrometrie/referentiel/sites"
+        url = self.BASE_URL + "/v2/hydrometrie/referentiel/sites"
         df = self.get_result(method, url, params=params)
+
+        for f in (
+            "date_premiere_donnee_dispo_site",
+            "date_maj_site",
+        ):
+            try:
+                df[f] = pd.to_datetime(df[f])
+            except KeyError:
+                continue
 
         return df
 
     def get_observations(self, **kwargs):
         """
         Lister les observations hydrométriques élaborées
-        Endpoint /v1/hydrometrie/obs_elab
+        Endpoint /api/v2/hydrometrie/obs_elab
 
         Grandeurs hydrométriques élaborées disponibles : débits moyens
-        journaliers (QmJ), débits moyens mensuels (QmM)
+        journaliers (QmnJ), débits moyens mensuels (QmM)
+        Si la valeur du paramètre size n'est pas renseignée, la taille de page
+        par défaut : 1000, taille max de la page : 20000.
+        La profondeur d'accès aux résultats est : 20000, calcul de la
+        profondeur = numéro de la page * nombre maximum de résultats dans une
+        page.
         Trie par défaut : code_station,date_obs_elab asc
 
         Doc: https://hubeau.eaufrance.fr/page/api-hydrometrie
@@ -219,14 +253,19 @@ class HydrometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
-        for arg in ("code_entite", "fields"):
-            try:
-                variable = kwargs.pop(arg)
-                params[arg] = self.list_to_str_param(variable)
-            except KeyError:
-                continue
+        try:
+            variable = kwargs.pop("code_entite")
+            params["code_entite"] = self.list_to_str_param(variable, 100)
+        except KeyError:
+            pass
 
-        for arg in "date_debut_obs_elab", "date_fin_obs_elab":
+        try:
+            variable = kwargs.pop("fields")
+            params["fields"] = self.list_to_str_param(variable)
+        except KeyError:
+            pass
+
+        for arg in ("date_debut_obs_elab", "date_fin_obs_elab"):
             try:
                 variable = kwargs.pop(arg)
                 self.ensure_date_format_is_ok(variable)
@@ -254,23 +293,22 @@ class HydrometrySession(BaseHubeauSession):
             )
 
         method = "GET"
-        url = self.BASE_URL + "/v1/hydrometrie/obs_elab"
+        url = self.BASE_URL + "/v2/hydrometrie/obs_elab"
 
         df = self.get_result(method, url, params=params)
 
-        try:
-            df["date_obs_elab"] = pd.to_datetime(
-                df["date_obs_elab"], format="%Y-%m-%d"
-            )
-        except KeyError:
-            pass
+        for f in "date_obs_elab", "date_prod":
+            try:
+                df[f] = pd.to_datetime(df[f])
+            except KeyError:
+                continue
 
         return df
 
     def get_realtime_observations(self, **kwargs):
         """
         Lister les observations hydrométriques
-        Endpoint /v1/hydrometrie/observations_tr
+        Endpoint /api/v2/hydrometrie/observations_tr
 
         Ce service permet de lister les observations dites "temps réel" portées
         par le référentiel (sites et stations hydrométriques), à savoir les
@@ -289,17 +327,6 @@ class HydrometrySession(BaseHubeauSession):
             params["bbox"] = self.list_to_str_param(
                 kwargs.pop("bbox"), None, 4
             )
-        except KeyError:
-            pass
-
-        try:
-            variable = kwargs.pop("grandeur_hydro_elab")
-            if variable not in ("QmJ", "QmM"):
-                raise ValueError(
-                    "grandeur_hydro_elab must be among ('QmJ', 'QmM'), "
-                    f"found grandeur_hydro_elab='{variable}' instead"
-                )
-            params["grandeur_hydro_elab "] = variable
         except KeyError:
             pass
 
@@ -325,7 +352,7 @@ class HydrometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
-        for arg in ("code_entite", "fields"):
+        for arg in ("code_entite", "fields", "code_statut"):
             try:
                 variable = kwargs.pop(arg)
                 params[arg] = self.list_to_str_param(variable)
@@ -349,7 +376,7 @@ class HydrometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
-        for arg in "date_debut_obs", "date_fin_obs":
+        for arg in ("date_debut_obs", "date_fin_obs"):
             try:
                 variable = kwargs.pop(arg)
                 self.ensure_date_format_is_ok(variable)
@@ -375,14 +402,15 @@ class HydrometrySession(BaseHubeauSession):
             )
 
         method = "GET"
-        url = self.BASE_URL + "/v1/hydrometrie/observations_tr"
+        url = self.BASE_URL + "/v2/hydrometrie/observations_tr"
 
         df = self.get_result(method, url, params=params)
 
-        try:
-            df["date_obs"] = pd.to_datetime(df["date_obs"])
-        except KeyError:
-            pass
+        for f in "date_debut_serie", "date_fin_serie", "date_obs":
+            try:
+                df[f] = pd.to_datetime(df[f])
+            except KeyError:
+                continue
 
         return df
 
@@ -392,7 +420,10 @@ class HydrometrySession(BaseHubeauSession):
 
 #     # logging.basicConfig(level=logging.WARNING)
 #     with HydrometrySession() as session:
-#         gdf = session.get_sites(code_departement="02", format="geojson")
+#         # gdf = session.get_stations(code_departement="02", format="geojson")
+#         # gdf = session.get_sites(
+#         #     code_departement=["02", "59"], format="geojson"
+#         # )
 #         # df = session.get_observations(code_entite="K437311001")
 
 #         df = session.get_realtime_observations(
@@ -400,6 +431,6 @@ class HydrometrySession(BaseHubeauSession):
 #             grandeur_hydro="Q",
 #             # date_debut_obs="2010-01-01",
 #         )
-#         df.pivot_table(
-#             index="date_obs", columns="grandeur_hydro", values="resultat_obs"
-#         ).plot()
+#         # df.pivot_table(
+#         #     index="date_obs", columns="grandeur_hydro", values="resultat_obs"
+#         # ).plot()

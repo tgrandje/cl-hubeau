@@ -70,6 +70,35 @@ from cl_hubeau import hydrometry
 gdf = hydrometry.get_all_sites(libelle_cours_eau="seine")
 ```
 
+{: .warning }
+> Certains champs retournés par l'API constituent des itérables (un site peut être situé à une 
+> frontière communale, départementale, etc.).
+>
+> Pour "éclater" ces champs (et incidemment dupliquer les sites sur plusieurs lignes), il est possible 
+> d'utiliser des fonctions inspirées de la suivante :
+> ```
+> from cl_hubeau import hydrometry
+> gdf = hydrometry.get_all_sites(libelle_cours_eau="seine")
+> 
+> # Isoler les sites situés sur des frontières communales :
+> subset = gdf[gdf.code_commune_site.map(set).str.len() > 1].copy()
+> 
+> # "Eclater" les codes commune :
+> print(subset.explode("code_commune_site"))
+> ```
+> Il est *possible* de chaîner ces éclatements :
+> ```
+> print(subset.explode("code_commune_site").explode("type_loi_site"))
+> ```
+> Pour des raisons évidentes, **il est déconseillé** de chaîner ces fonctions sur des éléments
+> liés (comme les différents niveaux d'emboîtement du code officiel géographique ou des couples
+> codes et libellés) ; l'exemple suivant montre comment on peut arriver à des liaisons
+> département / commune totalement erronées :
+> ```
+> aberration = subset.explode("code_commune_site").explode("code_departement")
+> print(aberration[["code_commune_site", "code_departement"]])
+> ```
+
 ### Récupération des observations élaborées "temps différé"
 
 Cette fonction permet de récupérer les observations élaborées (débits moyens journaliers ou mensuels) en temps différé
