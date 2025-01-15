@@ -107,6 +107,7 @@ def get_all_observations(**kwargs) -> gpd.GeoDataFrame:
 
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
+    results = results.drop_duplicates()
     return results
 
 
