@@ -174,5 +174,5 @@ def get_realtime_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
     return results
 
 
-if __name__ == "__main__":
-    gdf = get_all_sites()
+# if __name__ == "__main__":
+#     gdf = get_all_sites()

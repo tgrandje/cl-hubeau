@@ -4,8 +4,6 @@ Created on Sun Jul 28 14:03:41 2024
 
 low level class to collect data from the hydrometry API from hub'eau
 """
-
-# TODO : update docstrings
 # TODO : dans la doc, montrer comment faire un explode des données COG sur les sites
 
 import pandas as pd
@@ -45,7 +43,7 @@ class HydrometrySession(BaseHubeauSession):
         """
 
         params = {}
-        for arg in "date_fermeture_station", "date_ouverture_station":
+        for arg in ("date_fermeture_station", "date_ouverture_station"):
             try:
                 variable = kwargs.pop(arg)
                 self.ensure_date_format_is_ok(variable)
@@ -116,7 +114,7 @@ class HydrometrySession(BaseHubeauSession):
             )
 
         method = "GET"
-        url = self.BASE_URL + "/v1/hydrometrie/referentiel/stations"
+        url = self.BASE_URL + "/v2/hydrometrie/referentiel/stations"
         df = self.get_result(method, url, params=params)
 
         for f in (
@@ -137,11 +135,11 @@ class HydrometrySession(BaseHubeauSession):
     def get_sites(self, **kwargs):
         """
         Lister les sites hydrométriques
-        Endpoint /v1/hydrometrie/referentiel/sites
+        Endpoint /api/v2/hydrometrie/referentiel/sites
 
         Ce service permet d'interroger les sites du référentiel hydrométrique
         (tronçon de cours d'eau sur lequel les mesures de débit sont réputées
-        homogènes et comparables entre elles). Un site peut posséder une ou
+         homogènes et comparables entre elles). Un site peut posséder une ou
         plusieurs stations ; il est support de données de débit (Q)
         Si la valeur du paramètre size n'est pas renseignée, la taille de page
         par défaut : 1000, taille max de la page : 10000.
@@ -205,7 +203,7 @@ class HydrometrySession(BaseHubeauSession):
             )
 
         method = "GET"
-        url = self.BASE_URL + "/v1/hydrometrie/referentiel/sites"
+        url = self.BASE_URL + "/v2/hydrometrie/referentiel/sites"
         df = self.get_result(method, url, params=params)
 
         for f in (
@@ -222,10 +220,15 @@ class HydrometrySession(BaseHubeauSession):
     def get_observations(self, **kwargs):
         """
         Lister les observations hydrométriques élaborées
-        Endpoint /v1/hydrometrie/obs_elab
+        Endpoint /api/v2/hydrometrie/obs_elab
 
         Grandeurs hydrométriques élaborées disponibles : débits moyens
-        journaliers (QmJ), débits moyens mensuels (QmM)
+        journaliers (QmnJ), débits moyens mensuels (QmM)
+        Si la valeur du paramètre size n'est pas renseignée, la taille de page
+        par défaut : 1000, taille max de la page : 20000.
+        La profondeur d'accès aux résultats est : 20000, calcul de la
+        profondeur = numéro de la page * nombre maximum de résultats dans une
+        page.
         Trie par défaut : code_station,date_obs_elab asc
 
         Doc: https://hubeau.eaufrance.fr/page/api-hydrometrie
@@ -257,14 +260,13 @@ class HydrometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
-        for arg in "fields":
-            try:
-                variable = kwargs.pop(arg)
-                params[arg] = self.list_to_str_param(variable)
-            except KeyError:
-                continue
+        try:
+            variable = kwargs.pop("fields")
+            params["fields"] = self.list_to_str_param(variable)
+        except KeyError:
+            pass
 
-        for arg in "date_debut_obs_elab", "date_fin_obs_elab":
+        for arg in ("date_debut_obs_elab", "date_fin_obs_elab"):
             try:
                 variable = kwargs.pop(arg)
                 self.ensure_date_format_is_ok(variable)
@@ -292,7 +294,7 @@ class HydrometrySession(BaseHubeauSession):
             )
 
         method = "GET"
-        url = self.BASE_URL + "/v1/hydrometrie/obs_elab"
+        url = self.BASE_URL + "/v2/hydrometrie/obs_elab"
 
         df = self.get_result(method, url, params=params)
 
@@ -307,7 +309,7 @@ class HydrometrySession(BaseHubeauSession):
     def get_realtime_observations(self, **kwargs):
         """
         Lister les observations hydrométriques
-        Endpoint /v1/hydrometrie/observations_tr
+        Endpoint /api/v2/hydrometrie/observations_tr
 
         Ce service permet de lister les observations dites "temps réel" portées
         par le référentiel (sites et stations hydrométriques), à savoir les
@@ -375,7 +377,7 @@ class HydrometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
-        for arg in "date_debut_obs", "date_fin_obs":
+        for arg in ("date_debut_obs", "date_fin_obs"):
             try:
                 variable = kwargs.pop(arg)
                 self.ensure_date_format_is_ok(variable)
@@ -401,7 +403,7 @@ class HydrometrySession(BaseHubeauSession):
             )
 
         method = "GET"
-        url = self.BASE_URL + "/v1/hydrometrie/observations_tr"
+        url = self.BASE_URL + "/v2/hydrometrie/observations_tr"
 
         df = self.get_result(method, url, params=params)
 
