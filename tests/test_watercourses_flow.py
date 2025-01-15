@@ -35,21 +35,6 @@ def mock_get_data(monkeypatch):
             data = {
                 "count": 1,
                 "first": "blah_page",
-                "data": [
-                    {
-                        "code_station": "dummy",
-                        "libelle_station": "Dummy",
-                        "uri_station": "blah_dummy",
-                        "geometry": {
-                            "type": "Point",
-                            "crs": {
-                                "type": "name",
-                                "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"},
-                            },
-                            "coordinates": [0, 0],
-                        },
-                    }
-                ],
                 "features": [
                     {
                         "type": "Feature",
@@ -61,6 +46,34 @@ def mock_get_data(monkeypatch):
                     }
                 ],
             }
+        elif "observations" in url:
+
+            # Data with duplicates to check that duplicates are removed!
+            data = {
+                "count": 1,
+                "first": "blah_page",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "code_station": "dummy_code",
+                            "libelle_station": "dummy",
+                            "date_observation": "2024-01-01",
+                        },
+                        "geometry": {"type": "Point", "coordinates": [0, 0]},
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "code_station": "dummy_code",
+                            "libelle_station": "dummy",
+                            "date_observation": "2024-01-01",
+                        },
+                        "geometry": {"type": "Point", "coordinates": [0, 0]},
+                    },
+                ],
+            }
+
         elif "campagnes" in url:
             data = {
                 "count": 1,
@@ -82,7 +95,9 @@ def mock_get_data(monkeypatch):
 
 def test_get_one_station_live():
     with WatercoursesFlowSession() as session:
-        data = session.get_stations(code_station=["D0110001"], format="geojson")
+        data = session.get_stations(
+            code_station=["D0110001"], format="geojson"
+        )
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 1
 
