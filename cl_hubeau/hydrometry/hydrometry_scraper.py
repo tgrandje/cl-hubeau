@@ -4,7 +4,6 @@ Created on Sun Jul 28 14:03:41 2024
 
 low level class to collect data from the hydrometry API from hub'eau
 """
-# TODO : dans la doc, montrer comment faire un explode des données COG sur les sites
 
 import pandas as pd
 
