@@ -28,31 +28,35 @@ def mock_get_data(monkeypatch):
     def mock_request(*args, **kwargs):
         self, method, url, *args = args
 
-        if "communes_udi" in url:
+        if "stations" in url:
             data = {
+                "type": "FeatureCollection",
+                "crs": {
+                    "type": "name",
+                    "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"},
+                },
                 "count": 1,
                 "first": "blah_page",
-                "data": [
+                "features": [
                     {
-                        "code_commune": "00000",
-                        "nom_commune": "DUMMY",
-                        "nom_quartier": "DUMMY",
-                        "code_reseau": "000000000",
-                        "nom_reseau": "DUMMY",
-                        "debut_alim": "2024-01-01",
-                        "annee": "2024",
-                    },
+                        "type": "Feature",
+                        "properties": {
+                            "code_bss": "dummy_code",
+                            "bss_id": "dummy",
+                        },
+                        "geometry": {"type": "Point", "coordinates": [0, 0]},
+                    }
                 ],
             }
-        elif "resultats_dis" in url:
+        elif "analyses" in url:
             data = {
                 "count": 1,
                 "first": "blah_page",
                 "data": [
                     {
-                        "resultat_numerique": 0,
-                        "date_prelevement": "2024-01-01T00:00:00Z",
-                        "reseaux": [{"code": "000000000", "nom": "DUMMY"}],
+                        "code_bss": "dummy_code",
+                        "timestamp_mesure": 1704063600000,
+                        "bss_id": "dummy",
                     }
                 ],
             }
@@ -62,7 +66,6 @@ def mock_get_data(monkeypatch):
     # init = CachedSession.request
     monkeypatch.setattr(CacheMixin, "request", mock_request)
 
-
 def test_get_all_stations_mocked(mock_get_data):
     data = ground_water_quality.get_all_stations()
     assert isinstance(data, pd.DataFrame)
@@ -70,29 +73,29 @@ def test_get_all_stations_mocked(mock_get_data):
 
 
 def test_get_analyses_mocked(mock_get_data):
-    data = ground_water_quality.get_analyses(codes_entites=["dummy_code"])
+    data = ground_water_quality.get_analyses(bss_ids=("dummy_code"))
     # remove duplicates issued from the mockup
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 1
+    assert len(data) == 10
 
 
 def test_get_one_station_live():
     with ground_water_quality.GroundWaterQualitySession() as session:
         data = session.get_stations(
-            code_commune=["59350"],
+            bss_id="01832B0600",
+            code_insee_actuel=["59350"],
             annee="2023",
-            fields=["code_commune", "code_bss"],
+            fields=["code_commune", "bss_id"],
         )
     assert isinstance(data, pd.DataFrame)
-    assert data.shape == (3, 3)
+    assert data.shape == (1, 1)
 
 
 def test_get_analyses_live():
     data = ground_water_quality.get_analyses(
-        codes_communes="59350",
-        code_param="1340",
-        date_debut_prelevement="2023-01-01",
-        date_fin_prelevement="2023-12-31",
+        bss_ids=["BSS000BMMA"],
+        code_insee_actuel="59350",
+        code_param="1461",
         fields=[
             "code_parametre",
             "resultat_numerique",
@@ -100,4 +103,4 @@ def test_get_analyses_live():
         ],
     )
     assert isinstance(data, pd.DataFrame)
-    assert data.shape == (11, 3)
+    assert data.shape == (1, 65)
