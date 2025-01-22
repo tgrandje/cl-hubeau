@@ -5,7 +5,10 @@ Created on Sun Jul 28 14:03:41 2024
 low level class to collect data from the drinking water quality API from
 hub'eau
 """
+import deprecation
 import pandas as pd
+
+from cl_hubeau import __version__
 from cl_hubeau.session import BaseHubeauSession
 
 
@@ -398,7 +401,28 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
 
         return df
 
+    @deprecation.deprecated(
+        deprecated_in="0.6.0",
+        removed_in="1.0",
+        current_version=__version__,
+        details=(
+            "Please use `SuperficialWaterbodiesQualitySession.get_analyses` "
+            "instead.",
+        ),
+    )
     def get_analysis(self, **kwargs):
+        """
+        Lister les analyses physicochimique
+        Endpoint /v2/qualite_rivieres/analyse_pc
+
+        Ce service permet de rechercher des analyses physicochimique sur des
+        cours d'eau et plan d'eau en France et les DROM.
+
+        Doc: https://hubeau.eaufrance.fr/page/api-qualite-cours-deau
+        """
+        return self.get_analyses(**kwargs)
+
+    def get_analyses(self, **kwargs):
         """
         Lister les analyses physicochimique
         Endpoint /v2/qualite_rivieres/analyse_pc

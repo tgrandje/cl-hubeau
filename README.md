@@ -237,16 +237,16 @@ For instance, you could use :
 df = superficial_waterbodies_quality.get_all_environmental_conditions(code_region="11")
 ```
 
-Get all physicochemical analysis:
+Get all physicochemical analyses:
 ```python
 from cl_hubeau import superficial_waterbodies_quality
-df = superficial_waterbodies_quality.get_all_analysis()
+df = superficial_waterbodies_quality.get_all_analyses()
 ```
 
 Note that this query is heavy, users should restrict it to a given territory
 and given parameters. For instance, you could use :
 ```python
-df = superficial_waterbodies_quality.get_all_analysis(
+df = superficial_waterbodies_quality.get_all_analyses(
     code_departement="59", 
     code_parametre="1313"
     )
@@ -266,7 +266,7 @@ with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as s
     df = session.get_stations(code_commune="59183")
     df = session.get_operations(code_commune="59183")
     df = session.get_environmental_conditions(code_commune="59183")
-    df = session.get_analysis(code_commune='59183', code_parametre="1340")
+    df = session.get_analyses(code_commune='59183', code_parametre="1340")
 
 ```
 

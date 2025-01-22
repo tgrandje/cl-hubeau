@@ -118,7 +118,7 @@ en France métropolitaine et DROM.
 
 ```python
 from cl_hubeau import superficial_waterbodies_quality
-df = superficial_waterbodies_quality.get_all_analysis()
+df = superficial_waterbodies_quality.get_all_analyses()
 ```
 
 {: .warning }
@@ -137,7 +137,7 @@ Par exemple :
 
 ```python
 from cl_hubeau import superficial_waterbodies_quality
-gdf = superficial_waterbodies_quality.get_all_analysis(code_departement="59", code_parametre="1313")
+gdf = superficial_waterbodies_quality.get_all_analyses(code_departement="59", code_parametre="1313")
 ```
 
 ## Fonctions de bas niveau
@@ -184,7 +184,7 @@ with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as s
 ```python
 from cl_hubeau import superficial_waterbodies_quality
 with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as session:
-    df = session.get_analysis(
+    df = session.get_analyses(
         code_departement='02',
         code_parametre="1313",
         date_debut_prelevement="2024-01-01",

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cl-hubeau"
-version = "0.6.0"
+version = "0.6.1"
 description = "Hubeau client to collect data from the different APIs"
 authors = [
     "Thomas Grandjean <thomas.grandjean@developpement-durable.gouv.fr>",
@@ -37,6 +37,7 @@ requests-ratelimiter = "^0.7.0"
 pynsee = "^0.1.8"
 python-dotenv = "^1.0.1"
 setuptools = "^75.8.0"
+deprecation = "^2.1.0"
 
 
 [tool.poetry.group.dev.dependencies]
