@@ -132,6 +132,14 @@ class GroundWaterQualitySession(BaseHubeauSession):
 
         df = self.get_result(method, url, params=params)
 
+
+        if kwargs:
+            raise ValueError(
+                f"found unexpected arguments {kwargs}, "
+                "please have a look at the documentation on "
+                "http://hubeau.eaufrance.fr/page/api-qualite-nappes"
+            )
+
         return df
 
     def get_analyses(self, **kwargs):
