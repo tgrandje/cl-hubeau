@@ -11,6 +11,7 @@ At this stage, the following APIs are covered by cl-hubeau:
 * [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
 * [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable)
 * [superficial waterbodies quality/qualité physico-chimique des cours d'eau'](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
+* [ground waterbodies quality/qualité des nappes'](https://hubeau.eaufrance.fr/page/api-qualite-nappes)
 
 For any help on available kwargs for each endpoint, please refer 
 directly to the documentation on hubeau (this will not be covered
@@ -267,3 +268,50 @@ with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as s
     df = session.get_analysis(code_commune='59183', code_parametre="1340")
 
 ```
+
+### Ground water quality
+
+2 high level functions are available (and one class for low level operations).
+
+
+Get all water stations (UDI) (uses a 30 days caching):
+
+```python
+from cl_hubeau import ground_water_quality 
+df = ground_water_quality.get_all_stations()
+```
+
+Get the tests results for nitrates on all networks of Paris, Lyon & Marseille 
+(uses a 30 days caching) for nitrates
+
+```python
+networks = ground_water_quality.get_all_stations()
+networks = networks[
+    networks.nom_commune_actuel.isin(["PARIS", "MARSEILLE", "LYON"])
+    ]["code_reseau"].unique().tolist()
+
+df = ground_water_quality.get_analyses(
+    code_reseau=networks,
+    code_param="1340"
+)
+```
+
+Note that this query is heavy, even if this was already restricted to nitrates.
+In theory, you could also query the API without specifying the substance you're tracking,
+but you may hit the 20k threshold and trigger an exception.
+
+You can also call the same function, using official city codes directly:
+```python
+df = ground_water_quality.get_control_results(
+    code_commune_actuel=['59350'],
+    code_param="1340"
+)
+```
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility

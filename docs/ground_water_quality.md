@@ -27,37 +27,36 @@ requête : les arguments optionnels `size` et `page` ou `cursor` ne doivent pas 
 au client python.
 
 ## Fonctions de haut niveau
-PAT
-### Récupération de la totalité des unités de distribution
 
-Cette fonction permet de récupérer les unités de distribution (UDI) de la France entière.
+### Récupération de la totalité des stations de mesure
+
+Cette fonction permet de récupérer les stations de mesure sur la France entière.
 
 ```python
-from cl_hubeau import drinking_water_quality 
-df = drinking_water_quality.get_all_water_networks()
+from cl_hubeau import ground_water_quality 
+df = ground_water_quality.get_all_stations()
 ```
 
 Il est également possible de spécifier des arguments à la fonction, parmi ceux supportés
-par le point de sortie "UDI" de l'API, à l'exception de :
-* `code_commune` (utilisé pour boucler sur les codes communes)
+par le point de sortie de l'API.
 
 Par exemple :
 ```python
-from cl_hubeau import drinking_water_quality 
-gdf = drinking_water_quality.get_all_water_networks(annee=2024)
+from cl_hubeau import ground_water_quality 
+gdf = ground_water_quality.get_all_stations(annee=2024)
 ```
 
-### Récupération des résultats du contrôle sanitaire
+### Récupération des résultats des analyses
 
 Cette fonction permet de récupérer les chroniques de données temps différé pour une liste de piézomètres.
 Ceux-ci doivent être spécifiés sous la forme d'une liste de codes bss (seul champ disponible pour
 identifier un piézomètre sur ce point de sortie API).
 
 ```python
-from cl_hubeau import drinking_water_quality 
-df = drinking_water_quality.get_control_results(
-    codes_reseaux=['013000519', '013000521'],
-    code_parametre="1340"
+from cl_hubeau import ground_water_quality 
+df = ground_water_quality.get_analyses(
+    bdd_id=['013000519', '013000521'],
+    code_param="1340"
 )
 ```
 
@@ -72,14 +71,14 @@ En l'état, cette fonction implémente déjà une double boucle :
 et optimise l'usage du cache).
 
 Il est également possible de spécifier des arguments à la fonction, parmi ceux supportés
-par le point de sortie "chroniques" de l'API, à l'exception de `code_reseau`.
+par le point de sortie "chroniques" de l'API.
 
 Par exemple :
 ```python
-from cl_hubeau import drinking_water_quality 
-df = drinking_water_quality.get_control_results(
-    codes_communes=['59350'],
-    code_parametre="1340"
+from cl_hubeau import ground_water_quality 
+df = ground_water_quality.get_control_results(
+    code_insee_actuel=['59350'],
+    code_param="1340"
     )
 ```
 
@@ -89,19 +88,3 @@ Un objet session est défini pour consommer l'API à l'aide de méthodes de bas 
 Ces méthodes correspondent strictement aux fonctions disponibles via l'API : l'utilisateur
 est invité à se reporter à la documentation de l'API concernant le détail des arguments
 disponibles.
-
-### Lister les communes et les UDI (réseaux)
-
-```python
-from cl_hubeau import drinking_water_quality
-with drinking_water_quality.DrinkingWaterQualitySession() as session:
-    df = session.get_cities_networks(nom_commune="LILLE")
-```
-
-### Lister les analyses d'une ou plusieurs UDI
-
-```python
-from cl_hubeau import drinking_water_quality
-with drinking_water_quality.DrinkingWaterQualitySession() as session:
-    df = session.get_control_results(code_departement='02', code_parametre="1340")
-```
