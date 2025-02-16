@@ -4,12 +4,52 @@
 Get list of cities' and departements' codes
 """
 
+import logging
 import os
 
 from pynsee import get_area_list, get_geo_list
 from pynsee.utils.init_connection import init_conn
 
 
+def silence_sirene_logs(func):
+    """
+    decorator deactivating critical/error/warning log entries from pynsee on
+    missing SIRENE credentials:  this is intended behaviour in cl-hubeau
+    context
+    """
+
+    def filter_no_credential_or_no_results(record):
+        return (
+            not record.msg.startswith(
+                "INSEE API credentials have not been found"
+            )
+            and not record.msg.startswith(
+                "Invalid credentials, the following APIs returned error codes"
+            )
+            and not record.msg.startswith(
+                "Remember to subscribe to SIRENE API"
+            )
+        )
+
+    def wrapper(*args, **kwargs):
+        # Note: deactivate pynsee log to substitute by a more accurate
+        pynsee_logs = "_get_credentials", "requests_session", "init_connection"
+        for log in pynsee_logs:
+            pynsee_log = logging.getLogger(f"pynsee.utils.{log}")
+            pynsee_log.addFilter(filter_no_credential_or_no_results)
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            raise
+        finally:
+            for log in pynsee_logs:
+                pynsee_log = logging.getLogger(f"pynsee.utils.{log}")
+                pynsee_log.removeFilter(filter_no_credential_or_no_results)
+
+    return wrapper
+
+
+@silence_sirene_logs
 def init_pynsee_connection():
     """
     Initiate an INSEE API connection with tokens and proxies.
@@ -22,12 +62,14 @@ def init_pynsee_connection():
     init_conn(**kwargs)
 
 
+@silence_sirene_logs
 def get_cities():
     init_pynsee_connection()
     cities = get_area_list("communes", "*", silent=True)
     return cities["CODE"].unique().tolist()
 
 
+@silence_sirene_logs
 def get_regions() -> list:
     try:
         init_pynsee_connection()
@@ -72,6 +114,7 @@ def get_regions() -> list:
         ]
 
 
+@silence_sirene_logs
 def get_departements_from_regions(reg: str) -> list:
     try:
         init_pynsee_connection()
@@ -143,6 +186,7 @@ def get_departements_from_regions(reg: str) -> list:
     return deps[reg]
 
 
+@silence_sirene_logs
 def get_departements() -> list:
     try:
         init_pynsee_connection()
