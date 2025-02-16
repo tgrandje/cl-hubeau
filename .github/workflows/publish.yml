@@ -1,6 +1,6 @@
 name: test_and_publish
 
-on: 
+on:
   push:
     tags:
       - '*'
@@ -66,7 +66,7 @@ jobs:
           insee_key: ${{secrets.INSEE_KEY}}
           insee_secret: ${{secrets.INSEE_SECRET}}
         run: poetry run pytest --cov -W error
-        
+
   publish:
     runs-on: ubuntu-latest
     needs: test
@@ -106,25 +106,25 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root --without dev --extras "full"
-        
+
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
       - name: Install project
         run: poetry install --no-interaction --without dev
-      
+
       #----------------------------------------------
       # config pypi token
       #----------------------------------------------
       - name: Set pypi token
         run: poetry config pypi-token.pypi ${{secrets.PYPI_TOKEN}}
-        
+
       #----------------------------------------------
       # build
       #----------------------------------------------
       - name: Build
         run: poetry build
-      
+
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
