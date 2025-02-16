@@ -2,11 +2,14 @@
 
 ![PyPI - Version](https://img.shields.io/pypi/v/cl-hubeau)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/cl-hubeau)](https://pypi.python.org/pypi/cl-hubeau/)
+![PyPI - Status](https://img.shields.io/pypi/status/cl-hubeau)
+
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 ![flake8 checks](https://raw.githubusercontent.com/tgrandje/cl-hubeau/refs/heads/main/badges/flake8-badge.svg)
 ![Test Coverage](https://raw.githubusercontent.com/tgrandje/cl-hubeau/refs/heads/main/badges/coverage-badge.svg)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/tgrandje/cl-hubeau)
 ![GitHub commits since latest release](https://img.shields.io/github/commits-since/tgrandje/cl-hubeau/latest)
+
 ![Monthly Downloads](https://img.shields.io/pypi/dm/cl-hubeau)
 ![Total Downloads](https://img.shields.io/pepy/dt/cl-hubeau)
 
@@ -53,6 +56,20 @@ First of all, you will need API keys from INSEE to use some high level operation
 which may loop over cities'official codes. Please refer to pynsee's
 [API subscription Tutorial ](https://pynsee.readthedocs.io/en/latest/api_subscription.html)
 for help.
+
+## Support
+
+In case of bugs, please open an issue [on the repo](https://github.com/tgrandje/cl-hubeau/issues).
+
+## Contribution
+Any help is welcome. Please refer to the [CONTRIBUTING file](https://github.com/tgrandje/cl-hubeau/CONTRIBUTING.md).
+
+## Licence
+GPL-3.0-or-later
+
+## Project Status
+
+This package is currently under active development.
 
 ## Basic examples
 
