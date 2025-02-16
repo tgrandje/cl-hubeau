@@ -52,10 +52,7 @@ team managing Hub'eau.
 
 ## Configuration
 
-First of all, you will need API keys from INSEE to use some high level operations,
-which may loop over cities'official codes. Please refer to pynsee's
-[API subscription Tutorial ](https://pynsee.readthedocs.io/en/latest/api_subscription.html)
-for help.
+Starting with `pynsee 0.2.0`, no API keys are needed anymore.
 
 ## Support
 

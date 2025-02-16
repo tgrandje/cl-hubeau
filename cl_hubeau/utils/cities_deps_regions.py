@@ -14,7 +14,7 @@ def init_pynsee_connection():
     """
     Initiate an INSEE API connection with tokens and proxies.
     """
-    keys = ["insee_key", "insee_secret", "http_proxy", "https_proxy"]
+    keys = ["http_proxy", "https_proxy"]
     kwargs = {x: os.environ[x] for x in keys if x in os.environ}
     kwargs.update(
         {x: os.environ[x.upper()] for x in keys if x.upper() in os.environ}
