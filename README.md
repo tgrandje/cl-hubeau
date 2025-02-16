@@ -1,5 +1,15 @@
 # cl-hubeau
 
+![PyPI - Version](https://img.shields.io/pypi/v/cl-hubeau)
+[![Supported Python Versions](https://img.shields.io/pypi/pyversions/cl-hubeau)](https://pypi.python.org/pypi/cl-hubeau/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+![flake8 checks](https://raw.githubusercontent.com/tgrandje/cl-hubeau/refs/heads/main/badges/flake8-badge.svg)
+![Test Coverage](https://raw.githubusercontent.com/tgrandje/cl-hubeau/refs/heads/main/badges/coverage-badge.svg)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/tgrandje/cl-hubeau)
+![GitHub commits since latest release](https://img.shields.io/github/commits-since/tgrandje/cl-hubeau/latest)
+![Monthly Downloads](https://img.shields.io/pypi/dm/cl-hubeau)
+![Total Downloads](https://img.shields.io/pepy/dt/cl-hubeau)
+
 Simple hub'eau client for python
 
 This package is currently under active development.
