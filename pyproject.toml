@@ -51,6 +51,28 @@ jupyter = "^1.0.0"
 pyproj = "^3.6.1"
 debugpy = "1.8.2"
 seaborn = "^0.13.2"
+pre-commit = "^4.1.0"
+flake8 = "^7.1.2"
+vulture = "^2.14"
+pytest-cov = "^6.0.0"
+genbadge = {extras = ["all"], version = "^1.1.1"}
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "WARNING"
+log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+addopts = "--cov-report xml:./reports/coverage/coverage.xml"
+
+[tool.coverage.run]
+omit = [
+    "tests/*",
+    ]
+
+[tool.black]
+include = '\.py$'
+line-length = 79
+
 
 [build-system]
 requires = ["poetry-core"]
