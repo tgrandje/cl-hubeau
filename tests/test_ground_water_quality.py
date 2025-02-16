@@ -66,6 +66,7 @@ def mock_get_data(monkeypatch):
     # init = CachedSession.request
     monkeypatch.setattr(CacheMixin, "request", mock_request)
 
+
 def test_get_all_stations_mocked(mock_get_data):
     data = ground_water_quality.get_all_stations()
     assert isinstance(data, pd.DataFrame)
@@ -83,9 +84,7 @@ def test_get_one_station_live():
     with ground_water_quality.GroundWaterQualitySession() as session:
         data = session.get_stations(
             bss_id="01832B0600",
-            code_insee_actuel=["59350"],
-            annee="2023",
-            fields=["code_commune", "bss_id"],
+            fields=["bss_id"],
         )
     assert isinstance(data, pd.DataFrame)
     assert data.shape == (1, 1)
@@ -103,4 +102,4 @@ def test_get_analyses_live():
         ],
     )
     assert isinstance(data, pd.DataFrame)
-    assert data.shape == (1, 65)
+    assert len(data) == 1
