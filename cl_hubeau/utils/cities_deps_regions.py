@@ -7,7 +7,7 @@ Get list of cities' and departements' codes
 import os
 
 from pynsee import get_area_list, get_geo_list
-from pynsee.utils.init_conn import init_conn
+from pynsee.utils.init_connection import init_conn
 
 
 def init_pynsee_connection():
