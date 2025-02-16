@@ -19,7 +19,7 @@ nav_order: 7
 Lors de l'utilisation des fonctions de bas niveau, l'utilisateur est responsable
 de la consommation de l'API. En particulier, il s'agit d'être vigilant quant au seuil
 de 20 000 résultats récupérables d'une seule requête.
-Par ailleurs, la gestion du cache par les fonctions de bas niveau est de la responsabilité 
+Par ailleurs, la gestion du cache par les fonctions de bas niveau est de la responsabilité
 de l'utilisateur, notamment pour l'accès aux données de temps réel (expiration par défaut
 fixée à 30 jours).
 
@@ -77,7 +77,7 @@ df = piezometry.get_chronicles(
 ### Récupération des chroniques de données "temps réel"
 
 Cette fonction permet de récupérer les chroniques de données temps réel pour une liste de piézomètres.
-Ceux-ci doivent être spécifiés sous la forme d'une liste de codes bss ou d'identifiants BSS 
+Ceux-ci doivent être spécifiés sous la forme d'une liste de codes bss ou d'identifiants BSS
 (les deux options étant mutuellement exclusives).
 
 Cette fonction utilise un cache avec une expiration fixée à 15 minutes.
