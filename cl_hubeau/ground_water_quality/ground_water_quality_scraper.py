@@ -5,6 +5,8 @@ Created on Mon Sep 16 14:00:00 2024
 low level class to collect data from the ground water quality API from hub'eau
 """
 
+import pandas as pd
+
 from cl_hubeau.session import BaseHubeauSession
 
 
@@ -127,18 +129,22 @@ class GroundWaterQualitySession(BaseHubeauSession):
         except KeyError:
             pass
 
-        method = "GET"
-        url = self.BASE_URL + "/v1/qualite_nappes/stations"
-
-        df = self.get_result(method, url, params=params)
-
-
         if kwargs:
             raise ValueError(
                 f"found unexpected arguments {kwargs}, "
                 "please have a look at the documentation on "
                 "http://hubeau.eaufrance.fr/page/api-qualite-nappes"
             )
+
+        method = "GET"
+        url = self.BASE_URL + "/v1/qualite_nappes/stations"
+        df = self.get_result(method, url, params=params)
+
+        for f in ["date_fin_mesure", "date_debut_mesure"]:
+            try:
+                df[f] = pd.to_datetime(df[f], errors="coerce")
+            except KeyError:
+                continue
 
         return df
 
@@ -292,11 +298,6 @@ class GroundWaterQualitySession(BaseHubeauSession):
         except KeyError:
             pass
 
-        method = "GET"
-        url = self.BASE_URL + "/v1/qualite_nappes/analyses"
-
-        df = self.get_result(method, url, params=params)
-
         if kwargs:
             raise ValueError(
                 f"found unexpected arguments {kwargs}, "
@@ -304,13 +305,14 @@ class GroundWaterQualitySession(BaseHubeauSession):
                 "http://hubeau.eaufrance.fr/page/api-qualite-nappes"
             )
 
+        method = "GET"
+        url = self.BASE_URL + "/v1/qualite_nappes/analyses"
+        df = self.get_result(method, url, params=params)
+
+        for f in ["date_debut_prelevement"]:
+            try:
+                df[f] = pd.to_datetime(df[f], errors="coerce")
+            except KeyError:
+                continue
+
         return df
-
-
-# if __name__ == "__main__":
-#     import logging
-
-#     logging.basicConfig(level=logging.WARNING)
-#     with PiezometrySession() as session:
-#         df = session.get_chronicles(code_bss="07548X0009/F")
-#         # df = session.get_realtime_chronicles()

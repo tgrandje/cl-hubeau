@@ -300,39 +300,53 @@ with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as s
 2 high level functions are available (and one class for low level operations).
 
 
-Get all water stations (UDI) (uses a 30 days caching):
+Get all stations (uses a 30 days caching):
 
 ```python
 from cl_hubeau import ground_water_quality
 df = ground_water_quality.get_all_stations()
 ```
 
-Get the tests results for nitrates on all networks of Paris, Lyon & Marseille
-(uses a 30 days caching) for nitrates
+Get the tests results for nitrates :
 
 ```python
-networks = ground_water_quality.get_all_stations()
-networks = networks[
-    networks.nom_commune_actuel.isin(["PARIS", "MARSEILLE", "LYON"])
-    ]["code_reseau"].unique().tolist()
+df = ground_water_quality.df = get_all_analyses(code_param="1340")
+```
 
-df = ground_water_quality.get_analyses(
-    code_reseau=networks,
+Note that this query is heavy, even if this was already restricted to nitrates, and that it
+may fail. In theory, you could even query the API without specifying the substance
+you're tracking, but you will hit the 20k threshold and trigger an exception.
+
+In practice, you should call the same function with a territorial restriction or with
+specific bss_ids.
+For instance, you could use official city codes directly:
+
+```python
+df = ground_water_quality.get_all_analyses(
+    num_departement=["59"]
     code_param="1340"
 )
 ```
 
-Note that this query is heavy, even if this was already restricted to nitrates.
-In theory, you could also query the API without specifying the substance you're tracking,
-but you may hit the 20k threshold and trigger an exception.
+Note: a bit of caution is needed here, as the arguments are **NOT** the same
+in the two endpoints of the API. Please have a look at the documentation on
+[hubeau](https://hubeau.eaufrance.fr/page/api-qualite-nappes#/qualite-nappes/analyses).
 
-You can also call the same function, using official city codes directly:
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility
 
 ```python
-df = ground_water_quality.get_control_results(
-    code_commune_actuel=['59350'],
-    code_param="1340"
-)
+with ground_water_quality.GroundWaterQualitySession() as session:
+    df = session.get_stations(bss_id="01832B0600")
+    df = session.get_analyses(
+        bss_ids=["BSS000BMMA"],
+        code_param="1461",
+        )
 ```
 
 ### Watercourses flow
