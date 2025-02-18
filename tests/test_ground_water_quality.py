@@ -91,15 +91,15 @@ def test_get_one_station_live():
 
 
 def test_get_analyses_live():
-    data = ground_water_quality.get_analyses(
-        bss_ids=["BSS000BMMA"],
+    data = ground_water_quality.get_all_analyses(
+        bss_id=["BSS000BMMA"],
         code_insee_actuel="59350",
         code_param="1461",
         fields=[
-            "code_parametre",
-            "resultat_numerique",
-            "date_prelevement",
+            "code_param",
+            "resultat",
+            "date_debut_prelevement",
         ],
     )
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 1
+    assert data.shape == (1, 3)
