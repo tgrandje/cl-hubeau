@@ -19,7 +19,7 @@ nav_order: 8
 Lors de l'utilisation des fonctions de bas niveau, l'utilisateur est responsable
 de la consommation de l'API. En particulier, il s'agit d'être vigilant quant au seuil
 de 20 000 résultats récupérables d'une seule requête.
-Par ailleurs, la gestion du cache par les fonctions de bas niveau est de la responsabilité 
+Par ailleurs, la gestion du cache par les fonctions de bas niveau est de la responsabilité
 de l'utilisateur, notamment pour l'accès aux données de temps réel (expiration par défaut
 fixée à 30 jours).
 
@@ -49,6 +49,25 @@ from cl_hubeau import watercourses_flow
 gdf = watercourses_flow.get_all_stations(code_cours_eau="D0110600")
 ```
 
+### Récupération de la totalité des campagnes
+
+Cette fonction permet de récupérer les observations de la France entière.
+
+```python
+from cl_hubeau import watercourses_flow
+gdf = watercourses_flow.get_all_campaigns()
+```
+
+Il est également possible de spécifier des arguments à la fonction, parmi ceux supportés
+par le point de sortie "campagnes" de l'API, à l'exception de :
+* `code_departement` (utilisé pour boucler sur les données nationales)
+
+Par exemple :
+```python
+from cl_hubeau import watercourses_flow
+gdf = watercourses_flow.get_all_observations(code_cours_eau="D0110600")
+```
+
 ### Récupération de la totalité des observations
 
 Cette fonction permet de récupérer les observations de la France entière.
@@ -61,7 +80,6 @@ gdf = watercourses_flow.get_all_observations()
 Il est également possible de spécifier des arguments à la fonction, parmi ceux supportés
 par le point de sortie "stations" de l'API, à l'exception de :
 * `format` (fixé par défaut au format geojson pour retourner un geodataframe)
-* `code_departement` (utilisé pour boucler sur les données nationales)
 
 Par exemple :
 ```python
@@ -97,5 +115,5 @@ with watercourses_flow.WatercoursesFlowSession() as session:
 ```python
 from cl_hubeau import watercourses_flow
 with watercourses_flow.WatercoursesFlowSession() as session:
-    df = session.get_campagnes(code_departement="59")
+    df = session.get_campaigns(code_departement="59")
 ```

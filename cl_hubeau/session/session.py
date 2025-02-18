@@ -6,6 +6,7 @@ all APIs.
 
 from copy import deepcopy
 from datetime import datetime
+from functools import lru_cache
 import logging
 import os
 from typing import Callable
@@ -25,6 +26,11 @@ from requests.packages.urllib3.util.retry import Retry
 
 from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, RATELIMITER_NAME
 from cl_hubeau import _config
+
+
+@lru_cache(maxsize=None)
+def log_only_once(url):
+    logging.warning("api_version not found among API response")
 
 
 def map_func(
@@ -243,7 +249,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError as exc:
             raise ValueError(
-                "hubeau date should respect yyyy-MM-dd format"
+                "cl-hubeau date should respect yyyy-MM-dd format"
             ) from exc
 
     def request(
@@ -318,7 +324,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                         "unexpected behaviour may occur."
                     )
             except KeyError:
-                logging.warning("api_version not found among API response")
+                log_only_once(url)
 
         logging.debug(js)
 

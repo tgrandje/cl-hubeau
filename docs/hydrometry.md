@@ -19,7 +19,7 @@ nav_order: 6
 Lors de l'utilisation des fonctions de bas niveau, l'utilisateur est responsable
 de la consommation de l'API. En particulier, il s'agit d'être vigilant quant au seuil
 de 20 000 résultats récupérables d'une seule requête.
-Par ailleurs, la gestion du cache par les fonctions de bas niveau est de la responsabilité 
+Par ailleurs, la gestion du cache par les fonctions de bas niveau est de la responsabilité
 de l'utilisateur, notamment pour l'accès aux données de temps réel (expiration par défaut
 fixée à 30 jours).
 
@@ -69,6 +69,35 @@ Par exemple :
 from cl_hubeau import hydrometry
 gdf = hydrometry.get_all_sites(libelle_cours_eau="seine")
 ```
+
+{: .warning }
+> Certains champs retournés par l'API constituent des itérables (un site peut être situé à une
+> frontière communale, départementale, etc.).
+>
+> Pour "éclater" ces champs (et incidemment dupliquer les sites sur plusieurs lignes), il est possible
+> d'utiliser des fonctions inspirées de la suivante :
+> ```
+> from cl_hubeau import hydrometry
+> gdf = hydrometry.get_all_sites(libelle_cours_eau="seine")
+>
+> # Isoler les sites situés sur des frontières communales :
+> subset = gdf[gdf.code_commune_site.map(set).str.len() > 1].copy()
+>
+> # "Eclater" les codes commune :
+> print(subset.explode("code_commune_site"))
+> ```
+> Il est *possible* de chaîner ces éclatements :
+> ```
+> print(subset.explode("code_commune_site").explode("type_loi_site"))
+> ```
+> Pour des raisons évidentes, **il est déconseillé** de chaîner ces fonctions sur des éléments
+> liés (comme les différents niveaux d'emboîtement du code officiel géographique ou des couples
+> codes et libellés) ; l'exemple suivant montre comment on peut arriver à des liaisons
+> département / commune totalement erronées :
+> ```
+> aberration = subset.explode("code_commune_site").explode("code_departement")
+> print(aberration[["code_commune_site", "code_departement"]])
+> ```
 
 ### Récupération des observations élaborées "temps différé"
 
