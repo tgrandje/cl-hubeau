@@ -73,7 +73,7 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
 
     Should only be used with additional arguments to avoid reaching the 20k
     threshold, in conjonction with the built-in loop (which will operate
-    on yearly subsets, even if date_min_prelevement/date_max_prelevement are
+    on 6 months subsets, even if date_min_prelevement/date_max_prelevement are
     not set.)
 
     Parameters
@@ -110,13 +110,13 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
         reg = kwargs.pop("code_region")
         if isinstance(reg, (list, tuple, set)):
             deps = [
-                dep for r in get_departements_from_regions(reg) for dep in r
+                dep for r in reg for dep in get_departements_from_regions(r)
             ]
         else:
             deps = get_departements_from_regions(reg)
         kwargs["code_departement"] = deps
 
-    desc = "querying year/year" + (
+    desc = "querying 6m/6m" + (
         " & dep/dep" if "code_departement" in kwargs else ""
     )
 
@@ -191,7 +191,7 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
         reg = kwargs.pop("code_region")
         if isinstance(reg, (list, tuple, set)):
             deps = [
-                dep for r in get_departements_from_regions(reg) for dep in r
+                dep for r in reg for dep in get_departements_from_regions(r)
             ]
         else:
             deps = get_departements_from_regions(reg)
@@ -269,7 +269,7 @@ def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
         reg = kwargs.pop("code_region")
         if isinstance(reg, (list, tuple, set)):
             deps = [
-                dep for r in get_departements_from_regions(reg) for dep in r
+                dep for r in reg for dep in get_departements_from_regions(r)
             ]
         else:
             deps = get_departements_from_regions(reg)
