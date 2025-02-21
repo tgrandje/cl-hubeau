@@ -329,8 +329,10 @@ df = ground_water_quality.get_all_analyses(
 ```
 
 Note: a bit of caution is needed here, as the arguments are **NOT** the same
-in the two endpoints of the API. Please have a look at the documentation on
+in the two endpoints. Please have a look at the documentation on
 [hubeau](https://hubeau.eaufrance.fr/page/api-qualite-nappes#/qualite-nappes/analyses).
+For instance, the city's number is called `"code_insee_actuel"` on analyses' endpoint
+and `"code_commune"` on station's.
 
 Low level class to perform the same tasks:
 
