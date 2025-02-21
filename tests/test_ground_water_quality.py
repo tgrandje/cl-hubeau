@@ -74,10 +74,14 @@ def test_get_all_stations_mocked(mock_get_data):
 
 
 def test_get_analyses_mocked(mock_get_data):
-    data = ground_water_quality.get_analyses(bss_ids=("dummy_code"))
+    data = ground_water_quality.get_all_analyses(
+        bss_id="dummy_code",
+        date_debut_prelevement="2020-01-01",
+        date_fin_prelevement="2020-12-31",
+    )
     # remove duplicates issued from the mockup
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 10
+    assert len(data) == 2  # 2 x 6 months
 
 
 def test_get_one_station_live():
