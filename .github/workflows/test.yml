@@ -72,6 +72,10 @@ jobs:
           poetry run pytest --cov-config pyproject.toml --cov
           poetry run genbadge coverage -o ./badges/coverage-badge.svg
 
+      - name: Generate hub'eau coverage badge
+        run: |
+          poetry run python -c 'from genbadge import Badge;from glob import glob;x = len([x for x in glob("cl_hubeau/*/") if not any(y in x for y in {"session", "utils", "pycache"})]);b = Badge(left_txt="couverture hub'eau", right_txt=f"{x} API / 13", color="green");b.write_to("badges/hubeau-coverage.svg", use_shields=False)'
+
       - name: Commit changes
         continue-on-error: true
         run: |
@@ -79,5 +83,6 @@ jobs:
           git config --global user.email "22030685+tgrandje@users.noreply.github.com"
           git add ./badges/flake8-badge.svg
           git add ./badges/coverage-badge.svg
+          git add ./badges/hubeau-coverage.svg
           git commit -m "add badges"
           git push

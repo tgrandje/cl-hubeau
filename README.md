@@ -13,6 +13,8 @@
 ![Monthly Downloads](https://img.shields.io/pypi/dm/cl-hubeau)
 ![Total Downloads](https://img.shields.io/pepy/dt/cl-hubeau)
 
+![Hub'eau Coverage](https://raw.githubusercontent.com/tgrandje/cl-hubeau/refs/heads/main/badges/hubeau-coverage.svg)
+
 Simple hub'eau client for python
 
 This package is currently under active development.
