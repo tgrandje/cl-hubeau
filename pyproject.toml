@@ -4,7 +4,8 @@ version = "0.6.0"
 description = "Hubeau client to collect data from the different APIs"
 authors = [
     "Thomas Grandjean <thomas.grandjean@developpement-durable.gouv.fr>",
-    "Alica Burlot <alica.burlot@developpement-durable.gouv.fr>"
+    "Alica Burlot <alica.burlot@developpement-durable.gouv.fr>",
+    "Patrice Sauvage <patrice.sauvage@developpement-durable.gouv.fr>",
     ]
 maintainers = [
     "Thomas Grandjean <thomas.grandjean@developpement-durable.gouv.fr>",
