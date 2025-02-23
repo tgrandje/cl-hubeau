@@ -6,6 +6,7 @@ Clean all cache
 
 import os
 import pynsee.utils
+from pynsee.utils._clean_insee_folder import _clean_insee_folder
 
 from cl_hubeau.constants import (
     DIR_CACHE,
@@ -34,3 +35,4 @@ def clean_all_cache(cache_name: str = os.path.join(DIR_CACHE, CACHE_NAME)):
 
     # Clear pynsee's cache:
     pynsee.utils.clear_all_cache()
+    _clean_insee_folder()

@@ -6,8 +6,11 @@ all APIs.
 
 from copy import deepcopy
 from datetime import datetime
+from functools import lru_cache
+import hashlib
 import logging
 import os
+import socket
 from typing import Callable
 from urllib.parse import urlparse, parse_qs
 import warnings
@@ -17,14 +20,19 @@ import pandas as pd
 import pebble
 from pyrate_limiter import SQLiteBucket
 from requests import Session
+from requests.adapters import HTTPAdapter
 from requests.exceptions import JSONDecodeError
 from requests_cache import CacheMixin
 from requests_ratelimiter import LimiterMixin
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util.retry import Retry
 
 from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, RATELIMITER_NAME
-from cl_hubeau import _config
+from cl_hubeau import _config, __version__
+
+
+@lru_cache(maxsize=None)
+def log_only_once(url):
+    logging.warning("api_version not found among API response")
 
 
 def map_func(
@@ -176,6 +184,28 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         self.mount("http://", adapter)
         self.mount("https://", adapter)
 
+        self.headers.update({"User-Agent": self.get_machine_user_agent()})
+
+    @staticmethod
+    def get_machine_user_agent() -> str:
+        """
+        Get a fixed User Agent for a given machine.
+
+        Returns
+        -------
+        str
+            User-Agent string
+        """
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+
+        m = hashlib.sha256()
+        m.update(bytes(ip, encoding="utf8"))
+        digest = m.hexdigest()
+
+        return f"cl_hubeau-{__version__}-{digest}"
+
     @staticmethod
     def list_to_str_param(
         x: list,
@@ -253,7 +283,9 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         *args,
         **kwargs,
     ):
-        logging.info(f"{method=} {url=} {args=} {kwargs=}")
+        logging.info(
+            "method=%s url=%s args=%s kwargs=%s", method, url, args, kwargs
+        )
         r = super().request(
             method,
             url,
@@ -318,7 +350,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                         "unexpected behaviour may occur."
                     )
             except KeyError:
-                logging.warning("api_version not found among API response")
+                log_only_once(url)
 
         logging.debug(js)
 

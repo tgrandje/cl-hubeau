@@ -1,8 +1,7 @@
 import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
-from datetime import date, datetime
-from itertools import product
+from datetime import date
 
 from cl_hubeau.watercourses_flow.watercourses_flow_scraper import (
     WatercoursesFlowSession,
@@ -18,9 +17,9 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     Parameters
     ----------
     **kwargs :
-        kwargs passed to WatercoursesFlowSession.get_stations (hence mostly intended
-        for hub'eau API's arguments). Do not use `format` or `code_departement`
-        as they are set by the current function.
+        kwargs passed to WatercoursesFlowSession.get_stations (hence mostly
+        intended for hub'eau API's arguments). Do not use `format` or
+        `code_departement` as they are set by the current function.
 
     Returns
     -------
@@ -60,9 +59,9 @@ def get_all_observations(**kwargs) -> gpd.GeoDataFrame:
     Parameters
     ----------
     **kwargs :
-        kwargs passed to WatercoursesFlowSession.get_observations (hence mostly intended
-        for hub'eau API's arguments). Do not use `format` or `code_departement`
-        as they are set by the current function.
+        kwargs passed to WatercoursesFlowSession.get_observations (hence mostly
+        intended for hub'eau API's arguments). Do not use `format` or
+        `code_departement` as they are set by the current function.
 
     Returns
     -------
@@ -148,9 +147,3 @@ def get_all_campaigns(**kwargs) -> gpd.GeoDataFrame:
             ]
             results = gpd.pd.concat(results, ignore_index=True)
         return results
-
-
-if __name__ == "__main__":
-    #     # print(get_all_stations())
-    df = get_all_observations(code_departement=["59"])
-#     df = get_all_campaigns()

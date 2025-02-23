@@ -20,7 +20,7 @@
 
 title: cl-hubeau
 email: tgrandje@gmail.com
-description: 
+description:
   en: >- # this means to ignore newlines until "baseurl:"
     Documentation of python package `cl-hubeau`, a python implementation
     for using hub'eau APIs
