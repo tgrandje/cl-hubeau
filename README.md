@@ -25,9 +25,9 @@ At this stage, the following APIs are covered by cl-hubeau:
 * [piezometry/piézométrie](https://hubeau.eaufrance.fr/page/api-piezometrie)
 * [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
 * [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable)
-* [superficial waterbodies quality/qualité physico-chimique des cours d'eau'](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
-* [ground waterbodies quality/qualité des nappes'](https://hubeau.eaufrance.fr/page/api-qualite-nappes)
-* [watercourses flow/écoulement des cours d'eau'](https://hubeau.eaufrance.fr/page/api-ecoulement)
+* [superficial waterbodies quality/qualité physico-chimique des cours d'eau](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
+* [ground waterbodies quality/qualité des nappes](https://hubeau.eaufrance.fr/page/api-qualite-nappes)
+* [watercourses flow/écoulement des cours d'eau](https://hubeau.eaufrance.fr/page/api-ecoulement)
 
 
 For any help on available kwargs for each endpoint, please refer
