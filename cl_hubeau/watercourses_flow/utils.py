@@ -147,9 +147,3 @@ def get_all_campaigns(**kwargs) -> gpd.GeoDataFrame:
             ]
             results = gpd.pd.concat(results, ignore_index=True)
         return results
-
-
-if __name__ == "__main__":
-    #     # print(get_all_stations())
-    df = get_all_observations(code_departement=["59"])
-#     df = get_all_campaigns()
