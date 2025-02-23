@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cl-hubeau"
-version = "0.6.0"
+version = "0.7.0"
 description = "Hubeau client to collect data from the different APIs"
 authors = [
     "Thomas Grandjean <thomas.grandjean@developpement-durable.gouv.fr>",
