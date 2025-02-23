@@ -77,7 +77,7 @@ par le point de sortie "chroniques" de l'API.
 Par exemple :
 ```python
 from cl_hubeau import ground_water_quality
-df = ground_water_quality.get_control_results(
+df = ground_water_quality.get_all_analyses(
     bss_id=['BSS000EFUA', 'BSS000EWPC'],
     code_param="1340"
     )
