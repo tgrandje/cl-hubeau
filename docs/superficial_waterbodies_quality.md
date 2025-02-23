@@ -191,4 +191,3 @@ with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as s
         format="geojson",
         )
 ```
-
