@@ -25,8 +25,9 @@ At this stage, the following APIs are covered by cl-hubeau:
 * [piezometry/piézométrie](https://hubeau.eaufrance.fr/page/api-piezometrie)
 * [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
 * [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable)
-* [superficial waterbodies quality/qualité physico-chimique des cours d'eau'](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
-* [watercourses flow/écoulement des cours d'eau'](https://hubeau.eaufrance.fr/page/api-ecoulement)
+* [superficial waterbodies quality/qualité physico-chimique des cours d'eau](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
+* [ground waterbodies quality/qualité des nappes](https://hubeau.eaufrance.fr/page/api-qualite-nappes)
+* [watercourses flow/écoulement des cours d'eau](https://hubeau.eaufrance.fr/page/api-ecoulement)
 
 
 For any help on available kwargs for each endpoint, please refer
@@ -294,6 +295,62 @@ with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as s
     df = session.get_environmental_conditions(code_commune="59183")
     df = session.get_analysis(code_commune='59183', code_parametre="1340")
 
+```
+
+### Ground water quality
+
+2 high level functions are available (and one class for low level operations).
+
+
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import ground_water_quality
+df = ground_water_quality.get_all_stations()
+```
+
+Get the tests results for nitrates :
+
+```python
+df = ground_water_quality.df = get_all_analyses(code_param="1340")
+```
+
+Note that this query is heavy, even if this was already restricted to nitrates, and that it
+may fail. In theory, you could even query the API without specifying the substance
+you're tracking, but you will hit the 20k threshold and trigger an exception.
+
+In practice, you should call the same function with a territorial restriction or with
+specific bss_ids.
+For instance, you could use official city codes directly:
+
+```python
+df = ground_water_quality.get_all_analyses(
+    num_departement=["59"]
+    code_param="1340"
+)
+```
+
+Note: a bit of caution is needed here, as the arguments are **NOT** the same
+in the two endpoints. Please have a look at the documentation on
+[hubeau](https://hubeau.eaufrance.fr/page/api-qualite-nappes#/qualite-nappes/analyses).
+For instance, the city's number is called `"code_insee_actuel"` on analyses' endpoint
+and `"code_commune"` on station's.
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility
+
+```python
+with ground_water_quality.GroundWaterQualitySession() as session:
+    df = session.get_stations(bss_id="01832B0600")
+    df = session.get_analyses(
+        bss_ids=["BSS000BMMA"],
+        code_param="1461",
+        )
 ```
 
 ### Watercourses flow

@@ -69,7 +69,7 @@ jobs:
 
       - name: Generate hub'eau coverage badge
         run: |
-          poetry run python -c "from genbadge import Badge;from glob import glob;x = len([x for x in glob('cl_hubeau/*') if not any(y in x for y in {'session', 'utils', 'pycache'})]);b = Badge(left_txt='couverture hub’eau', right_txt=f'{x} API / 13', color='green');b.write_to('badges/hubeau-coverage.svg', use_shields=False)"
+          poetry run python -c "import os;from genbadge import Badge;from glob import glob;dirs = [x for x in glob('cl_hubeau/*/') if os.path.isdir(x) and not any(y in x for y in {'session', 'utils', 'pycache'})];print('\n'.join(dirs));b = Badge(left_txt='couverture hub’eau', right_txt=f'{len(dirs)} API / 13', color='green');b.write_to('badges/hubeau-coverage.svg', use_shields=False)"
 
       - name: Commit changes
         continue-on-error: true
