@@ -64,7 +64,7 @@ df = ground_water_quality.get_all_analyses(
 {: .warning }
 Ce type de requêtage induit rapidement des résultats volumineux.
 En théorie, il est possible de requêter l'API sans spécifier la substance ciblée ni les
-qualitomètres, mais  la probabilité d'atteindre le seuil maximal de 20 000 résultats est élevé.
+qualitomètres, mais la probabilité d'atteindre le seuil maximal de 20 000 résultats est élevée.
 
 En l'état, cette fonction implémente déjà une double boucle :
 * sur les codes départements
