@@ -119,8 +119,8 @@ def test_get_environmental_conditions(mock_get_data):
     assert len(data) == 1
 
 
-def test_get_analysis(mock_get_data):
-    data = superficial_waterbodies_quality.get_all_analysis(
+def test_get_analyses(mock_get_data):
+    data = superficial_waterbodies_quality.get_all_analyses(
         code_station="dummy_code",
         date_debut_prelevement="2020-01-01",
         date_fin_prelevement="2020-12-31",

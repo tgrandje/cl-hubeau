@@ -7,11 +7,13 @@ Convenience functions for superficial waterbodies quality inspections
 from datetime import date
 import warnings
 
+import deprecation
 import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
 
 
+from cl_hubeau import __version__
 from cl_hubeau.superficial_waterbodies_quality import (
     SuperficialWaterbodiesQualitySession,
 )
@@ -25,7 +27,7 @@ from cl_hubeau.utils import (
 
 def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     """
-    Retrieve all stations for physical/chemical analysis on superficial
+    Retrieve all stations for physical/chemical analyses on superficial
     waterbodies
 
     Use a loop to avoid reaching 20k results threshold. Do not use
@@ -226,9 +228,15 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
+@deprecation.deprecated(
+    deprecated_in="0.6.0",
+    removed_in="1.0",
+    current_version=__version__,
+    details="Please use `get_all_analyses` instead.",
+)
 def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
     """
-    Retrieve analysis results from measures.
+    Retrieve analyses results from measures.
 
     Should only be used with additional arguments to avoid reaching the 20k
     threshold, in conjonction with the built-in loop (which will operate
@@ -238,21 +246,45 @@ def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
     Parameters
     ----------
     **kwargs :
-        kwargs passed to SuperficialWaterbodiesQualitySession.get_analysis
+        kwargs passed to SuperficialWaterbodiesQualitySession.get_analyses
         (hence mostly intended for hub'eau API's arguments).
 
     Returns
     -------
     results : gpd.GeoDataFrame
-        GeoDataFrame of analysis results
+        GeoDataFrame of analyses results
+
+    """
+    return get_all_analyses(**kwargs)
+
+
+def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
+    """
+    Retrieve analyses results from measures.
+
+    Should only be used with additional arguments to avoid reaching the 20k
+    threshold, in conjonction with the built-in loop (which will operate
+    on yearly subsets, even if date_min_prelevement/date_max_prelevement are
+    not set.)
+
+    Parameters
+    ----------
+    **kwargs :
+        kwargs passed to SuperficialWaterbodiesQualitySession.get_analyses
+        (hence mostly intended for hub'eau API's arguments).
+
+    Returns
+    -------
+    results : gpd.GeoDataFrame
+        GeoDataFrame of analyses results
 
     """
 
     if not kwargs:
         warnings.warn(
-            "get_all_analysis should only be used with "
+            "get_all_analyses should only be used with "
             "kwargs, for instance "
-            "`get_all_analysis(code_department='02')`"
+            "`get_all_analyses(code_department='02')`"
         )
 
     # Set a loop for yearly querying as dataset are big
@@ -289,7 +321,7 @@ def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
-            session.get_analysis(format="geojson", **kwargs, **kw_loop)
+            session.get_analyses(format="geojson", **kwargs, **kw_loop)
             for kw_loop in tqdm(
                 kwargs_loop,
                 desc=desc,
