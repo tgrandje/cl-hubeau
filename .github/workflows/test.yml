@@ -9,6 +9,8 @@ on:
       - "dev"
   pull_request:
     types: [opened, synchronize]
+  schedule:
+    - cron: '0 5 1,15 * *'
 
 jobs:
   test:
