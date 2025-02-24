@@ -18,7 +18,7 @@ Depuis la version 0.2.0 de `pynsee`, il n'est plus nécessaire de disposer de cl
 Les requêtes web exécutées par  `cl-hubeau` sont de deux types :
 
 * celles exécutées par `pynsee` pour requêter les API de l'INSEE ;
-* celles exécutées en propre par `cl-hubeau` pour requêter hubeau.
+* celles exécutées en propre par `cl-hubeau`.
 
 Dans le cas où l'on souhaiterait utiliser des proxies professionnels
 pour connexion internet, il suffit de fixer deux variables d'environnement
