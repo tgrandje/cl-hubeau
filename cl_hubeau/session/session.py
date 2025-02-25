@@ -231,7 +231,9 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             Concatenated arguments
 
         """
-        if any(isinstance(x, y) for y in (list, tuple, set)):
+        if isinstance(x, str):
+            x = [y.strip() for y in x.split(",")]
+        if isinstance(x, (list, tuple, set)):
             if max_authorized_values and len(x) > max_authorized_values:
                 msg = (
                     f"Should not have more than {max_authorized_values}, "
@@ -246,8 +248,6 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                 raise ValueError(msg)
 
             return ",".join([str(y) for y in x])
-        if isinstance(x, str):
-            return x
         raise ValueError(f"unexpected format for {x}")
 
     @staticmethod
