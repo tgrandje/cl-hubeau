@@ -10,12 +10,15 @@ import pandas as pd
 
 from cl_hubeau import __version__
 from cl_hubeau.session import BaseHubeauSession
+from cl_hubeau.exceptions import UnexpectedValueError, UnexpectedArguments
 
 
 class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
     """
     Base session class to handle the superifical waterbodies' quality API
     """
+
+    DOC_URL = "https://hubeau.eaufrance.fr/page/api-qualite-cours-deau"
 
     def __init__(self, *args, **kwargs):
 
@@ -38,24 +41,16 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         params = {}
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "sort must be among ('asc', 'sort'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             params["sort"] = "asc"
 
         try:
-            variable = kwargs.pop("format")
-            if variable not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found {format=} instead"
-                )
-            params["format"] = variable
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
             params["format"] = "json"
 
@@ -137,11 +132,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-qualite-cours-deau"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v2/qualite_rivieres/station_pc"
@@ -163,24 +154,16 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         params = {}
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "sort must be among ('asc', 'sort'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             params["sort"] = "asc"
 
         try:
-            variable = kwargs.pop("format")
-            if variable not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found {format=} instead"
-                )
-            params["format"] = variable
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
             params["format"] = "json"
 
@@ -263,11 +246,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-qualite-cours-deau"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v2/qualite_rivieres/operation_pc"
@@ -296,24 +275,16 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         params = {}
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "sort must be among ('asc', 'sort'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             params["sort"] = "asc"
 
         try:
-            variable = kwargs.pop("format")
-            if variable not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found {format=} instead"
-                )
-            params["format"] = variable
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
             params["format"] = "json"
 
@@ -380,11 +351,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-qualite-cours-deau"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
         method = "GET"
         url = (
             self.BASE_URL
@@ -436,24 +403,16 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         params = {}
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "sort must be among ('asc', 'sort'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             params["sort"] = "asc"
 
         try:
-            variable = kwargs.pop("format")
-            if variable not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found {format=} instead"
-                )
-            params["format"] = variable
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
             params["format"] = "json"
 
@@ -531,11 +490,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-qualite-cours-deau"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v2/qualite_rivieres/analyse_pc"

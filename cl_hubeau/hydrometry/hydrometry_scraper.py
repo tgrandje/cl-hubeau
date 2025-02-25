@@ -8,12 +8,15 @@ low level class to collect data from the hydrometry API from hub'eau
 import pandas as pd
 
 from cl_hubeau.session import BaseHubeauSession
+from cl_hubeau.exceptions import UnexpectedValueError, UnexpectedArguments
 
 
 class HydrometrySession(BaseHubeauSession):
     """
     Base session class to handle the hydrometry API
     """
+
+    DOC_URL = "https://hubeau.eaufrance.fr/page/api-hydrometrie"
 
     def __init__(self, *args, **kwargs):
 
@@ -51,25 +54,16 @@ class HydrometrySession(BaseHubeauSession):
                 continue
 
         try:
-            variable = kwargs.pop("format")
-            if variable not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found format='{variable}' instead"
-                )
-            params["format"] = variable
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
             pass
 
         try:
-
-            variable = int(kwargs.pop("en_service"))
-            if variable not in {0, 1}:
-                raise ValueError(
-                    "en_service must be among (0, 1), "
-                    f"found en_service='{variable}' instead"
-                )
-            params["en_service"] = variable
+            params["en_service"] = self._ensure_val_among_authorized_values(
+                "en_service", kwargs, {0, 1}, int
+            )
         except KeyError:
             pass
 
@@ -106,11 +100,7 @@ class HydrometrySession(BaseHubeauSession):
                 continue
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-hydrometrie"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v2/hydrometrie/referentiel/stations"
@@ -153,13 +143,9 @@ class HydrometrySession(BaseHubeauSession):
         params = {}
 
         try:
-            variable = kwargs.pop("format")
-            if variable not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found format='{variable}' instead"
-                )
-            params["format"] = variable
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
             pass
 
@@ -195,11 +181,7 @@ class HydrometrySession(BaseHubeauSession):
                 continue
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-hydrometrie"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v2/hydrometrie/referentiel/sites"
@@ -243,13 +225,11 @@ class HydrometrySession(BaseHubeauSession):
             pass
 
         try:
-            variable = kwargs.pop("grandeur_hydro_elab")
-            if variable not in ("QmJ", "QmM"):
-                raise ValueError(
-                    "grandeur_hydro_elab must be among ('QmJ', 'QmM'), "
-                    f"found grandeur_hydro_elab='{variable}' instead"
+            params["grandeur_hydro_elab"] = (
+                self._ensure_val_among_authorized_values(
+                    "grandeur_hydro_elab", kwargs, {"QmJ", "QmM"}
                 )
-            params["grandeur_hydro_elab "] = variable
+            )
         except KeyError:
             pass
 
@@ -286,11 +266,7 @@ class HydrometrySession(BaseHubeauSession):
                 continue
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-hydrometrie"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v2/hydrometrie/obs_elab"
@@ -331,24 +307,18 @@ class HydrometrySession(BaseHubeauSession):
             pass
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "sort must be among ('asc', 'desc'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             pass
 
         try:
-            variable = kwargs.pop("grandeur_hydro")
-            if variable not in ("H", "Q"):
-                raise ValueError(
-                    "grandeur_hydro must be among ('H', 'Q'), "
-                    f"found grandeur_hydro='{variable}' instead"
+            params["grandeur_hydro"] = (
+                self._ensure_val_among_authorized_values(
+                    "grandeur_hydro", kwargs, {"H", "Q"}
                 )
-            params["grandeur_hydro"] = variable
+            )
         except KeyError:
             pass
 
@@ -395,11 +365,7 @@ class HydrometrySession(BaseHubeauSession):
                 continue
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-hydrometrie"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v2/hydrometrie/observations_tr"

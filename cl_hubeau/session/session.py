@@ -11,7 +11,7 @@ import hashlib
 import logging
 import os
 import socket
-from typing import Callable
+from typing import Callable, Any
 from urllib.parse import urlparse, parse_qs
 import warnings
 
@@ -28,6 +28,7 @@ from urllib3.util.retry import Retry
 
 from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, RATELIMITER_NAME
 from cl_hubeau import _config, __version__
+from cl_hubeau.exceptions import UnexpectedValueError
 
 
 @lru_cache(maxsize=None)
@@ -248,6 +249,42 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         if isinstance(x, str):
             return x
         raise ValueError(f"unexpected format for {x}")
+
+    @staticmethod
+    def _ensure_val_among_authorized_values(
+        arg: str, kwargs: dict, allowed: Any, converter: Callable = None
+    ) -> Any:
+        """
+        Pops an argument from kwargs and check that it matches
+
+        Parameters
+        ----------
+        arg : str
+            key of argument to pop from kwargs
+        kwargs : dict
+            kwargs to pop argument from
+        allowed : Any
+            Allowed values
+        converter : Callable
+            Function to be run on kwargs[arg] if found (for instance, `int`)
+
+        Raises
+        ------
+        UnexpectedValueError
+            If the value is not allowed.
+
+        Returns
+        -------
+        variable : Any
+            Poped value from kwargs
+
+        """
+        variable = kwargs.pop(arg)
+        if converter:
+            variable = converter(variable)
+        if variable not in allowed:
+            raise UnexpectedValueError(arg, variable, allowed)
+        return variable
 
     @staticmethod
     def ensure_date_format_is_ok(date_str: str) -> None:
