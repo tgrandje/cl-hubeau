@@ -11,13 +11,13 @@ from pynsee.geodata import get_geodata
 from requests import Session
 
 from cl_hubeau.utils.cities_deps_regions import silence_sirene_logs
-from cl_hubeau.constants import DIR_CACHE, SANDRE_CACHE
+from cl_hubeau.constants import DIR_CACHE, DISKCACHE
 from cl_hubeau.config import _config
 
-cache_sage = diskcache.Cache(os.path.join(DIR_CACHE, SANDRE_CACHE))
+cache = diskcache.Cache(os.path.join(DIR_CACHE, DISKCACHE))
 
 
-@cache_sage.memoize(
+@cache.memoize(
     tag="SAGE_cities", expire=_config["DEFAULT_EXPIRE_AFTER"].total_seconds()
 )
 @silence_sirene_logs
