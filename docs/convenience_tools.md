@@ -19,7 +19,7 @@ avec le dernier millésime des couches communales.
 Les codes commune récupérés peuvent ensuite être utilisés comme argument (sur les endpoints
 implémentant cet argument nativement).
 
-Ces fonctions sont de **simples utilitaires** et elles sont sujettes à des **effets de bord** 
+Ces fonctions sont de **simples utilitaires** et elles sont sujettes à des **effets de bord**
 (la précision géographique des deux datasets ne sera probablement pas identique).
 
 ## SAGE (Schéma d'Aménagement et de Gestion des Eaux)
@@ -34,6 +34,3 @@ cities = d["SAGE01001"]
 ```
 
 Le jeu de données utilisé est la couche SANDRE du catalogue eaufrance.
-
-
-

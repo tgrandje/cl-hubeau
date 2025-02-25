@@ -409,10 +409,10 @@ with watercourses_flow.WatercoursesFlowSession() as session:
 In order to ease queries on hydrographic territories, some convenience functions
 have been added to this module.
 
-In these process, we are harvesting official geodatasets which are not available on hub'eau; 
+In these process, we are harvesting official geodatasets which are not available on hub'eau;
 afterwards, simple geospatial joins are performed with the latest geodataset of french cities.
 
-These are **convenience** tools and there **will** be approximations (geographical precision 
+These are **convenience** tools and there **will** be approximations (geographical precision
 of both datasets might not match).
 
 #### SAGE (Schéma d'Aménagement et de Gestion des Eaux)
@@ -427,4 +427,3 @@ d = cities_for_sage()
 ```
 
 The official geodataset is eaufrance's SAGE.
-

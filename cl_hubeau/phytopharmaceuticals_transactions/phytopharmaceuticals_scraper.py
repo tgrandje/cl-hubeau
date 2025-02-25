@@ -403,184 +403,182 @@ class PhytopharmaceuticalsSession(BaseHubeauSession):
         return df
 
 
-if __name__ == "__main__":
-    import logging
-    import matplotlib.pyplot as plt
-    import seaborn as sns
+# if __name__ == "__main__":
+# import logging
+# import matplotlib.pyplot as plt
+# import seaborn as sns
 
-    sns.set_style("darkgrid")
+# sns.set_style("darkgrid")
 
-    # logging.basicConfig(level=logging.WARNING)
-    with PhytopharmaceuticalsSession() as session:
+# # logging.basicConfig(level=logging.WARNING)
+# with PhytopharmaceuticalsSession() as session:
 
-        # =====================================================================
-        #         Exemple 1: sold substances
-        # =====================================================================
-        # df = pd.concat(
-        #     [
-        #         session.active_substances_sold(
-        #             annee_min=2010,
-        #             annee_max=2015,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #         ),
-        #         session.active_substances_sold(
-        #             annee_min=2016,
-        #             annee_max=2020,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #         ),
-        #         session.active_substances_sold(
-        #             annee_min=2021,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #         ),
-        #     ]
-        # )
+# =====================================================================
+#         Exemple 1: sold substances
+# =====================================================================
+# df = pd.concat(
+#     [
+#         session.active_substances_sold(
+#             annee_min=2010,
+#             annee_max=2015,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#         ),
+#         session.active_substances_sold(
+#             annee_min=2016,
+#             annee_max=2020,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#         ),
+#         session.active_substances_sold(
+#             annee_min=2021,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#         ),
+#     ]
+# )
 
-        # ax = (
-        #     df.pivot_table(
-        #         "quantite",
-        #         index=["libelle_territoire", "fonction"],
-        #         columns=["annee"],
-        #     )
-        #     .loc["HAUTS-DE-FRANCE"]
-        #     .T.plot(kind="bar", stacked=True)
-        # )
-        # handles, labels = ax.get_legend_handles_labels()
-        # lgd = ax.legend(
-        #     handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.2)
-        # )
-        # plt.show()
-        #
-        # =====================================================================
-        #         Exemple 2: sold products
-        # =====================================================================
-        # df = pd.concat(
-        #     [
-        #         session.phytopharmaceutical_products_sold(
-        #             annee_min=2010,
-        #             annee_max=2015,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #             eaj="Oui",
-        #             unite="l",
-        #         ),
-        #         session.phytopharmaceutical_products_sold(
-        #             annee_min=2016,
-        #             annee_max=2020,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #             eaj="Oui",
-        #             unite="l",
-        #         ),
-        #         session.phytopharmaceutical_products_sold(
-        #             annee_min=2021,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #             eaj="Oui",
-        #             unite="l",
-        #         ),
-        #     ]
-        # )
-        # ax = (
-        #     df.pivot_table(
-        #         "quantite",
-        #         index=["libelle_territoire"],
-        #         columns=["annee"],
-        #     )
-        #     .loc["HAUTS-DE-FRANCE"]
-        #     .T.plot(kind="bar", stacked=True)
-        # )
-        # handles, labels = ax.get_legend_handles_labels()
-        # lgd = ax.legend(
-        #     handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.2)
-        # )
-        # plt.show()
-        #
-        # =====================================================================
-        #         Exemple 3: bought substances
-        # =====================================================================
-        # df = pd.concat(
-        #     [
-        #         session.active_substances_bought(
-        #             annee_min=2010,
-        #             annee_max=2015,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #         ),
-        #         session.active_substances_sold(
-        #             annee_min=2016,
-        #             annee_max=2020,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #         ),
-        #         session.active_substances_sold(
-        #             annee_min=2021,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #         ),
-        #     ]
-        # )
-
-        # ax = (
-        #     df.pivot_table(
-        #         "quantite",
-        #         index=["libelle_territoire", "fonction"],
-        #         columns=["annee"],
-        #     )
-        #     .loc["HAUTS-DE-FRANCE"]
-        #     .T.plot(kind="bar", stacked=True)
-        # )
-        # handles, labels = ax.get_legend_handles_labels()
-        # lgd = ax.legend(
-        #     handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.2)
-        # )
-        # plt.show()
-        #
-        # =====================================================================
-        #         Exemple 4: bought products
-        # =====================================================================
-        # df = pd.concat(
-        #     [
-        #         session.phytopharmaceutical_products_bought(
-        #             annee_min=2010,
-        #             annee_max=2015,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #             eaj="Oui",
-        #             unite="l",
-        #         ),
-        #         session.phytopharmaceutical_products_bought(
-        #             annee_min=2016,
-        #             annee_max=2020,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #             eaj="Oui",
-        #             unite="l",
-        #         ),
-        #         session.phytopharmaceutical_products_bought(
-        #             annee_min=2021,
-        #             code_territoire=["32"],
-        #             type_territoire="Région",
-        #             eaj="Oui",
-        #             unite="l",
-        #         ),
-        #     ]
-        # )
-        # ax = (
-        #     df.pivot_table(
-        #         "quantite",
-        #         index=["libelle_territoire"],
-        #         columns=["annee"],
-        #     )
-        #     .loc["HAUTS-DE-FRANCE"]
-        #     .T.plot(kind="bar", stacked=True)
-        # )
-        # handles, labels = ax.get_legend_handles_labels()
-        # lgd = ax.legend(
-        #     handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.2)
-        # )
-        # plt.show()
-
-        pass
+# ax = (
+#     df.pivot_table(
+#         "quantite",
+#         index=["libelle_territoire", "fonction"],
+#         columns=["annee"],
+#     )
+#     .loc["HAUTS-DE-FRANCE"]
+#     .T.plot(kind="bar", stacked=True)
+# )
+# handles, labels = ax.get_legend_handles_labels()
+# lgd = ax.legend(
+#     handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.2)
+# )
+# plt.show()
+#
+# =====================================================================
+#         Exemple 2: sold products
+# =====================================================================
+# df = pd.concat(
+#     [
+#         session.phytopharmaceutical_products_sold(
+#             annee_min=2010,
+#             annee_max=2015,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#             eaj="Oui",
+#             unite="l",
+#         ),
+#         session.phytopharmaceutical_products_sold(
+#             annee_min=2016,
+#             annee_max=2020,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#             eaj="Oui",
+#             unite="l",
+#         ),
+#         session.phytopharmaceutical_products_sold(
+#             annee_min=2021,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#             eaj="Oui",
+#             unite="l",
+#         ),
+#     ]
+# )
+# ax = (
+#     df.pivot_table(
+#         "quantite",
+#         index=["libelle_territoire"],
+#         columns=["annee"],
+#     )
+#     .loc["HAUTS-DE-FRANCE"]
+#     .T.plot(kind="bar", stacked=True)
+# )
+# handles, labels = ax.get_legend_handles_labels()
+# lgd = ax.legend(
+#     handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.2)
+# )
+# plt.show()
+#
+# =====================================================================
+#         Exemple 3: bought substances
+# =====================================================================
+# df = pd.concat(
+#     [
+#         session.active_substances_bought(
+#             annee_min=2010,
+#             annee_max=2015,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#         ),
+#         session.active_substances_sold(
+#             annee_min=2016,
+#             annee_max=2020,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#         ),
+#         session.active_substances_sold(
+#             annee_min=2021,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#         ),
+#     ]
+# )
+#
+# ax = (
+#     df.pivot_table(
+#         "quantite",
+#         index=["libelle_territoire", "fonction"],
+#         columns=["annee"],
+#     )
+#     .loc["HAUTS-DE-FRANCE"]
+#     .T.plot(kind="bar", stacked=True)
+# )
+# handles, labels = ax.get_legend_handles_labels()
+# lgd = ax.legend(
+#     handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.2)
+# )
+# plt.show()
+#
+# =====================================================================
+#         Exemple 4: bought products
+# =====================================================================
+# df = pd.concat(
+#     [
+#         session.phytopharmaceutical_products_bought(
+#             annee_min=2010,
+#             annee_max=2015,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#             eaj="Oui",
+#             unite="l",
+#         ),
+#         session.phytopharmaceutical_products_bought(
+#             annee_min=2016,
+#             annee_max=2020,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#             eaj="Oui",
+#             unite="l",
+#         ),
+#         session.phytopharmaceutical_products_bought(
+#             annee_min=2021,
+#             code_territoire=["32"],
+#             type_territoire="Région",
+#             eaj="Oui",
+#             unite="l",
+#         ),
+#     ]
+# )
+# ax = (
+#     df.pivot_table(
+#         "quantite",
+#         index=["libelle_territoire"],
+#         columns=["annee"],
+#     )
+#     .loc["HAUTS-DE-FRANCE"]
+#     .T.plot(kind="bar", stacked=True)
+# )
+# handles, labels = ax.get_legend_handles_labels()
+# lgd = ax.legend(
+#     handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.2)
+# )
+# plt.show()
