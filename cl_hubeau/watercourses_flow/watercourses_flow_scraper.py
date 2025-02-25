@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Sep 13 10:57:00 2024
-
 low level class to collect data from the watercourses-flow API from hub'eau
 """
 
 from cl_hubeau.session import BaseHubeauSession
-from cl_hubeau.exceptions import UnexpectedValueError, UnexpectedArguments
+from cl_hubeau.exceptions import UnexpectedArguments
 
 
 class WatercoursesFlowSession(BaseHubeauSession):

@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jul 28 14:03:41 2024
-
 low level class to collect data from the drinking water quality API from
 hub'eau
 """
@@ -10,7 +8,7 @@ import pandas as pd
 
 from cl_hubeau import __version__
 from cl_hubeau.session import BaseHubeauSession
-from cl_hubeau.exceptions import UnexpectedValueError, UnexpectedArguments
+from cl_hubeau.exceptions import UnexpectedArguments
 
 
 class SuperficialWaterbodiesQualitySession(BaseHubeauSession):

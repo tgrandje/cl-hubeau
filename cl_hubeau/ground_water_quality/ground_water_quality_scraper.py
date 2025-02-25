@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Sep 16 14:00:00 2024
-
 low level class to collect data from the ground water quality API from hub'eau
 """
 
 import pandas as pd
 
 from cl_hubeau.session import BaseHubeauSession
-from cl_hubeau.exceptions import UnexpectedValueError, UnexpectedArguments
+from cl_hubeau.exceptions import UnexpectedArguments
 
 
 class GroundWaterQualitySession(BaseHubeauSession):
