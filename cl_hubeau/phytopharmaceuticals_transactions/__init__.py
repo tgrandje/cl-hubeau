@@ -2,18 +2,18 @@
 
 from .phytopharmaceuticals_scraper import PhytopharmaceuticalsSession
 
-# from .utils import (
-# get_all_stations,
-# get_all_sites,
-# get_observations,
-# get_realtime_observations,
-# )
+from .utils import (
+    get_all_active_substances_bought,
+    get_all_phytopharmaceutical_products_bought,
+    get_all_active_substances_sold,
+    get_all_phytopharmaceutical_products_sold,
+)
 
 
 __all__ = [
-    # "get_all_stations",
-    # "get_all_sites",
-    # "get_observations",
-    # "get_realtime_observations",
+    "get_all_active_substances_bought",
+    "get_all_phytopharmaceutical_products_bought",
+    "get_all_active_substances_sold",
+    "get_all_phytopharmaceutical_products_sold",
     "PhytopharmaceuticalsSession",
 ]
