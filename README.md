@@ -22,12 +22,13 @@ Every API on [Hub'eau](hubeau.eaufrance.fr/) will be covered by this package in
 due time.
 
 At this stage, the following APIs are covered by cl-hubeau:
-* [piezometry/piézométrie](https://hubeau.eaufrance.fr/page/api-piezometrie)
-* [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
-* [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable)
-* [superficial waterbodies quality/qualité physico-chimique des cours d'eau](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
-* [ground waterbodies quality/qualité des nappes](https://hubeau.eaufrance.fr/page/api-qualite-nappes)
+* [phytopharmaceuticals transactions/vente et achat de produits phytopharmaceutiques](https://hubeau.eaufrance.fr/page/api-vente-achat-phytos)
 * [watercourses flow/écoulement des cours d'eau](https://hubeau.eaufrance.fr/page/api-ecoulement)
+* [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable)
+* [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
+* [superficial waterbodies quality/qualité des cours d'eau](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
+* [ground waterbodies quality/qualité des nappes](https://hubeau.eaufrance.fr/page/api-qualite-nappes)
+* [piezometry/piézométrie](https://hubeau.eaufrance.fr/page/api-piezometrie)
 
 
 For any help on available kwargs for each endpoint, please refer
@@ -80,79 +81,40 @@ from cl_hubeau.utils import clean_all_cache
 clean_all_cache()
 ```
 
-### Piezometry
+
+### Watercourses flow
 
 3 high level functions are available (and one class for low level operations).
 
-Get all piezometers (uses a 30 days caching):
 
-```python
-from cl_hubeau import piezometry
-gdf = piezometry.get_all_stations()
-```
 
-Get chronicles for the first 100 piezometers (uses a 30 days caching):
-
-```python
-df = piezometry.get_chronicles(gdf["code_bss"].head(100).tolist())
-```
-
-Get realtime data for the first 100 piezometers:
-
-A small cache is stored to allow for realtime consumption (cache expires after
-only 15 minutes). Please, adopt a responsible usage with this functionnality !
-
-```python
-df = get_realtime_chronicles(gdf["code_bss"].head(100).tolist())
-```
-
-Low level class to perform the same tasks:
-
-Note that :
-
-* the API is forbidding results > 20k rows and you may need inner loops
-* the cache handling will be your responsibility, noticely for realtime data
-
-```python
-with piezometry.PiezometrySession() as session:
-    df = session.get_chronicles(code_bss="07548X0009/F")
-    df = session.get_stations(code_departement=['02', '59', '60', '62', '80'], format="geojson")
-    df = session.get_chronicles_real_time(code_bss="07548X0009/F")
-```
-
-### Hydrometry
-
-4 high level functions are available (and one class for low level operations).
-
+get_all_campaigns
 
 Get all stations (uses a 30 days caching):
 
 ```python
-from cl_hubeau import hydrometry
-gdf = hydrometry.get_all_stations()
+from cl_hubeau import watercourses_flow
+df = watercourses_flow.get_all_stations()
 ```
 
-Get all sites (uses a 30 days caching):
+Get all observations (uses a 30 days caching):
 
 ```python
-gdf = hydrometry.get_all_sites()
+from cl_hubeau import watercourses_flow
+df = watercourses_flow.get_all_observations()
 ```
 
-Get observations for the first 5 sites (uses a 30 days caching):
-_Note that this will also work with stations (instead of sites)._
-
+Note that this query is heavy, users should restrict it to a given territory when possible.
+For instance, you could use :
 ```python
-df = hydrometry.get_observations(gdf["code_site"].head(5).tolist())
+df = watercourses_flow.get_all_observations(code_region="11")
 ```
 
-Get realtime data for the first 5 sites (no cache stored):
-
-A small cache is stored to allow for realtime consumption (cache expires after
-only 15 minutes). Please, adopt a responsible usage with this functionnality !
-
+Get all campagins:
 
 ```python
-df = hydrometry.get_realtime_observations(gdf["code_site"].head(5).tolist())
+from cl_hubeau import watercourses_flow
+df = watercourses_flow.get_all_campaigns()
 ```
 
 Low level class to perform the same tasks:
@@ -161,14 +123,13 @@ Low level class to perform the same tasks:
 Note that :
 
 * the API is forbidding results > 20k rows and you may need inner loops
-* the cache handling will be your responsibility, noticely for realtime data
+* the cache handling will be your responsibility
 
 ```python
-with hydrometry.HydrometrySession() as session:
-    df = session.get_stations(code_station="K437311001")
-    df = session.get_sites(code_departement=['02', '59', '60', '62', '80'], format="geojson")
-    df = session.get_realtime_observations(code_entite="K437311001")
-    df = session.get_observations(code_entite="K437311001")
+with watercourses_flow.WatercoursesFlowSession() as session:
+    df = session.get_stations(code_departement="59")
+    df = session.get_campaigns(code_campagne=[12])
+    df = session.get_observations(code_station="F6640008")
 
 ```
 
@@ -223,6 +184,58 @@ Note that :
 with drinking_water_quality.DrinkingWaterQualitySession() as session:
     df = session.get_cities_networks(nom_commune="LILLE")
     df = session.get_control_results(code_departement='02', code_parametre="1340")
+
+```
+
+### Hydrometry
+
+4 high level functions are available (and one class for low level operations).
+
+
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import hydrometry
+gdf = hydrometry.get_all_stations()
+```
+
+Get all sites (uses a 30 days caching):
+
+```python
+gdf = hydrometry.get_all_sites()
+```
+
+Get observations for the first 5 sites (uses a 30 days caching):
+_Note that this will also work with stations (instead of sites)._
+
+```python
+df = hydrometry.get_observations(gdf["code_site"].head(5).tolist())
+```
+
+Get realtime data for the first 5 sites (no cache stored):
+
+A small cache is stored to allow for realtime consumption (cache expires after
+only 15 minutes). Please, adopt a responsible usage with this functionnality !
+
+
+```python
+df = hydrometry.get_realtime_observations(gdf["code_site"].head(5).tolist())
+```
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility, noticely for realtime data
+
+```python
+with hydrometry.HydrometrySession() as session:
+    df = session.get_stations(code_station="K437311001")
+    df = session.get_sites(code_departement=['02', '59', '60', '62', '80'], format="geojson")
+    df = session.get_realtime_observations(code_entite="K437311001")
+    df = session.get_observations(code_entite="K437311001")
 
 ```
 
@@ -297,7 +310,7 @@ with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as s
 
 ```
 
-### Ground water quality
+### Ground waterbodies quality
 
 2 high level functions are available (and one class for low level operations).
 
@@ -353,56 +366,49 @@ with ground_water_quality.GroundWaterQualitySession() as session:
         )
 ```
 
-### Watercourses flow
+### Piezometry
 
 3 high level functions are available (and one class for low level operations).
 
-
-
-get_all_campaigns
-
-Get all stations (uses a 30 days caching):
+Get all piezometers (uses a 30 days caching):
 
 ```python
-from cl_hubeau import watercourses_flow
-df = watercourses_flow.get_all_stations()
+from cl_hubeau import piezometry
+gdf = piezometry.get_all_stations()
 ```
 
-Get all observations (uses a 30 days caching):
+Get chronicles for the first 100 piezometers (uses a 30 days caching):
 
 ```python
-from cl_hubeau import watercourses_flow
-df = watercourses_flow.get_all_observations()
+df = piezometry.get_chronicles(gdf["code_bss"].head(100).tolist())
 ```
 
-Note that this query is heavy, users should restrict it to a given territory when possible.
-For instance, you could use :
-```python
-df = watercourses_flow.get_all_observations(code_region="11")
-```
+Get realtime data for the first 100 piezometers:
 
-Get all campagins:
+A small cache is stored to allow for realtime consumption (cache expires after
+only 15 minutes). Please, adopt a responsible usage with this functionnality !
 
 ```python
-from cl_hubeau import watercourses_flow
-df = watercourses_flow.get_all_campaigns()
+df = get_realtime_chronicles(gdf["code_bss"].head(100).tolist())
 ```
 
 Low level class to perform the same tasks:
 
-
 Note that :
 
 * the API is forbidding results > 20k rows and you may need inner loops
-* the cache handling will be your responsibility
+* the cache handling will be your responsibility, noticely for realtime data
 
 ```python
-with watercourses_flow.WatercoursesFlowSession() as session:
-    df = session.get_stations(code_departement="59")
-    df = session.get_campaigns(code_campagne=[12])
-    df = session.get_observations(code_station="F6640008")
-
+with piezometry.PiezometrySession() as session:
+    df = session.get_chronicles(code_bss="07548X0009/F")
+    df = session.get_stations(code_departement=['02', '59', '60', '62', '80'], format="geojson")
+    df = session.get_chronicles_real_time(code_bss="07548X0009/F")
 ```
+
+
+
+
 
 ### Convenience functions
 
