@@ -9,5 +9,6 @@ from .cities_deps_regions import (
 )
 from .prepare_loops import prepare_kwargs_loops
 from .hydro_perimeters_queries import cities_for_sage
+from .postcodes import _get_postcodes
 
 __all__ = ["clean_all_cache", "cities_for_sage"]
