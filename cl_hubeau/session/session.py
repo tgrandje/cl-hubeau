@@ -248,7 +248,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                 raise ValueError(msg)
 
             return ",".join([str(y) for y in x])
-        raise ValueError(f"unexpected format for {x}")
+        raise ValueError(f"unexpected format found on {x}")
 
     @staticmethod
     def _ensure_val_among_authorized_values(
@@ -371,7 +371,12 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
 
         """
 
+        remove = [key for key, val in params.items() if val == ""]
+        for key in remove:
+            del params[key]
+
         copy_params = deepcopy(params)
+
         copy_params["size"] = 1
         # copy_params["page"] = 1
         js = self.request(
