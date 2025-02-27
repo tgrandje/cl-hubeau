@@ -4,9 +4,12 @@
 Get list of cities' and departements' codes
 """
 
+from itertools import chain
 import logging
 import os
+from typing import Union
 
+import pandas as pd
 from pynsee import get_area_list, get_geo_list
 from pynsee.utils.init_connection import init_conn
 
@@ -63,238 +66,145 @@ def init_pynsee_connection():
 
 
 @silence_sirene_logs
-def get_cities():
+def _get_pynsee_arealist_cities() -> pd.DataFrame:
+    "Retrieve french cities for all times"
     init_pynsee_connection()
     cities = get_area_list("communes", "*", silent=True)
+    return cities
+
+
+@silence_sirene_logs
+def _get_pynsee_geolist_cities():
+    """
+    Retrieve the french regions with their dep & region at current date.
+    Note: this is only used in an inner function to link to the postcodes
+    dataset which is not historised, so this should be ok
+    """
+    init_pynsee_connection()
+    cities = get_geo_list("communes", silent=True)
+    return cities
+
+
+@silence_sirene_logs
+def _get_pynsee_arealist_regions():
+    "Retrieve the french regions for all times (to also get areas < 2016)"
+    init_pynsee_connection()
+    regs = get_area_list("regions", "*", silent=True)
+    return regs
+
+
+@silence_sirene_logs
+def _get_pynsee_geolist_departements():
+    """
+    Retrieve french departements with their current regions.
+
+    Note: no departement's code has changed in recent years, and regions are
+    only used as a convenience group, it is not expected that users might
+    query the departements' from their previous's regions code: this seems
+    safe to query only on the current date.
+    """
+    init_pynsee_connection()
+    deps = get_geo_list("departements", silent=True)
+    return deps
+
+
+@silence_sirene_logs
+def _get_pynsee_arealist_departements():
+    "Retrieve french departements for all times"
+    init_pynsee_connection()
+    deps = get_area_list("departements", "*", silent=True)
+    return deps
+
+
+def get_cities():
+    """
+    Retrieve all unique cities' codes in the whole timeline.
+
+    This allows to query datasets using Region codes even if you don't
+    know the dataset's vintage.
+
+    Returns
+    -------
+    list
+        Codes of departements
+
+    Examples
+    -------
+    >>> get_cities()
+    ['01001', '01002', '01003', ..., '97615', '97616', '97617']
+    """
+    cities = _get_pynsee_arealist_cities()
     return cities["CODE"].unique().tolist()
 
 
-@silence_sirene_logs
 def get_regions() -> list:
-    try:
-        init_pynsee_connection()
-        regs = get_area_list("regions", "*", silent=True)
-        return regs["CODE"].unique().tolist()
-    except Exception:
-        return [
-            "01",
-            "02",
-            "03",
-            "04",
-            "06",
-            "11",
-            "21",
-            "22",
-            "23",
-            "24",
-            "25",
-            "26",
-            "27",
-            "28",
-            "31",
-            "32",
-            "41",
-            "42",
-            "43",
-            "44",
-            "52",
-            "53",
-            "54",
-            "72",
-            "73",
-            "74",
-            "75",
-            "76",
-            "82",
-            "83",
-            "84",
-            "91",
-            "93",
-            "94",
-        ]
+    """
+    Retrieve all unique regions' codes in the whole timeline.
+
+    This allows to query datasets using Region codes even if you don't
+    know the dataset's vintage.
+
+    Returns
+    -------
+    list
+        Codes of departements
+
+    Examples
+    -------
+    >>> get_regions()
+    ['01', '02', '03',...,  '91', '93', '94']
+    """
+    regs = _get_pynsee_arealist_regions()
+    return regs["CODE"].unique().tolist()
 
 
-@silence_sirene_logs
-def get_departements_from_regions(reg: str) -> list:
-    try:
-        init_pynsee_connection()
-        deps = get_geo_list("departements", silent=True)
-        deps = deps.groupby("CODE_REG")["CODE"].agg(list).to_dict()
-    except Exception:
-        # pynsee not working, return a simple constant
-        deps = {
-            "01": ["971"],
-            "02": ["972"],
-            "03": ["973"],
-            "04": ["974"],
-            "06": ["976"],
-            "11": ["75", "77", "78", "91", "92", "93", "94", "95"],
-            "24": ["18", "28", "36", "37", "41", "45"],
-            "27": ["21", "25", "39", "58", "70", "71", "89", "90"],
-            "28": ["14", "27", "50", "61", "76"],
-            "32": ["02", "59", "60", "62", "80"],
-            "44": ["08", "10", "51", "52", "54", "55", "57", "67", "68", "88"],
-            "52": ["44", "49", "53", "72", "85"],
-            "53": ["22", "29", "35", "56"],
-            "75": [
-                "16",
-                "17",
-                "19",
-                "23",
-                "24",
-                "33",
-                "40",
-                "47",
-                "64",
-                "79",
-                "86",
-                "87",
-            ],
-            "76": [
-                "09",
-                "11",
-                "12",
-                "30",
-                "31",
-                "32",
-                "34",
-                "46",
-                "48",
-                "65",
-                "66",
-                "81",
-                "82",
-            ],
-            "84": [
-                "01",
-                "03",
-                "07",
-                "15",
-                "26",
-                "38",
-                "42",
-                "43",
-                "63",
-                "69",
-                "73",
-                "74",
-            ],
-            "93": ["04", "05", "06", "13", "83", "84"],
-            "94": ["2A", "2B"],
-        }
+def get_departements_from_regions(reg: Union[str, list, set, tuple]) -> list:
+    """
+    Retrieve current departements' codes for one or more regions.
 
-    return deps[reg]
+    Parameters
+    ----------
+    reg : Union[str, list, set, tuple]
+        Code(s) of desired regions.
+
+    Returns
+    -------
+    list
+        List of departements
+
+    Examples
+    -------
+    >>> get_departements_from_regions("32")
+    ['02', '59', '60', '62', '80']
+
+    >>> get_departements_from_regions(["32", "01"])
+    ['02', '59', '60', '62', '80', '971']
+    """
+    deps = _get_pynsee_geolist_departements()
+    deps = deps.groupby("CODE_REG")["CODE"].agg(list)
+    if isinstance(reg, str):
+        reg = [reg]
+    deps = list(chain(*deps.loc[reg].values))
+    return deps
 
 
-@silence_sirene_logs
 def get_departements() -> list:
-    try:
-        init_pynsee_connection()
-        deps = get_area_list("departements", "*", silent=True)
-        return deps["CODE"].unique().tolist()
-    except Exception:
-        # pynsee not working, return a simple constant
-        return [
-            "01",
-            "02",
-            "03",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08",
-            "09",
-            "10",
-            "11",
-            "12",
-            "13",
-            "14",
-            "15",
-            "16",
-            "17",
-            "18",
-            "19",
-            "20",
-            "21",
-            "22",
-            "23",
-            "24",
-            "25",
-            "26",
-            "27",
-            "28",
-            "29",
-            "2A",
-            "2B",
-            "30",
-            "31",
-            "32",
-            "33",
-            "34",
-            "35",
-            "36",
-            "37",
-            "38",
-            "39",
-            "40",
-            "41",
-            "42",
-            "43",
-            "44",
-            "45",
-            "46",
-            "47",
-            "48",
-            "49",
-            "50",
-            "51",
-            "52",
-            "53",
-            "54",
-            "55",
-            "56",
-            "57",
-            "58",
-            "59",
-            "60",
-            "61",
-            "62",
-            "63",
-            "64",
-            "65",
-            "66",
-            "67",
-            "68",
-            "69",
-            "70",
-            "71",
-            "72",
-            "73",
-            "74",
-            "75",
-            "76",
-            "77",
-            "78",
-            "79",
-            "80",
-            "81",
-            "82",
-            "83",
-            "84",
-            "85",
-            "86",
-            "87",
-            "88",
-            "89",
-            "90",
-            "91",
-            "92",
-            "93",
-            "94",
-            "95",
-            "971",
-            "972",
-            "973",
-            "974",
-            "976",
-        ]
+    """
+    Retrieve all unique departements' codes in the whole timeline. (For
+    instance, including 20 for Corse).
+
+    This allows to query datasets using Departement codes even if you don't
+    know the dataset's vintage.
+
+    Returns
+    -------
+    list
+        Codes of departements
+
+    Examples
+    -------
+    >>> get_departements()
+    ['01', '02', '03',..., '973', '974', '976']
+    """
+    deps = _get_pynsee_arealist_departements()
+    return deps["CODE"].unique().tolist()
