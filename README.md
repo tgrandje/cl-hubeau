@@ -81,14 +81,132 @@ from cl_hubeau.utils import clean_all_cache
 clean_all_cache()
 ```
 
+### Phyopharmaceuticals transactions
+
+4 high level functions are available (and one class for low level operations).
+
+Note that high level functions introduce new arguments (`filter_regions` and `filter_departements`
+to better target territorial data.
+
+Get all active substances bought (uses a 30 days caching):
+
+```python
+from cl_hubeau import phytopharmaceuticals_transactions as pt
+df = pt.get_all_active_substances_bought()
+
+# or to get regional data:
+df = pt.get_all_active_substances_bought(
+        type_territoire="Région", code_territoire="32"
+    )
+
+# or to get departemantal data:
+df = pt.get_all_active_substances_bought(
+        type_territoire="Département", filter_regions="32"
+    )
+
+# or to get postcode-zoned data:
+df = pt.get_all_active_substances_bought(
+        type_territoire="Zone postale", filter_departements=["59", "62"]
+    )
+```
+
+Get all phytopharmaceutical products bought (uses a 30 days caching):
+
+```python
+from cl_hubeau import phytopharmaceuticals_transactions as pt
+df = pt.get_all_phytopharmaceutical_products_bought()
+
+# or to get regional data:
+df = pt.get_all_phytopharmaceutical_products_bought(
+        type_territoire="Région", code_territoire="32"
+    )
+
+# or to get departemantal data:
+df = pt.get_all_phytopharmaceutical_products_bought(
+        type_territoire="Département", filter_regions="32"
+    )
+
+# or to get postcode-zoned data:
+df = pt.get_all_phytopharmaceutical_products_bought(
+        type_territoire="Zone postale", filter_departements=["59", "62"]
+    )
+```
+
+Get all active substances sold (uses a 30 days caching):
+
+```python
+from cl_hubeau import phytopharmaceuticals_transactions as pt
+df = pt.get_all_active_substances_sold()
+
+# or to get regional data:
+df = pt.get_all_active_substances_sold(
+        type_territoire="Région", code_territoire="32"
+    )
+
+# or to get departemantal data:
+df = pt.get_all_active_substances_sold(
+        type_territoire="Département", filter_regions="32"
+    )
+```
+
+Get all phytopharmaceutical products sold (uses a 30 days caching):
+
+```python
+from cl_hubeau import phytopharmaceuticals_transactions as pt
+df = pt.get_all_phytopharmaceutical_products_sold()
+
+# or to get regional data:
+df = pt.get_all_phytopharmaceutical_products_sold(
+        type_territoire="Région", code_territoire="32"
+    )
+
+# or to get departemantal data:
+df = pt.get_all_phytopharmaceutical_products_sold(
+        type_territoire="Département", filter_regions="32"
+    )
+```
+
+Low level class to perform the same tasks:
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility
+
+```python
+with pt.PhytopharmaceuticalsSession() as session:
+    df = session.active_substances_sold(
+        annee_min=2010,
+        annee_max=2015,
+        code_territoire=["32"],
+        type_territoire="Région",
+        )
+    df = session.phytopharmaceutical_products_sold(
+        annee_min=2010,
+        annee_max=2015,
+        code_territoire=["32"],
+        type_territoire="Région",
+        eaj="Oui",
+        unite="l",
+    )
+    df = session.active_substances_bought(
+        annee_min=2010,
+        annee_max=2015,
+        code_territoire=["32"],
+        type_territoire="Région",
+    )
+    df = session.phytopharmaceutical_products_bought(
+        code_territoire=["32"],
+        type_territoire="Région",
+        eaj="Oui",
+        unite="l",
+    )
+
+```
 
 ### Watercourses flow
 
 3 high level functions are available (and one class for low level operations).
-
-
-
-get_all_campaigns
 
 Get all stations (uses a 30 days caching):
 
@@ -110,7 +228,7 @@ For instance, you could use :
 df = watercourses_flow.get_all_observations(code_region="11")
 ```
 
-Get all campagins:
+Get all campaigns:
 
 ```python
 from cl_hubeau import watercourses_flow
