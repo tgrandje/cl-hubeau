@@ -119,3 +119,9 @@ def test_get_all_observations_mocked(mock_get_data):
     data = watercourses_flow.get_all_observations()
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 1
+
+
+def get_get_all_campaigns_live():
+    df = watercourses_flow.get_all_campaigns(date_campagne_max="2015-01-01")
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1745
