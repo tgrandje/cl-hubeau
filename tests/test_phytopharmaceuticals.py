@@ -6,6 +6,8 @@ Created on Fri Feb 28 16:14:50 2025
 Test mostly high level functions
 """
 
+from datetime import date
+
 import pandas as pd
 import pytest
 
@@ -14,6 +16,9 @@ from requests_cache import CacheMixin
 from cl_hubeau import phytopharmaceuticals_transactions
 from cl_hubeau.phytopharmaceuticals_transactions import (
     PhytopharmaceuticalsSession,
+)
+from cl_hubeau.phytopharmaceuticals_transactions.utils import (
+    _get_territory_years_combination,
 )
 
 
@@ -34,8 +39,6 @@ def mock_get_data(monkeypatch):
 
         if "achats/substances" in url:
             data = {
-                "count": 1,
-                "first": "blah_page",
                 "data": [
                     {
                         "amm": "2140050",
@@ -57,11 +60,7 @@ def mock_get_data(monkeypatch):
                 ],
             }
         elif "achats/produits" in url:
-
-            # Data with duplicates to check that duplicates are removed!
             data = {
-                "count": 1,
-                "first": "blah_page",
                 "data": [
                     {
                         "achat_etranger": "Non",
@@ -77,11 +76,8 @@ def mock_get_data(monkeypatch):
                     }
                 ],
             }
-
         elif "ventes/substances" in url:
             data = {
-                "count": 1,
-                "first": "blah_page",
                 "data": [
                     {
                         "amm": "2150353",
@@ -101,11 +97,8 @@ def mock_get_data(monkeypatch):
                     }
                 ],
             }
-
-        elif "ventes/substances" in url:
+        elif "ventes/produits" in url:
             data = {
-                "count": 1,
-                "first": "blah_page",
                 "data": [
                     {
                         "annee": 2022,
@@ -121,6 +114,8 @@ def mock_get_data(monkeypatch):
                 ],
             }
 
+        data.update({"count": 1, "first": "blah_page", "api_version": "v1"})
+
         return MockResponse(data)
 
     # init = CachedSession.request
@@ -132,25 +127,51 @@ def test_sold_substances_mocked(mock_get_data):
         type_territoire="National",
         annee_min=2022,
         annee_max=2022,
+        code_substance="1139",
         amm="2140050",
+        libelle_substance="cymoxanil",
+        fonction="fongicide",
     )
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 1
 
 
 def test_sold_products_mocked(mock_get_data):
-    # TODO
-    pass
+    df = phytopharmaceuticals_transactions.get_all_phytopharmaceutical_products_sold(
+        type_territoire="National",
+        annee_min=2022,
+        annee_max=2022,
+        amm="2140050",
+        unite=["l", "kg"],
+    )
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
 
 
 def test_bought_substances_mocked(mock_get_data):
-    # TODO
-    pass
+    df = phytopharmaceuticals_transactions.get_all_active_substances_bought(
+        type_territoire="National",
+        annee_min=2022,
+        annee_max=2022,
+        code_substance="5563",
+        amm="2150353",
+        achat_etranger="Oui",
+    )
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
 
 
 def test_bought_products_mocked(mock_get_data):
-    # TODO
-    pass
+    df = phytopharmaceuticals_transactions.get_all_phytopharmaceutical_products_bought(
+        type_territoire="National",
+        annee_min=2022,
+        annee_max=2022,
+        amm="2160839",
+        achat_etranger="Non",
+        unite=["l", "kg"],
+    )
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
 
 
 def test_sold_substances_live():
@@ -158,6 +179,7 @@ def test_sold_substances_live():
         type_territoire="National",
         annee_min=2022,
         annee_max=2022,
+        code_substance="1139",
         amm="2140050",
     )
     assert isinstance(df, pd.DataFrame)
@@ -165,15 +187,114 @@ def test_sold_substances_live():
 
 
 def test_sold_products_live():
-    # TODO
-    pass
+    df = phytopharmaceuticals_transactions.get_all_phytopharmaceutical_products_sold(
+        type_territoire="National",
+        annee_min=2022,
+        annee_max=2022,
+        amm="2140050",
+        unite=["l", "kg"],
+    )
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
 
 
 def test_bought_substances_live():
-    # TODO
-    pass
+    df = phytopharmaceuticals_transactions.get_all_active_substances_sold(
+        type_territoire="National",
+        annee_min=2022,
+        annee_max=2022,
+        code_substance="1139",
+        amm="2140050",
+        libelle_substance="cymoxanil",
+        fonction="fongicide",
+    )
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
 
 
 def test_bought_products_live():
-    # TODO
-    pass
+    df = phytopharmaceuticals_transactions.get_all_phytopharmaceutical_products_bought(
+        type_territoire="National",
+        annee_min=2022,
+        annee_max=2022,
+        amm="2160839",
+        achat_etranger="Non",
+        unite=["l", "kg"],
+    )
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 1
+
+
+def test_unexpected_arguments():
+    for func in (
+        "get_all_active_substances_bought",
+        "get_all_phytopharmaceutical_products_bought",
+        "get_all_active_substances_sold",
+        "get_all_phytopharmaceutical_products_sold",
+    ):
+        with pytest.raises(ValueError):
+            getattr(phytopharmaceuticals_transactions, func)(dummy="blah")
+
+
+def test_unexpected_values():
+    for func in (
+        "get_all_active_substances_bought",
+        "get_all_phytopharmaceutical_products_bought",
+        "get_all_active_substances_sold",
+        "get_all_phytopharmaceutical_products_sold",
+    ):
+        with pytest.raises(ValueError):
+            getattr(phytopharmaceuticals_transactions, func)(
+                type_territoire="EPCI"
+            )
+
+
+def test_get_territory_years_combination():
+    df = _get_territory_years_combination(
+        {"type_territoire": "National"}, "bought"
+    )
+    df = pd.DataFrame(df, columns=["territory", "year"])
+    assert df.territory.drop_duplicates().tolist() == [""]
+    assert df.year.min() == 2013
+    assert df.year.max() == date.today().year
+
+    df = _get_territory_years_combination(
+        {"type_territoire": "National"}, "sold"
+    )
+    df = pd.DataFrame(df, columns=["territory", "year"])
+    assert df.territory.drop_duplicates().tolist() == [""]
+    assert df.year.min() == 2008
+    assert df.year.max() == date.today().year
+
+    df = _get_territory_years_combination(
+        {"type_territoire": "Région"}, "bought"
+    )
+    df = pd.DataFrame(df, columns=["territory", "year"])
+    assert len(df.territory.drop_duplicates().tolist()) == 34
+
+    df = _get_territory_years_combination(
+        {"type_territoire": "Département"}, "bought"
+    )
+    df = pd.DataFrame(df, columns=["territory", "year"])
+    assert len(df.territory.drop_duplicates().tolist()) == 102
+
+    df = _get_territory_years_combination(
+        {"type_territoire": "Zone postale"},
+        filter_departements="59",
+        transaction="bought",
+    )
+    df = pd.DataFrame(df, columns=["territory", "year"])
+    assert len(df.territory.drop_duplicates().tolist()) > 200
+
+    df = _get_territory_years_combination(
+        {
+            "type_territoire": "Département",
+            "annee_min": 2020,
+            "annee_max": 2024,
+        },
+        filter_regions="32",
+        transaction="bought",
+    )
+    df = pd.DataFrame(df, columns=["territory", "year"])
+    assert len(df.territory.drop_duplicates().tolist()) == 5
+    assert len(df.year.drop_duplicates().tolist()) == 5

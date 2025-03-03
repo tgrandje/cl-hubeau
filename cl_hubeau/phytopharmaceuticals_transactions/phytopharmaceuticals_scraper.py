@@ -144,13 +144,9 @@ class PhytopharmaceuticalsSession(BaseHubeauSession):
             pass
 
         try:
-            arg = "eaj"
-            variable = self.list_to_str_param(kwargs.pop(arg), 2)
-            splitted = set(variable.split(","))
-            allowed = {"Oui", "Non"}
-            if not allowed.issuperset(splitted):
-                raise UnexpectedValueError(arg, variable, allowed)
-            params["eaj"] = variable
+            params["eaj"] = self._ensure_val_among_authorized_values(
+                "eaj", kwargs, {"Oui", "Non"}
+            )
         except KeyError:
             pass
 
@@ -334,13 +330,9 @@ class PhytopharmaceuticalsSession(BaseHubeauSession):
             pass
 
         try:
-            arg = "eaj"
-            variable = self.list_to_str_param(kwargs.pop(arg), 3)
-            splitted = set(variable.split(","))
-            allowed = {"Oui", "Non", "nc"}
-            if not allowed.issuperset(splitted):
-                raise UnexpectedValueError(arg, variable, allowed)
-            params["eaj"] = variable
+            params["eaj"] = self._ensure_val_among_authorized_values(
+                "eaj", kwargs, {"Oui", "Non", "nc"}
+            )
         except KeyError:
             pass
 

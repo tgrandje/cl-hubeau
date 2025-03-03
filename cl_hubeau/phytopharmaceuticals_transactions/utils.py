@@ -74,7 +74,7 @@ def _get_territory_years_combination(
 
     Examples
     ------
-    >>> _get_territory_years_combination({"type_territoire": "National"})
+    >>> _get_territory_years_combination({"type_territoire": "National"}, "bought")
     [('', 2013), ('', 2014), ... ('', 2024), ('', 2025)]
 
     >>> _get_territory_years_combination(
