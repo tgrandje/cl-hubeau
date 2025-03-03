@@ -110,45 +110,40 @@ def _get_territory_years_combination(
     warn_regs = bool(filter_regions)
     warn_deps = bool(filter_departements)
 
-    match type_territoire:
-        case "National":
-            # both regs & deps filtering are ignored
+    if type_territoire == "National":
+        # both regs & deps filtering are ignored
+        pass
+
+    elif type_territoire == "Région":
+        # both regs & deps filtering are ignored
+        code_territoire = code_territoire if code_territoire else get_regions()
+
+    elif type_territoire == "Département":
+        if code_territoire:
+            # already filtered directly with deps codes, ignore
+            # filter_regions
             pass
-
-        case "Région":
-            # both regs & deps filtering are ignored
-            code_territoire = (
-                code_territoire if code_territoire else get_regions()
-            )
-
-        case "Département":
-            if code_territoire:
-                # already filtered directly with deps codes, ignore
-                # filter_regions
-                pass
-            elif filter_regions:
-                # deps filtering is ignored
-                warn_regs = False
-                code_territoire = get_departements_from_regions(filter_regions)
-            else:
-                code_territoire = get_departements()
-
-        case "Zone postale":
+        elif filter_regions:
+            # deps filtering is ignored
             warn_regs = False
-            warn_deps = False
-            code_territoire = (
-                code_territoire
-                if code_territoire
-                else _get_postcodes(
-                    filter_regions, filter_departements
-                ).tolist()
-            )
-        case _:
-            raise UnexpectedValueError(
-                "code_territoire",
-                type_territoire,
-                ["National", "Région", "Département", "Zone postale"],
-            )
+            code_territoire = get_departements_from_regions(filter_regions)
+        else:
+            code_territoire = get_departements()
+
+    elif type_territoire == "Zone postale":
+        warn_regs = False
+        warn_deps = False
+        code_territoire = (
+            code_territoire
+            if code_territoire
+            else _get_postcodes(filter_regions, filter_departements).tolist()
+        )
+    else:
+        raise UnexpectedValueError(
+            "code_territoire",
+            type_territoire,
+            ["National", "Région", "Département", "Zone postale"],
+        )
     msg = f"is ignored with type_territoire='{type_territoire}'"
     if warn_regs:
         warnings.warn(f"`filter_regions` {msg}", stacklevel=2)
@@ -160,11 +155,10 @@ def _get_territory_years_combination(
 
     annee_max = kwargs.pop("annee_max", None)
 
-    match transaction:
-        case "bought":
-            annee_min = kwargs.pop("annee_min", None) or 2013
-        case "sold":
-            annee_min = kwargs.pop("annee_min", None) or 2008
+    if transaction == "bought":
+        annee_min = kwargs.pop("annee_min", None) or 2013
+    if transaction == "sold":
+        annee_min = kwargs.pop("annee_min", None) or 2008
 
     annee_max = annee_max if annee_max else date.today().year
     years = range(annee_min, annee_max + 1)
@@ -234,17 +228,16 @@ def _get_all_from_loop(
     )
 
     func = transaction, retrieve
-    match func:
-        case "bought", "substance":
-            func = "active_substances_bought"
-        case "bought", "product":
-            func = "phytopharmaceutical_products_bought"
-        case "sold", "substance":
-            func = "active_substances_sold"
-        case "sold", "product":
-            func = "phytopharmaceutical_products_sold"
-        case _:
-            raise ValueError(f"found {func}")
+    if func == ("bought", "substance"):
+        func = "active_substances_bought"
+    elif func == ("bought", "product"):
+        func = "phytopharmaceutical_products_bought"
+    elif func == ("sold", "substance"):
+        func = "active_substances_sold"
+    elif func == ("sold", "product"):
+        func = "phytopharmaceutical_products_sold"
+    else:
+        raise ValueError(f"found {func}")
 
     with PhytopharmaceuticalsSession() as session:
         results = [
