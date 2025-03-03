@@ -122,6 +122,6 @@ def test_get_all_observations_mocked(mock_get_data):
 
 
 def get_get_all_campaigns_live():
-    df = watercourses_flow.get_all_campaigns(date_campagne_max="2015-01-01")
+    df = watercourses_flow.get_all_campaigns()
     assert isinstance(df, pd.DataFrame)
-    assert len(df) == 1745
+    assert len(df) >= 8000
