@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Sep 16 14:00:00 2024
-
 low level class to collect data from the ground water quality API from hub'eau
 """
 
 import pandas as pd
 
 from cl_hubeau.session import BaseHubeauSession
+from cl_hubeau.exceptions import UnexpectedArguments
 
 
 class GroundWaterQualitySession(BaseHubeauSession):
     """
     Base session class to handle the ground water quality API
     """
+
+    DOC_URL = "http://hubeau.eaufrance.fr/page/api-qualite-nappes"
 
     def __init__(self, *args, **kwargs):
         super().__init__(version="1.2.1", *args, **kwargs)
@@ -48,24 +49,16 @@ class GroundWaterQualitySession(BaseHubeauSession):
             except KeyError:
                 continue
         try:
-            format = kwargs.pop("format")
-            if format not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found {format=} instead"
-                )
-            params["format"] = format
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
             pass
 
         try:
-            srid = kwargs.pop("srid")
-            if int(srid) not in (4326, 900913, 3857):
-                raise ValueError(
-                    "srid must be among (4326, 900913, 3857), "
-                    f"found {srid=} instead"
-                )
-            params["srid"] = srid
+            params["srid"] = self._ensure_val_among_authorized_values(
+                "srid", kwargs, {4326, 900913, 3857}, int
+            )
         except KeyError:
             pass
 
@@ -130,11 +123,7 @@ class GroundWaterQualitySession(BaseHubeauSession):
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "http://hubeau.eaufrance.fr/page/api-qualite-nappes"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/qualite_nappes/stations"
@@ -283,13 +272,9 @@ class GroundWaterQualitySession(BaseHubeauSession):
                 continue
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "sort must be among ('asc', 'desc'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             pass
 
@@ -299,11 +284,7 @@ class GroundWaterQualitySession(BaseHubeauSession):
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "http://hubeau.eaufrance.fr/page/api-qualite-nappes"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/qualite_nappes/analyses"

@@ -7,6 +7,7 @@ Test utils functions
 """
 
 from cl_hubeau.utils import cities_for_sage
+from cl_hubeau.utils import _get_postcodes
 
 
 def test_sage():
@@ -17,3 +18,9 @@ def test_sage():
     first = list(d.keys())[0]
     assert isinstance(first, str)
     assert isinstance(d[first], list)
+
+
+def test_postcodes():
+    assert len(_get_postcodes()) > 1000
+    assert 1000 > len(_get_postcodes(code_reg=["32"])) > 500
+    assert 500 > len(_get_postcodes(code_dep=["59"])) > 200
