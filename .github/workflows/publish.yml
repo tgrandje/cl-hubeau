@@ -50,8 +50,8 @@ jobs:
       #----------------------------------------------
       # add pytest suite (not the full dev dependencies to avoid installing spyder)
       #----------------------------------------------
-      - name: Add pytest pytest-cov genbadge[all] flake8 black filelock pytest-xdist
-        run: poetry run pip install pytest pytest-cov genbadge[all] flake8 black filelock pytest-xdist
+      - name: Add pytest pytest-cov flake8 black filelock pytest-xdist genbadge[all] lxml
+        run: poetry run pip install pytest pytest-cov flake8 black filelock pytest-xdist genbadge[all] lxml
 
       - name: flake8 check & badge
         run: |
@@ -69,7 +69,7 @@ jobs:
 
       - name: Generate hub'eau coverage badge
         run: |
-          poetry run python -c "import os;from genbadge import Badge;from glob import glob;dirs = [x for x in glob('cl_hubeau/*/') if os.path.isdir(x) and not any(y in x for y in {'session', 'utils', 'pycache'})];print('\n'.join(dirs));b = Badge(left_txt='couverture hub’eau', right_txt=f'{len(dirs)} API / 13', color='green');b.write_to('badges/hubeau-coverage.svg', use_shields=False)"
+          poetry run python -./.github/workflows/hubeau_coverage.py
 
       - name: Commit changes
         continue-on-error: true
