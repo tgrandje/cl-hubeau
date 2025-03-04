@@ -71,3 +71,52 @@ def cities_for_sage() -> dict:
     sages = sages.sjoin(com)
     sages = sages.groupby("CodeNatZone")["insee_com"].agg(list).to_dict()
     return sages
+
+
+# @cache.memoize(
+#     tag="DCE", expire=_config["DEFAULT_EXPIRE_AFTER"].total_seconds()
+# )
+def basins_sub_basins() -> dict:
+
+    session = Session()
+    session.proxies.update(
+        {
+            "https": os.environ.get("https_proxy", None),
+            "http": os.environ.get("http_proxy", None),
+        }
+    )
+
+    url = "https://services.sandre.eaufrance.fr/geo/mdo"
+    params = {
+        "request": "GetFeature",
+        "service": "WFS",
+        "version": "2.0.0",
+        "outputFormat": "application/json; subtype=geojson",
+        "typeNames": "SsBassinDCEAdmin",
+    }
+
+    r = session.get(url, params=params)
+    subbasins = gpd.read_file(r.content)
+
+    params.update({"typeNames": "BassinDCE"})
+    r = session.get(url, params=params)
+    basins = gpd.read_file(r.content)
+
+    df = subbasins.merge(
+        basins.drop(["geometry", "gid"], axis=1),
+        on="CdEuBassinDCE",
+        how="outer",
+    )
+    print(df)
+    # -> test with a merge on deps!
+
+    # # https://services.sandre.eaufrance.fr/geo/mdo?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&typename=SousBassinDCE_Communes&OUTPUTFORMAT=CSV
+    dep = get_geodata("ADMINEXPRESS-COG-CARTO.LATEST:departement", crs=df.crs)
+
+    df = df.sjoin(dep)
+    df.groupby()
+    return df
+
+
+if __name__ == "__main__":
+    df = basins_sub_basins()
