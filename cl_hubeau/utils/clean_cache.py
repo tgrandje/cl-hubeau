@@ -12,6 +12,7 @@ from cl_hubeau.constants import (
     DIR_CACHE,
     CACHE_NAME,
 )
+from .hydro_perimeters_queries import cache
 
 
 def clean_all_cache(cache_name: str = os.path.join(DIR_CACHE, CACHE_NAME)):
@@ -29,9 +30,11 @@ def clean_all_cache(cache_name: str = os.path.join(DIR_CACHE, CACHE_NAME)):
 
     """
     try:
-        os.unlink(cache_name)
+        os.remove(cache_name)
     except FileNotFoundError:
         pass
+
+    cache.clear(retry=True)
 
     # Clear pynsee's cache:
     pynsee.utils.clear_all_cache()

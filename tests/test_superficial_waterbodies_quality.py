@@ -5,6 +5,9 @@
 Test high level functions
 """
 
+from datetime import date, timedelta
+
+import geopandas as gpd
 import pandas as pd
 import pytest
 import re
@@ -93,7 +96,7 @@ def mock_get_data(monkeypatch):
 
 def test_get_stations(mock_get_data):
     data = superficial_waterbodies_quality.get_all_stations()
-    assert isinstance(data, pd.DataFrame)
+    assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 102
 
 
@@ -128,3 +131,37 @@ def test_get_analyses(mock_get_data):
     data = data.drop_duplicates()
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
+
+
+def test_get_stations_live():
+    data = superficial_waterbodies_quality.get_all_stations(code_region="06")
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 29
+
+
+def test_get_operations_live():
+    data = superficial_waterbodies_quality.get_all_operations(
+        code_region="06",
+        date_debut_prelevement="2020-01-01",
+        date_fin_prelevement="2020-06-01",
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 29
+
+
+def test_get_environmental_conditions_live():
+    data = superficial_waterbodies_quality.get_all_environmental_conditions(
+        code_region="04",
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 40
+
+
+def test_get_analyses_live():
+    data = superficial_waterbodies_quality.get_all_analyses(
+        code_region="06",
+        date_debut_prelevement="2020-01-01",
+        date_fin_prelevement="2020-06-01",
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 800

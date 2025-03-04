@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jul 28 14:03:41 2024
-
 low level class to collect data from the drinking water quality API from
 hub'eau
 """
 import pandas as pd
 from cl_hubeau.session import BaseHubeauSession
+from cl_hubeau.exceptions import UnexpectedArguments
 
 
 class DrinkingWaterQualitySession(BaseHubeauSession):
     """
     Base session class to handle the drinking water quality API
     """
+
+    DOC_URL = "https://hubeau.eaufrance.fr/page/api-qualite-eau-potable"
 
     def __init__(self, *args, **kwargs):
 
@@ -34,13 +35,9 @@ class DrinkingWaterQualitySession(BaseHubeauSession):
         params = {}
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "format must be among ('asc', 'sort'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             params["sort"] = "asc"
 
@@ -68,11 +65,7 @@ class DrinkingWaterQualitySession(BaseHubeauSession):
                 continue
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-qualite-eau-potable"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/qualite_eau_potable/communes_udi"
@@ -95,13 +88,9 @@ class DrinkingWaterQualitySession(BaseHubeauSession):
         params = {}
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "format must be among ('asc', 'sort'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             params["sort"] = "asc"
 
@@ -159,22 +148,14 @@ class DrinkingWaterQualitySession(BaseHubeauSession):
             "conformite_references_pc_prelevement",
         ):
             try:
-                variable = kwargs.pop(arg)
-                if variable not in ("C", "D, S"):
-                    raise ValueError(
-                        f"{arg} must be among ('C', 'D', 'S'), "
-                        f"found {arg}='{variable}' instead"
-                    )
-                params[arg] = variable
+                params[arg] = self._ensure_val_among_authorized_values(
+                    arg, kwargs, {"C", "D", "S"}
+                )
             except KeyError:
                 continue
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-qualite-eau-potable"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/qualite_eau_potable/resultats_dis"
