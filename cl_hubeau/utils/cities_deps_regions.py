@@ -180,6 +180,8 @@ def get_departements_from_regions(reg: Union[str, list, set, tuple]) -> list:
     >>> get_departements_from_regions(["32", "01"])
     ['02', '59', '60', '62', '80', '971']
     """
+    if isinstance(reg, "str"):
+        reg = reg.split(",")
     deps = _get_pynsee_geolist_departements()
     deps = deps.groupby("CODE_REG")["CODE"].agg(list)
     if isinstance(reg, str):
