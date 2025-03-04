@@ -76,7 +76,7 @@ jobs:
 
       - name: Generate hub'eau coverage badge
         run: |
-          poetry run python -./.github/workflows/hubeau_coverage.py
+          poetry run python ./.github/workflows/hubeau_coverage.py
 
       - name: Commit changes
         continue-on-error: true
