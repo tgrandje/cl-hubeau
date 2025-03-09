@@ -4,8 +4,11 @@
 Convenience functions for piezometry consumption
 """
 
-from datetime import date
-from itertools import product
+from copy import deepcopy
+
+# from datetime import date
+# from itertools import product
+
 from typing import Union
 
 import geopandas as gpd
@@ -23,7 +26,8 @@ from cl_hubeau.utils import (
 
 from cl_hubeau.utils.mesh import _get_mesh
 from cl_hubeau.utils.hydro_perimeters_queries import _get_dce_subbasins
-from cl_hubeau.utils import prepare_kwargs_loops
+
+# from cl_hubeau.utils import prepare_kwargs_loops
 
 
 def _fill_missing_cog(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -232,6 +236,7 @@ def get_all_stations(**kwargs) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
         # no specific location -> let's loop over regions to avoid reaching
         # the 20k threshold
         bbox = _get_mesh(side=1.5)
+        kept = None
     elif any(kwargs.get(x) for x in areas_from_fixed_mesh):
         # a key has been given for which cl-hubeau fixes the queries, using a
         # custom mesh/bbox
@@ -243,6 +248,7 @@ def get_all_stations(**kwargs) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
         bbox = kwargs.pop("bbox", "")
         if isinstance(bbox, str):
             bbox = bbox.split(",")
+        kept = None
 
     kwargs["format"] = kwargs.pop("format", "geojson")
 
@@ -304,35 +310,35 @@ def get_all_indexes(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    areas_from_fixed_mesh = {
-        "code_region",
-        "code_departement",
-        "code_commune",
-        "code_bassin",
-        "code_sous_bassin",
-    }
-    areas_without_mesh = {
-        "code_masse_eau",
-        "code_cours_eau",
-        "code_station_hydrobio",
-    }
-    if not any(
-        kwargs.get(x) for x in areas_from_fixed_mesh | areas_without_mesh
-    ):
-        # no specific location -> let's loop over regions to avoid reaching
-        # the 20k threshold
-        bbox = _get_mesh(side=0.5)
-    elif any(kwargs.get(x) for x in areas_from_fixed_mesh):
-        # a key has been given for which cl-hubeau fixes the queries, using a
-        # custom mesh/bbox
-        bbox = _get_mesh(**kwargs)
-        kept = {x: kwargs.pop(x, None) for x in areas_from_fixed_mesh}
-    else:
-        # using keys from areas_without_mesh which are not covered by _get_mesh
-        # so let's built-in hub'eau queries
-        bbox = kwargs.pop("bbox", "")
-        if isinstance(bbox, str):
-            bbox = bbox.split(",")
+    # areas_from_fixed_mesh = {
+    #     "code_region",
+    #     "code_departement",
+    #     "code_commune",
+    #     "code_bassin",
+    #     "code_sous_bassin",
+    # }
+    # areas_without_mesh = {
+    #     "code_masse_eau",
+    #     "code_cours_eau",
+    #     "code_station_hydrobio",
+    # }
+    # if not any(
+    #     kwargs.get(x) for x in areas_from_fixed_mesh | areas_without_mesh
+    # ):
+    #     # no specific location -> let's loop over regions to avoid reaching
+    #     # the 20k threshold
+    #     bbox = _get_mesh(side=0.5)
+    # elif any(kwargs.get(x) for x in areas_from_fixed_mesh):
+    #     # a key has been given for which cl-hubeau fixes the queries, using a
+    #     # custom mesh/bbox
+    #     bbox = _get_mesh(**kwargs)
+    #     kept = {x: kwargs.pop(x, None) for x in areas_from_fixed_mesh}
+    # else:
+    #     # using keys from areas_without_mesh which are not covered by _get_mesh
+    #     # so let's built-in hub'eau queries
+    #     bbox = kwargs.pop("bbox", "")
+    #     if isinstance(bbox, str):
+    #         bbox = bbox.split(",")
 
     # elif kwargs.get(""):
     #     # TODO : query on FRG_ALA gets 410519 results!
@@ -346,37 +352,54 @@ def get_all_indexes(**kwargs) -> gpd.GeoDataFrame:
 
     kwargs["format"] = kwargs.pop("format", "geojson")
 
-    # Set a loop for yearly querying as dataset are big
-    start_auto_determination = False
-    if "date_debut_prelevement" not in kwargs:
-        start_auto_determination = True
-        kwargs["date_debut_prelevement"] = "1971-01-01"
-    if "date_fin_prelevement" not in kwargs:
-        kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
+    copy = deepcopy(kwargs)
+    copy["fields"] = "code_station_hydrobio"
 
-    timeranges = prepare_kwargs_loops(
-        "date_debut_prelevement",
-        "date_fin_prelevement",
-        kwargs,
-        start_auto_determination,
-        split_months=12,
-    )
-
-    kwargs_loop = [
-        timerange | {"bbox": this_bbox}
-        for timerange, this_bbox in product(timeranges, bbox)
-    ]
+    stations = get_all_stations(**kwargs)
+    stations = stations["code_station_hydrobio"].values.tolist()
 
     with HydrobiologySession() as session:
         results = [
-            session.get_indexes(**kwargs, **kw)
-            for kw in tqdm(
-                kwargs_loop,
+            session.get_indexes(code_station_hydrobio=station, **kwargs)
+            for station in tqdm(
+                stations,
                 desc="querying",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
         ]
+
+    # # Set a loop for yearly querying as dataset are big
+    # start_auto_determination = False
+    # if "date_debut_prelevement" not in kwargs:
+    #     start_auto_determination = True
+    #     kwargs["date_debut_prelevement"] = "1971-01-01"
+    # if "date_fin_prelevement" not in kwargs:
+    #     kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
+
+    # timeranges = prepare_kwargs_loops(
+    #     "date_debut_prelevement",
+    #     "date_fin_prelevement",
+    #     kwargs,
+    #     start_auto_determination,
+    #     split_months=12,
+    # )
+
+    # kwargs_loop = [
+    #     timerange | {"bbox": this_bbox}
+    #     for timerange, this_bbox in product(timeranges, bbox)
+    # ]
+
+    # with HydrobiologySession() as session:
+    #     results = [
+    #         session.get_indexes(**kwargs, **kw)
+    #         for kw in tqdm(
+    #             kwargs_loop,
+    #             desc="querying",
+    #             leave=_config["TQDM_LEAVE"],
+    #             position=tqdm._get_free_pos(),
+    #         )
+    #     ]
 
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     try:
@@ -389,9 +412,9 @@ def get_all_indexes(**kwargs) -> gpd.GeoDataFrame:
     results = _fill_missing_basin_subbasin(results)
 
     # filter from mesh
-    if kept:
-        query = " & ".join(f"({k}=='{v}')" for k, v in kept.items() if v)
-        results = results.query(query)
+    # if kept:
+    #     query = " & ".join(f"({k}=='{v}')" for k, v in kept.items() if v)
+    #     results = results.query(query)
 
     try:
         results = results.drop_duplicates("code_station_hydrobio")
@@ -406,7 +429,7 @@ def get_all_taxa(**kwargs) -> gpd.GeoDataFrame:
     pass
 
 
-# if __name__ == "__main__":
-#     # df = get_all_stations(code_region="32")
-#     df = get_all_indexes(code_region="32")
-#     df.plot()
+if __name__ == "__main__":
+    # df = get_all_stations(code_region="32")
+    df = get_all_indexes()
+    df.plot()
