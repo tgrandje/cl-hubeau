@@ -230,6 +230,9 @@ class HydrobiologySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        if kwargs:
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
+
         method = "GET"
         url = self.BASE_URL + "/v1/hydrobio/stations_hydrobio"
         df = self.get_result(method, url, params=params)
@@ -350,6 +353,9 @@ class HydrobiologySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        if kwargs:
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
+
         method = "GET"
         url = self.BASE_URL + "/v1/hydrobio/taxons"
         df = self.get_result(method, url, params=params)
@@ -357,15 +363,22 @@ class HydrobiologySession(BaseHubeauSession):
         return df
 
 
-if __name__ == "__main__":
-    import logging
+# if __name__ == "__main__":
+#     import logging
 
-    logging.basicConfig(level=logging.WARNING)
-    with HydrobiologySession() as session:
-        # df = session.get_stations(code_departement="02", format="geojson")
-        # df = session.get_taxa(
-        #     code_departement="02", format="geojson", code_qualification="2"
-        # )
-        df = session.get_indexes(
-            code_station_hydrobio="H0227103", format="geojson"
-        )
+#     logging.basicConfig(level=logging.WARNING)
+#     with HydrobiologySession() as session:
+#         # df = session.get_stations(code_departement="02", format="geojson")
+#         # df = session.get_taxa(
+#         #     code_departement="02", format="geojson", code_qualification="2"
+#         # )
+#         df = session.get_indexes(
+#             code_station_hydrobio=[
+#                 "H0227103",
+#                 "H0085603",
+#                 "03277600",
+#                 "03277588",
+#                 "03277563",
+#             ],
+#             format="geojson",
+#         )

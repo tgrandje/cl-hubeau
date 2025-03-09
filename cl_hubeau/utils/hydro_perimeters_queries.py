@@ -4,6 +4,7 @@
 Convenienence module retrieving SAGE's cities to run targeted queries
 """
 import os
+from typing import Union
 
 import diskcache
 import geopandas as gpd
@@ -15,6 +16,95 @@ from cl_hubeau.constants import DIR_CACHE, DISKCACHE
 from cl_hubeau.config import _config
 
 cache = diskcache.Cache(os.path.join(DIR_CACHE, DISKCACHE))
+
+
+@cache.memoize(
+    tag="SAGE", expire=_config["DEFAULT_EXPIRE_AFTER"].total_seconds()
+)
+def _inner_sages() -> gpd.GeoDataFrame:
+    """
+    Retrieve a GeoDataFrame of SAGEs. This should only be used to
+    construct an ad hoc mesh grid of bboxes. This is cached but should only
+    be called through get_sage which can filter that dataframe.
+
+    Returns
+    -------
+    gpd.GeoDataFrame:
+        SAGE GeoDataFrame. Only 2 columns: ["geometry", "CodeNatZone"]
+
+    Examples
+    -------
+    >>> gdf = _inner_sages()
+    >>> gdf.head()
+                                                geometry CdEuSsBassinDCEAdmin  \
+    0  POLYGON ((3.09897 49.68437, 3.10018 49.68509, ...             FRA_ESCA
+    1  POLYGON ((5.50417 48.55017, 5.50454 48.55137, ...            FRB1_MEUS
+
+      CdBassinDCE
+    0           A
+    1          B1
+
+
+    """
+
+    session = Session()
+    session.proxies.update(
+        {
+            "https": os.environ.get("https_proxy", None),
+            "http": os.environ.get("http_proxy", None),
+        }
+    )
+
+    url = "https://services.sandre.eaufrance.fr/geo/zpl"
+    params = {
+        "REQUEST": "getFeature",
+        "service": "WFS",
+        "VERSION": "2.0.0",
+        "TYPENAMES": "sa:Sage",
+        "OUTPUTFORMAT": "geojson",
+    }
+
+    r = session.get(url, params=params)
+    df = gpd.read_file(r.content)
+
+    keep = ["geometry", "CodeNatZone"]
+    df = df.loc[:, keep]
+
+    return df
+
+
+def _get_sage(sage: Union[str, None, list, tuple, set], crs: int = 4326):
+    """
+    Get GeoDataFrame of SAGE(s). This should only be used to generate a
+    mesh of selected bounding boxes when hub'eau's internal dataset misses some
+    datasets.
+
+
+    Parameters
+    ----------
+    sage : Union[str, None, list, tuple, set]
+        Desired SAGE code.
+    crs : int, optional
+        Desired projection. The default is 4326.
+
+    Returns
+    -------
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame of selected subbasins
+
+    Examples
+    -------
+    >>> get_sage("SAGE06022")
+                                                geometry CodeNatZone
+    0  POLYGON ((5.74855 43.71708, 5.74807 43.71784, ...   SAGE06022
+
+    """
+    gdf = _inner_sages()
+    if sage:
+        if isinstance(sage, str):
+            sage = [sage]
+        gdf = gdf.query(f"CodeNatZone.isin({sage})")
+    return gdf
 
 
 @cache.memoize(
@@ -45,26 +135,9 @@ def cities_for_sage() -> dict:
 
     """
 
-    url = "https://services.sandre.eaufrance.fr/geo/zpl"
-    payload = {
-        "REQUEST": "getFeature",
-        "service": "WFS",
-        "VERSION": "2.0.0",
-        "TYPENAMES": "sa:Sage",
-        "OUTPUTFORMAT": "geojson",
-    }
+    # TODO : deprecate function?
 
-    session = Session()
-    session.proxies.update(
-        {
-            "https": os.environ.get("https_proxy", None),
-            "http": os.environ.get("http_proxy", None),
-        }
-    )
-
-    r = session.get(url, params=payload)
-    sages = gpd.read_file(r.content)
-    sages = sages.loc[:, ["CodeNatZone", "NomZone", "geometry"]]
+    sages = _inner_sages()
 
     com = get_geodata("ADMINEXPRESS-COG-CARTO.LATEST:commune", crs=sages.crs)
 
@@ -73,10 +146,35 @@ def cities_for_sage() -> dict:
     return sages
 
 
-# @cache.memoize(
-#     tag="DCE", expire=_config["DEFAULT_EXPIRE_AFTER"].total_seconds()
-# )
-def basins_sub_basins() -> dict:
+@cache.memoize(
+    tag="DCE", expire=_config["DEFAULT_EXPIRE_AFTER"].total_seconds()
+)
+def _inner_basins_sub_basins() -> gpd.GeoDataFrame:
+    """
+    Retrieve a GeoDataFrame of basins/subbasins. This should only be used to
+    construct an ad hoc mesh grid of bboxes. This is cached but should only
+    be called through _get_dce_subbasins which can filter that dataframe
+
+    Returns
+    -------
+    gpd.GeoDataFrame:
+        Subbasins GeoDataFrame. Only 3 columns: ["geometry", "CdBassinDCE"
+        "CdEuSsBassinDCEAdmin"]
+
+    Examples
+    -------
+    >>> gdf = _inner_basins_sub_basins()
+    >>> gdf.head()
+                                                geometry CdEuSsBassinDCEAdmin  \
+    0  POLYGON ((3.09897 49.68437, 3.10018 49.68509, ...             FRA_ESCA
+    1  POLYGON ((5.50417 48.55017, 5.50454 48.55137, ...            FRB1_MEUS
+
+      CdBassinDCE
+    0           A
+    1          B1
+
+
+    """
 
     session = Session()
     session.proxies.update(
@@ -107,16 +205,83 @@ def basins_sub_basins() -> dict:
         on="CdEuBassinDCE",
         how="outer",
     )
-    print(df)
-    # -> test with a merge on deps!
 
-    # # https://services.sandre.eaufrance.fr/geo/mdo?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&typename=SousBassinDCE_Communes&OUTPUTFORMAT=CSV
-    dep = get_geodata("ADMINEXPRESS-COG-CARTO.LATEST:departement", crs=df.crs)
+    keep = [
+        "geometry",
+        "CdEuSsBassinDCEAdmin",
+        "NomSsBassinDCEAdmin",
+        "CdBassinDCE",
+        "NomBassinDCE",
+    ]
+    df = df.loc[:, keep]
 
-    df = df.sjoin(dep)
-    df.groupby()
     return df
 
 
+def _get_dce_subbasins(
+    subbasin: Union[str, None, list, tuple, set] = None,
+    basin: Union[str, None, list, tuple, set] = None,
+    crs: int = 4326,
+) -> gpd.GeoDataFrame:
+    """
+    Get GeoDataFrame of subbasin/basin. This should only be used to generate a
+    mesh of selected bounding boxes when hub'eau's internal dataset misses some
+    datasets.
+
+
+    Parameters
+    ----------
+    subbasin : Union[str, None, list, tuple, set], optional
+        Desired european subbasin code. The default is None.
+    basin : Union[str, None, list, tuple, set], optional
+        Desired basin code. The default is None.
+    crs : int, optional
+        Desired projection. The default is 4326.
+
+    Returns
+    -------
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame of selected subbasins
+
+    Examples
+    -------
+    >>> get_dce_subbasins(subbasin="FRA_ESCA")
+                                                geometry CdEuSsBassinDCEAdmin  \
+    0  POLYGON ((3.09897 49.68437, 3.10018 49.68509, ...             FRA_ESCA
+
+      CdBassinDCE
+    0           A
+
+    >>> get_dce_subbasins(basin="G")
+                                                 geometry CdEuSsBassinDCEAdmin  \
+    22  POLYGON ((2.4291 45.88538, 2.42914 45.88537, 2...             FRG_LMOY
+    23  MULTIPOLYGON (((-1.28457 46.17318, -1.28444 46...             FRG_LACV
+    24  POLYGON ((4.18938 44.77437, 4.18953 44.77422, ...              FRG_ALA
+    25  POLYGON ((0.86215 47.6767, 0.86092 47.67711, 0...              FRG_MSL
+    26  MULTIPOLYGON (((-3.25169 47.31108, -3.25169 47...             FRG_VICO
+    27  MULTIPOLYGON (((2.26949 45.96998, 2.26929 45.9...             FRG_VICR
+
+       CdBassinDCE
+    22           G
+    23           G
+    24           G
+    25           G
+    26           G
+    27           G
+
+    """
+    gdf = _inner_basins_sub_basins()
+    if subbasin:
+        if isinstance(subbasin, str):
+            subbasin = [subbasin]
+        gdf = gdf.query(f"CdEuSsBassinDCEAdmin.isin({subbasin})")
+    if basin:
+        if isinstance(basin, str):
+            basin = [basin]
+        gdf = gdf.query(f"CdBassinDCE.isin({basin})")
+    return gdf.to_crs(crs)
+
+
 if __name__ == "__main__":
-    df = basins_sub_basins()
+    df = _get_dce_subbasins(basin="G")
+    # gdf = get_sage("SAGE06022")

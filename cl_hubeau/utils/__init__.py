@@ -6,6 +6,10 @@ from .cities_deps_regions import (
     get_departements,
     get_regions,
     get_departements_from_regions,
+    _get_pynsee_geodata_latest,
+    _get_regions_bbox,
+    _get_departements_bbox,
+    _get_pynsee_geolist_cities,
 )
 from .prepare_loops import prepare_kwargs_loops
 from .hydro_perimeters_queries import cities_for_sage

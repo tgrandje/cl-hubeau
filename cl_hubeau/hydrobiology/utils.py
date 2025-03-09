@@ -4,6 +4,8 @@
 Convenience functions for piezometry consumption
 """
 
+from datetime import date
+from itertools import product
 from typing import Union
 
 import geopandas as gpd
@@ -13,13 +15,182 @@ from tqdm import tqdm
 from cl_hubeau.hydrobiology.hydrobiology_scraper import HydrobiologySession
 from cl_hubeau import _config
 from cl_hubeau.utils import (
-    get_departements,
-    get_regions,
-    get_departements_from_regions,
+    # get_departements,
+    # get_departements_from_regions,
+    _get_pynsee_geodata_latest,
+    _get_pynsee_geolist_cities,
 )
 
-# get_indexes
-# get_taxa
+from cl_hubeau.utils.mesh import _get_mesh
+from cl_hubeau.utils.hydro_perimeters_queries import _get_dce_subbasins
+from cl_hubeau.utils import prepare_kwargs_loops
+
+
+def _fill_missing_cog(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Fill missing region, departement & cities elements (codes & labels) using
+    the closest geometry in an buffer of 10km.
+
+    Note: this is approximative, particularly on international borders but will
+    avoid missing stations when looping over (for instance) code_regions.
+
+    Parameters
+    ----------
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame of results with missing official geographic data.
+
+    Returns
+    -------
+    gdf : gpd.GeoDataFrame
+        Filled results.
+
+    """
+
+    if gdf[gdf.code_region.isnull()].empty:
+        return gdf
+
+    # missing region_code, departement_code, commune_code, let's fill those
+    # with closest geometry, up to 10km
+    crs = gdf.crs
+    gdf = gdf.to_crs(2154)
+
+    coms = _get_pynsee_geodata_latest("commune", crs=2154)
+    cities_labels = _get_pynsee_geolist_cities()
+
+    # first exact spatial join
+    missing = gdf[
+        (gdf.code_commune.isnull())
+        | (gdf.code_departement.isnull())
+        | (gdf.code_region.isnull())
+    ].index
+    missing = (
+        gdf.loc[missing].sjoin(coms, how="left").drop("index_right", axis=1)
+    )
+    # get labels
+    missing = missing.merge(
+        cities_labels[["TITLE", "TITLE_DEP", "TITLE_REG", "CODE"]],
+        how="left",
+        left_on="code_commune",
+        right_on="CODE",
+    ).drop("CODE", axis=1)
+    coalesce = {
+        "code_commune": "insee_com",
+        "code_departement": "insee_dep",
+        "code_region": "insee_reg",
+        "libelle_commune": "TITLE",
+        "libelle_departement": "TITLE_DEP",
+        "libelle_region": "TITLE_REG",
+    }
+    for key, val in coalesce.items():
+        gdf[key] = gdf[key].combine_first(missing[val])
+
+    # spatial join to nearest, up to 10km
+    missing = gdf[
+        (gdf.code_commune.isnull())
+        | (gdf.code_departement.isnull())
+        | (gdf.code_region.isnull())
+    ].index
+    missing = (
+        gdf.loc[missing]
+        .sjoin_nearest(
+            coms,
+            how="left",
+            max_distance=10_000,
+        )
+        .drop("index_right", axis=1)
+    )
+    # get labels
+    missing = missing.merge(
+        cities_labels[["TITLE", "TITLE_DEP", "TITLE_REG", "CODE"]],
+        how="left",
+        left_on="code_commune",
+        right_on="CODE",
+    ).drop("CODE", axis=1)
+    coalesce = {
+        "code_commune": "insee_com",
+        "code_departement": "insee_dep",
+        "code_region": "insee_reg",
+        "libelle_commune": "TITLE",
+        "libelle_departement": "TITLE_DEP",
+        "libelle_region": "TITLE_REG",
+    }
+    for key, val in coalesce.items():
+        gdf[key] = gdf[key].combine_first(missing[val])
+
+    gdf = gdf.to_crs(crs)
+    return gdf
+
+
+def _fill_missing_basin_subbasin(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Fill missing basin & subbasins elements (codes & labels) using
+    the closest geometry in an buffer of 10km.
+
+    Note: this is approximative, particularly on international borders but will
+    avoid missing stations when looping over (for instance) basins.
+
+    Parameters
+    ----------
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame of results with missing (sub)basins data.
+
+    Returns
+    -------
+    gdf : gpd.GeoDataFrame
+        Filled results.
+
+    """
+
+    if gdf[gdf.code_bassin.isnull()].empty:
+        return gdf
+
+    # missing code_bassin, code_sous_bassin, etc., let's fill those with
+    # closest geometry, up to 10km
+    crs = gdf.crs
+    gdf = gdf.to_crs(2154)
+
+    # spatial join to nearest, up to 10km
+    basins = _get_dce_subbasins(crs=2154)
+
+    missing = gdf[
+        (gdf.code_sous_bassin.isnull()) | (gdf.code_bassin.isnull())
+    ].index
+
+    missing = (
+        gdf.loc[missing].sjoin(basins, how="left").drop("index_right", axis=1)
+    )
+    coalesce = {
+        "code_sous_bassin": "CdEuSsBassinDCEAdmin",
+        "libelle_sous_bassin": "NomSsBassinDCEAdmin",
+        "code_bassin": "CdBassinDCE",
+        "libelle_bassin": "NomBassinDCE",
+    }
+    for key, val in coalesce.items():
+        gdf[key] = gdf[key].combine_first(missing[val])
+
+    missing = gdf[
+        (gdf.code_sous_bassin.isnull()) | (gdf.code_bassin.isnull())
+    ].index
+    missing = (
+        gdf.loc[missing]
+        .sjoin_nearest(
+            basins,
+            how="left",
+            max_distance=10_000,
+        )
+        .drop("index_right", axis=1)
+    )
+    coalesce = {
+        "code_sous_bassin": "CdEuSsBassinDCEAdmin",
+        "libelle_sous_bassin": "NomSsBassinDCEAdmin",
+        "code_bassin": "CdBassinDCE",
+        "libelle_bassin": "NomBassinDCE",
+    }
+    for key, val in coalesce.items():
+        gdf[key] = gdf[key].combine_first(missing[val])
+
+    gdf = gdf.to_crs(crs)
+    return gdf
 
 
 def get_all_stations(**kwargs) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
@@ -43,50 +214,72 @@ def get_all_stations(**kwargs) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
 
     """
 
-    areas = {
+    areas_from_fixed_mesh = {
         "code_region",
         "code_departement",
         "code_commune",
         "code_bassin",
         "code_sous_bassin",
+    }
+    areas_without_mesh = {
         "code_masse_eau",
         "code_cours_eau",
         "code_station_hydrobio",
     }
-    if not any(kwargs.get(x) for x in areas):
+    if not any(
+        kwargs.get(x) for x in areas_from_fixed_mesh | areas_without_mesh
+    ):
         # no specific location -> let's loop over regions to avoid reaching
         # the 20k threshold
-        code_region = get_regions()
+        bbox = _get_mesh(side=1.5)
+    elif any(kwargs.get(x) for x in areas_from_fixed_mesh):
+        # a key has been given for which cl-hubeau fixes the queries, using a
+        # custom mesh/bbox
+        bbox = _get_mesh(**kwargs)
+        kept = {x: kwargs.pop(x, None) for x in areas_from_fixed_mesh}
     else:
-        code_region = kwargs.pop("code_region")
-        if isinstance(code_region, str):
-            code_region = code_region.split(",")
+        # using keys from areas_without_mesh which are not covered by _get_mesh
+        # so let's built-in hub'eau queries
+        bbox = kwargs.pop("bbox", "")
+        if isinstance(bbox, str):
+            bbox = bbox.split(",")
 
-    format_ = kwargs.get("format", "geojson")
+    kwargs["format"] = kwargs.pop("format", "geojson")
 
     with HydrobiologySession() as session:
-        if code_region:
+        if bbox != [""]:
             results = [
-                session.get_stations(code_region=reg, format=format_, **kwargs)
-                for reg in tqdm(
-                    code_region,
-                    desc="querying reg/reg",
+                session.get_stations(bbox=this_bbox, **kwargs)
+                for this_bbox in tqdm(
+                    bbox,
+                    desc="querying",
                     leave=_config["TQDM_LEAVE"],
                     position=tqdm._get_free_pos(),
                 )
             ]
         else:
-            results = session.get_stations(format=format_, **kwargs)
+            results = [session.get_stations(**kwargs)]
 
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
-    results = gpd.pd.concat(results, ignore_index=True)
     try:
-        results["code_bss"]
+        results = gpd.pd.concat(results, ignore_index=True)
+    except ValueError:
+        # results is empty
+        return gpd.GeoDataFrame()
+
+    results = _fill_missing_cog(results)
+    results = _fill_missing_basin_subbasin(results)
+
+    # filter from mesh
+    if kept:
+        query = " & ".join(f"({k}=='{v}')" for k, v in kept.items() if v)
+        results = results.query(query)
+
+    try:
         results = results.drop_duplicates("code_station_hydrobio")
     except KeyError:
         pass
-    # TODO : check that you get 20560 results (be wary of side effects about
-    # stations on regional borders)
+
     return results
 
 
@@ -111,58 +304,100 @@ def get_all_indexes(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    areas = {
+    areas_from_fixed_mesh = {
         "code_region",
         "code_departement",
         "code_commune",
         "code_bassin",
         "code_sous_bassin",
+    }
+    areas_without_mesh = {
         "code_masse_eau",
         "code_cours_eau",
         "code_station_hydrobio",
     }
-    if not any(kwargs.get(x) for x in areas):
-        # no specific location -> let's loop over departements to avoid
-        # reaching the 20k threshold
-        code_departement = get_departements()
-    elif kwargs.get("code_region"):
-        code_departement = get_departements_from_regions(
-            kwargs.pop("code_region")
-        )
-        code_departement  # TODO !
-    elif kwargs.get(""):
-        # TODO : query on FRG_ALA gets 410519 results!
-        pass
+    if not any(
+        kwargs.get(x) for x in areas_from_fixed_mesh | areas_without_mesh
+    ):
+        # no specific location -> let's loop over regions to avoid reaching
+        # the 20k threshold
+        bbox = _get_mesh(side=0.5)
+    elif any(kwargs.get(x) for x in areas_from_fixed_mesh):
+        # a key has been given for which cl-hubeau fixes the queries, using a
+        # custom mesh/bbox
+        bbox = _get_mesh(**kwargs)
+        kept = {x: kwargs.pop(x, None) for x in areas_from_fixed_mesh}
     else:
-        code_region = kwargs.pop("code_region")
-        if isinstance(code_region, str):
-            code_region = code_region.split(",")
+        # using keys from areas_without_mesh which are not covered by _get_mesh
+        # so let's built-in hub'eau queries
+        bbox = kwargs.pop("bbox", "")
+        if isinstance(bbox, str):
+            bbox = bbox.split(",")
 
-    format_ = kwargs.get("format", "geojson")
+    # elif kwargs.get(""):
+    #     # TODO : query on FRG_ALA gets 410519 results!
+    #     pass
+    # else:
+    #     code_region = kwargs.pop("code_region")
+    #     if isinstance(code_region, str):
+    #         code_region = code_region.split(",")
+
+    # TODO : date_debut_prelevement
+
+    kwargs["format"] = kwargs.pop("format", "geojson")
+
+    # Set a loop for yearly querying as dataset are big
+    start_auto_determination = False
+    if "date_debut_prelevement" not in kwargs:
+        start_auto_determination = True
+        kwargs["date_debut_prelevement"] = "1971-01-01"
+    if "date_fin_prelevement" not in kwargs:
+        kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
+
+    timeranges = prepare_kwargs_loops(
+        "date_debut_prelevement",
+        "date_fin_prelevement",
+        kwargs,
+        start_auto_determination,
+        split_months=12,
+    )
+
+    kwargs_loop = [
+        timerange | {"bbox": this_bbox}
+        for timerange, this_bbox in product(timeranges, bbox)
+    ]
 
     with HydrobiologySession() as session:
-        if code_region:
-            results = [
-                session.get_stations(code_region=reg, format=format_, **kwargs)
-                for reg in tqdm(
-                    code_region,
-                    desc="querying reg/reg",
-                    leave=_config["TQDM_LEAVE"],
-                    position=tqdm._get_free_pos(),
-                )
-            ]
-        else:
-            results = session.get_stations(format=format_, **kwargs)
+        results = [
+            session.get_indexes(**kwargs, **kw)
+            for kw in tqdm(
+                kwargs_loop,
+                desc="querying",
+                leave=_config["TQDM_LEAVE"],
+                position=tqdm._get_free_pos(),
+            )
+        ]
 
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
-    results = gpd.pd.concat(results, ignore_index=True)
     try:
-        results["code_bss"]
+        results = gpd.pd.concat(results, ignore_index=True)
+    except ValueError:
+        # results is empty
+        return gpd.GeoDataFrame()
+
+    results = _fill_missing_cog(results)
+    results = _fill_missing_basin_subbasin(results)
+
+    # filter from mesh
+    if kept:
+        query = " & ".join(f"({k}=='{v}')" for k, v in kept.items() if v)
+        results = results.query(query)
+
+    try:
         results = results.drop_duplicates("code_station_hydrobio")
     except KeyError:
         pass
-    # TODO : check that you get 20560 results (be wary of side effects about
-    # stations on regional borders)
+
     return results
 
 
@@ -171,99 +406,7 @@ def get_all_taxa(**kwargs) -> gpd.GeoDataFrame:
     pass
 
 
-# def get_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
-#     """
-#     Retrieve chronicles from multiple piezometers.
-
-#     Use an inner loop for multiple piezometers to avoid reaching 20k results
-#     threshold from hub'eau API.
-
-#     Parameters
-#     ----------
-#     codes_bss : list
-#         List of code_bss codes for piezometers
-#     **kwargs :
-#         kwargs passed to PiezometrySession.get_chronicles (hence mostly
-#         intended for hub'eau API's arguments). Do not use `code_bss` as they
-#         are set by the current function.
-
-#     Returns
-#     -------
-#     results : pd.dataFrame
-#         DataFrame of results
-
-#     """
-
-#     with PiezometrySession() as session:
-#         results = [
-#             session.get_chronicles(code_bss=code, **kwargs)
-#             for code in tqdm(
-#                 codes_bss,
-#                 desc="querying piezo/piezo",
-#                 leave=_config["TQDM_LEAVE"],
-#                 position=tqdm._get_free_pos(),
-#             )
-#         ]
-#     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
-#     results = pd.concat(results, ignore_index=True)
-#     return results
-
-
-# # def get_realtime_chronicles(
-# #     codes_bss: list = None, bss_ids: list = None, **kwargs
-# # ) -> pd.DataFrame:
-# #     """
-# #     Retrieve realtimes chronicles from multiple piezometers.
-# #     Uses a reduced timeout for cache expiration.
-
-# #     Note that `codes_bss` and `bss_ids` are mutually exclusive!
-
-# #     Parameters
-# #     ----------
-# #     codes_bss : list, optional
-# #         List of code_bss codes for piezometers. The default is None.
-# #     bss_ids : list, optional
-# #         List of bss_id codes for piezometers. The default is None.
-# #     **kwargs :
-# #         kwargs passed to PiezometrySession.get_realtime_chronicles (hence
-# #         mostly intended for hub'eau API's arguments). Do not use `code_bss` as
-# #         they are set by the current function.
-
-# #     Returns
-# #     -------
-# #     results : pd.dataFrame
-# #         DataFrame of results
-
-# #     """
-
-# #     if codes_bss and bss_ids:
-# #         raise ValueError(
-# #             "only one argument allowed among codes_bss and bss_ids"
-# #         )
-# #     if not codes_bss and not bss_ids:
-# #         raise ValueError(
-# #             "exactly one argument must be set among codes_bss and bss_ids"
-# #         )
-
-# #     code_names = "code_bss" if codes_bss else "bss_id"
-# #     codes = codes_bss if codes_bss else bss_ids
-
-# #     with PiezometrySession(
-# #         expire_after=_config["DEFAULT_EXPIRE_AFTER_REALTIME"]
-# #     ) as session:
-# #         results = [
-# #             session.get_realtime_chronicles(**{code_names: code}, **kwargs)
-# #             for code in tqdm(
-# #                 codes,
-# #                 desc="querying piezo/piezo",
-# #                 leave=_config["TQDM_LEAVE"],
-# #                 position=tqdm._get_free_pos(),
-# #             )
-# #         ]
-# #     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
-# #     results = pd.concat(results, ignore_index=True)
-# #     return results
-
-
-if __name__ == "__main__":
-    df = get_all_stations()
+# if __name__ == "__main__":
+#     # df = get_all_stations(code_region="32")
+#     df = get_all_indexes(code_region="32")
+#     df.plot()
