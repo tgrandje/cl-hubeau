@@ -201,8 +201,11 @@ class HydrometrySession(BaseHubeauSession):
         Lister les observations hydrométriques élaborées
         Endpoint /api/v2/hydrometrie/obs_elab
 
-        Grandeurs hydrométriques élaborées disponibles : débits moyens
-        journaliers (QmnJ), débits moyens mensuels (QmM)
+        Grandeurs hydrométriques élaborées disponibles : débits moyens journaliers (QmnJ),
+        débits moyens mensuels (QmM), Hauteur instantanée maximale mensuelle (HIXM),
+        Hauteur instantanée maximale journalière (HIXnJ), Débit instantané minimal mensuel (QINM),
+        Débit instantané minimal journalier (QINnJ), Débit instantané maximal mensuel (QixM),
+        Débit instantané maximal journalier (QIXnJ)
         Si la valeur du paramètre size n'est pas renseignée, la taille de page
         par défaut : 1000, taille max de la page : 20000.
         La profondeur d'accès aux résultats est : 20000, calcul de la
@@ -225,7 +228,7 @@ class HydrometrySession(BaseHubeauSession):
         try:
             params["grandeur_hydro_elab"] = (
                 self._ensure_val_among_authorized_values(
-                    "grandeur_hydro_elab", kwargs, {"QmJ", "QmM"}
+                    "grandeur_hydro_elab", kwargs, {"QmnJ", "QmM", "HIXM", "HIXnJ", "QINM", "QINnJ", "QixM", "QIXnJ"}
                 )
             )
         except KeyError:
@@ -390,11 +393,12 @@ class HydrometrySession(BaseHubeauSession):
 #         # )
 #         # df = session.get_observations(code_entite="K437311001")
 
-#         df = session.get_realtime_observations(
+#         df = session.get_observations(
 #             code_entite="K437311001",
-#             grandeur_hydro="Q",
-#             # date_debut_obs="2010-01-01",
+#             grandeur_hydro_elab="QmnJ",
+#             date_debut_obs_elab="2025-01-01",
 #         )
-#         # df.pivot_table(
-#         #     index="date_obs", columns="grandeur_hydro", values="resultat_obs"
-#         # ).plot()
+#         print(
+#         df.pivot_table(
+#             index="date_obs_elab", columns="grandeur_hydro_elab", values="resultat_obs_elab"
+#         ))
