@@ -13,7 +13,22 @@ from cl_hubeau import _config
 from cl_hubeau.utils import get_cities
 
 def get_all_communes(**kwargs) -> gpd.GeoDataFrame:
+    """
+    Gets the services for every french city.
 
+    Parameters
+    ----------
+    **kwargs :
+        kwargs passed to WaterServicesSession.get_communes (hence mostly intended
+        for hub'eau API's arguments). Do not use `format` or `code_commune`
+        as they are set by the current function.
+
+    Returns
+    -------
+    results : gpd.GeoDataFrame
+        GeoDataFrame of water services indicators for every french city.
+
+    """
     with WaterServicesSession() as session :
         cities = get_cities()
         results = [
@@ -37,6 +52,22 @@ def get_all_communes(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 def get_all_services(**kwargs) -> pd.DataFrame:
+    """
+    Gets the services for every french city.
+
+    Parameters
+    ----------
+    **kwargs :
+        kwargs passed to WaterServicesSession.get_services (hence mostly intended
+        for hub'eau API's arguments). Do not use `format` or `code_commune`
+        as they are set by the current function.
+
+    Returns
+    -------
+    results : pd.DataFrame
+        DataFrame of water services indicators for every service.
+
+    """
     with WaterServicesSession() as session:
         cities = get_cities()
         results = [

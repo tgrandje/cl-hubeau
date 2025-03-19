@@ -3,8 +3,6 @@
 low level class to collect data from the services indiators API from hub'eau
 """
 
-import pandas as pd
-
 from cl_hubeau.session import BaseHubeauSession
 from cl_hubeau.exceptions import UnexpectedArguments
 
