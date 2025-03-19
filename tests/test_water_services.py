@@ -50,7 +50,7 @@ def mock_get_data(monkeypatch):
                                 "service_name"
                             ],
                             "indicateurs": {
-                            "dummy_indicator": 0,
+                                "dummy_indicator": 0,
                             },
                             "code_commune_insee": "00000",
                             "annee": 2015,
@@ -121,10 +121,12 @@ def test_get_indicators_mocked(mock_get_data):
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
+
 def test_get_all_services_mocked(mock_get_data):
     data = water_services.get_all_services()
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
+
 
 def test_get_all_communes_mocked(mock_get_data):
     data = water_services.get_all_communes()

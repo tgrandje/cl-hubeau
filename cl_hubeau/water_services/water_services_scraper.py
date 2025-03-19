@@ -93,24 +93,24 @@ class WaterServicesSession(BaseHubeauSession):
 
         if kwargs :
             raise UnexpectedArguments(kwargs, self.DOC_URL)
-        
+
         method = "GET"
         url = self.BASE_URL + "/v0/indicateurs_services/communes"
 
         df = self.get_result(method, url, params=params)
         return df
-    
+
     def get_indicators(self, **kwargs):
         """
         Lister les services par indicateur
         Endpoint /v0/indicateurs_services/indicateurs
 
         Appel par indicateur. Retourne la liste des valeurs de performance par service public d'eau et d'assainissement par service.
-        
+
         Source de données : Observatoire des services publics de l'eau et de l'assainissement : prix de l'eau et performance des services.
         Site web :
         http://services.eaufrance.fr/
-        
+
         Si la valeur du paramètre size n'est pas renseignée, la taille de page par défaut : 2000, taille max de la page : 5000.
         La profondeur d'accès aux résultats est : 20000, calcul de la profondeur = numéro de la page * nombre maximum de résultats dans une page.
 
@@ -127,7 +127,7 @@ class WaterServicesSession(BaseHubeauSession):
             params["code_indicateur"] = kwargs.pop("code_indicateur")
         except KeyError:
             pass
-        
+
         try:
             params["fields"] = self.list_to_str_param(
                 kwargs.pop("fields")
@@ -144,25 +144,25 @@ class WaterServicesSession(BaseHubeauSession):
 
         if kwargs :
             raise UnexpectedArguments(kwargs, self.DOC_URL)
-        
+
         method = "GET"
         url = self.BASE_URL + "/v0/indicateurs_services/indicateurs"
 
         df = self.get_result(method, url, params=params)
 
         return df
-    
+
     def get_services(self, **kwargs) :
         """
         Lister les services par service
         Endpoint : /v0/indicateurs_services/services
 
         Appel par service. Retourne la liste des indicateurs de performance par service public d'eau et d'assainissement pour une commune donnée.
-        
+
         Source de données : Observatoire des services publics de l'eau et de l'assainissement : prix de l'eau et performance des services
         Site web :
         http://services.eaufrance.fr/
-        
+
         Si la valeur du paramètre size n'est pas renseignée, la taille de page par défaut : 5000, taille max de la page : 20000.
         La profondeur d'accès aux résultats est : 20000, calcul de la profondeur = numéro de la page * nombre maximum de résultats dans une page.
         """
@@ -181,7 +181,7 @@ class WaterServicesSession(BaseHubeauSession):
             )
         except KeyError:
             pass
-        
+
         try:
             params["code_departement"] = kwargs.pop("code_departement")
         except KeyError:
@@ -208,7 +208,7 @@ class WaterServicesSession(BaseHubeauSession):
 
         if kwargs :
             raise UnexpectedArguments(kwargs, self.DOC_URL)
-        
+
         method = "GET"
         url = self.BASE_URL + "/v0/indicateurs_services/services"
 

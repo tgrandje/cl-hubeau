@@ -12,6 +12,7 @@ from cl_hubeau.water_services.water_services_scraper import WaterServicesSession
 from cl_hubeau import _config
 from cl_hubeau.utils import get_cities
 
+
 def get_all_communes(**kwargs) -> gpd.GeoDataFrame:
     """
     Gets the services for every french city.
@@ -50,6 +51,7 @@ def get_all_communes(**kwargs) -> gpd.GeoDataFrame:
     except KeyError:
         pass
     return results
+
 
 def get_all_services(**kwargs) -> pd.DataFrame:
     """
