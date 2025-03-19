@@ -11,7 +11,7 @@ import hashlib
 import logging
 import os
 import socket
-from typing import Callable, Any
+from typing import Callable, Any, Union
 from urllib.parse import urlparse, parse_qs
 import warnings
 
@@ -212,6 +212,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         x: list,
         max_authorized_values: int = None,
         exact_authorized_values: int = None,
+        authorized_values: Union[list, set, tuple] = None,
     ) -> str:
         """
         Join array of arguments to an accepted string format
@@ -224,6 +225,9 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             Maximum authorized values in the list
         exact_authorized_values : int, optional
             Exact authorized values in the list
+        authorized_values : Union[list, set, tuple], optional
+            If set, each individual value from x should be among
+            authorized_values. Default is None.
 
         Returns
         -------
@@ -246,6 +250,13 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     f"found {len(x)} instead"
                 )
                 raise ValueError(msg)
+            if authorized_values:
+                authorized_values = {str(y) for y in authorized_values}
+                violation = [str(y) for y in x if y not in authorized_values]
+                if violation:
+                    raise ValueError(
+                        f"unauthorized values found for {x} : {violation}"
+                    )
 
             return ",".join([str(y) for y in x])
         raise ValueError(f"unexpected format found on {x}")

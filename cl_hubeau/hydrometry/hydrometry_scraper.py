@@ -201,11 +201,12 @@ class HydrometrySession(BaseHubeauSession):
         Lister les observations hydrométriques élaborées
         Endpoint /api/v2/hydrometrie/obs_elab
 
-        Grandeurs hydrométriques élaborées disponibles : débits moyens journaliers (QmnJ),
-        débits moyens mensuels (QmM), Hauteur instantanée maximale mensuelle (HIXM),
-        Hauteur instantanée maximale journalière (HIXnJ), Débit instantané minimal mensuel (QINM),
-        Débit instantané minimal journalier (QINnJ), Débit instantané maximal mensuel (QixM),
-        Débit instantané maximal journalier (QIXnJ)
+        Grandeurs hydrométriques élaborées disponibles : débits moyens
+        journaliers (QmnJ), débits moyens mensuels (QmM), Hauteur instantanée
+        maximale mensuelle (HIXM), Hauteur instantanée maximale
+        journalière (HIXnJ), Débit instantané minimal mensuel (QINM), Débit
+        instantané minimal journalier (QINnJ), Débit instantané maximal
+        mensuel (QixM), Débit instantané maximal journalier (QIXnJ)
         Si la valeur du paramètre size n'est pas renseignée, la taille de page
         par défaut : 1000, taille max de la page : 20000.
         La profondeur d'accès aux résultats est : 20000, calcul de la
@@ -228,7 +229,18 @@ class HydrometrySession(BaseHubeauSession):
         try:
             params["grandeur_hydro_elab"] = (
                 self._ensure_val_among_authorized_values(
-                    "grandeur_hydro_elab", kwargs, {"QmnJ", "QmM", "HIXM", "HIXnJ", "QINM", "QINnJ", "QixM", "QIXnJ"}
+                    "grandeur_hydro_elab",
+                    kwargs,
+                    {
+                        "QmnJ",
+                        "QmM",
+                        "HIXM",
+                        "HIXnJ",
+                        "QINM",
+                        "QINnJ",
+                        "QixM",
+                        "QIXnJ",
+                    },
                 )
             )
         except KeyError:
@@ -326,7 +338,12 @@ class HydrometrySession(BaseHubeauSession):
         for arg in ("code_entite", "fields", "code_statut"):
             try:
                 variable = kwargs.pop(arg)
-                params[arg] = self.list_to_str_param(variable)
+                authorized_values = None
+                if arg == "code_statut":
+                    authorized_values = {0, 4, 8, 12, 16}
+                params[arg] = self.list_to_str_param(
+                    variable, authorized_values=authorized_values
+                )
             except KeyError:
                 continue
 
@@ -380,25 +397,3 @@ class HydrometrySession(BaseHubeauSession):
                 continue
 
         return df
-
-
-# if __name__ == "__main__":
-#     import logging
-
-#     # logging.basicConfig(level=logging.WARNING)
-#     with HydrometrySession() as session:
-#         # gdf = session.get_stations(code_departement="02", format="geojson")
-#         # gdf = session.get_sites(
-#         #     code_departement=["02", "59"], format="geojson"
-#         # )
-#         # df = session.get_observations(code_entite="K437311001")
-
-#         df = session.get_observations(
-#             code_entite="K437311001",
-#             grandeur_hydro_elab="QmnJ",
-#             date_debut_obs_elab="2025-01-01",
-#         )
-#         print(
-#         df.pivot_table(
-#             index="date_obs_elab", columns="grandeur_hydro_elab", values="resultat_obs_elab"
-#         ))
