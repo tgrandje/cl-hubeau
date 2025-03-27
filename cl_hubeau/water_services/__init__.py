@@ -2,6 +2,7 @@
 
 from .water_services_scraper import WaterServicesSession
 from .utils import (
+    get_all_indicators,
     get_all_communes,
     get_all_services,
 )
@@ -10,5 +11,6 @@ from .utils import (
 __all__ = [
     "get_all_communes",
     "get_all_services",
+    "get_all_indicators"
     "WaterServicesSession",
 ]

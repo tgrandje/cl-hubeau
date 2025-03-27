@@ -10,8 +10,8 @@ from tqdm import tqdm
 
 from cl_hubeau.water_services.water_services_scraper import WaterServicesSession
 from cl_hubeau import _config
-from cl_hubeau.utils import get_cities
-
+from cl_hubeau.utils import get_departements_from_regions, get_regions, prepare_kwargs_loops
+from datetime import datetime
 
 def get_all_communes(**kwargs) -> gpd.GeoDataFrame:
     """
@@ -31,19 +31,19 @@ def get_all_communes(**kwargs) -> gpd.GeoDataFrame:
 
     """
     with WaterServicesSession() as session :
-        cities = get_cities()
+        regions = get_regions(latest=True)
         results = [
             session.get_communes(
-                code_commune=city, format="geojson", **kwargs
+                code_departement=get_departements_from_regions(reg), detail_service=True, format="geojson", **kwargs
             )
-            for city in tqdm(
-                cities,
-                desc="querying city/city",
+            for reg in tqdm(
+                regions,
+                desc="querying regions for communes",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
         ]
-    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    results = [x[0].dropna(axis=1, how="all") for x in results if not x[0].empty]
     results = gpd.pd.concat(results, ignore_index=True)
     try:
         results["code_commune_insee"]
@@ -71,14 +71,57 @@ def get_all_services(**kwargs) -> pd.DataFrame:
 
     """
     with WaterServicesSession() as session:
-        cities = get_cities()
+        regions = get_regions(latest=True)
+        results = []
+        for reg in tqdm(
+            regions, desc="Querying regions for services",
+            position=0
+        ):
+            for dep in tqdm(
+                get_departements_from_regions(reg),
+                desc="Querying departements from regions",
+                leave=False,
+                position=1
+            ):
+                result = session.get_services(code_departement=dep, **kwargs)
+                results.append(result)
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    results = pd.concat(results, ignore_index=True)
+    try:
+        results["code_service"]
+        results = results.drop_duplicates("code_service")
+    except KeyError:
+        pass
+    return results
+
+def get_all_indicators(**kwargs) -> pd.DataFrame:
+    """
+    Gets a given indicator value for every recorded french city at any time.
+
+    Parameters
+    ----------
+    **kwargs :
+        kwargs passed to WaterServicesSession.get_indicators (hence mostly intended
+        for hub'eau API's arguments). Do not use `format` or `code_commune`
+        as they are set by the current function.
+
+    Returns
+    -------
+    results : pd.DataFrame
+        DataFrame of water services indicators for every service.
+
+    """
+    with WaterServicesSession() as session:
+        years = range(2000, datetime.now().year)
+        print(years)
         results = [
-            session.get_services(
-                code_commune=city, **kwargs
+            session.get_indicators(
+                annee = year,
+                **kwargs,
             )
-            for city in tqdm(
-                cities,
-                desc="querying cities",
+            for year in tqdm(
+                years,
+                desc="querying indicators for every year",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )

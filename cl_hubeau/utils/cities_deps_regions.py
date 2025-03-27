@@ -92,6 +92,13 @@ def _get_pynsee_arealist_regions():
     regs = get_area_list("regions", "*", silent=True)
     return regs
 
+@silence_sirene_logs
+def _get_pynsee_arealist_latest_regions():
+    "Retrieve the french regions for all times (to also get areas < 2016)"
+    init_pynsee_connection()
+    regs = get_area_list("regions", silent=True)
+    return regs
+
 
 @silence_sirene_logs
 def _get_pynsee_geolist_departements():
@@ -137,7 +144,7 @@ def get_cities():
     return cities["CODE"].unique().tolist()
 
 
-def get_regions() -> list:
+def get_regions(latest: bool) -> list:
     """
     Retrieve all unique regions' codes in the whole timeline.
 
@@ -154,7 +161,11 @@ def get_regions() -> list:
     >>> get_regions()
     ['01', '02', '03',...,  '91', '93', '94']
     """
-    regs = _get_pynsee_arealist_regions()
+    if latest:
+        regs = _get_pynsee_arealist_latest_regions()
+    else:
+        regs = _get_pynsee_arealist_regions()
+        
     return regs["CODE"].unique().tolist()
 
 

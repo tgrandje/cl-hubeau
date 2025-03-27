@@ -2,6 +2,7 @@
 """
 low level class to collect data from the services indiators API from hub'eau
 """
+import pandas as pd
 
 from cl_hubeau.session import BaseHubeauSession
 from cl_hubeau.exceptions import UnexpectedArguments
@@ -64,11 +65,14 @@ class WaterServicesSession(BaseHubeauSession):
             pass
 
         try:
-            params["detail_service"] = self._ensure_val_among_authorized_values(
-                "detail_service", kwargs, {"true", "false"}
+            params["detail_service"] = kwargs.pop("detail_service") in (
+                "true",
+                True,
+                1,
             )
+            params["detail_service"] = str(params["detail_service"]).lower()
         except KeyError:
-            pass
+            params["detail_service"] = "false"
 
         try:
             params["fields"] = self.list_to_str_param(
@@ -98,7 +102,22 @@ class WaterServicesSession(BaseHubeauSession):
         url = self.BASE_URL + "/v0/indicateurs_services/communes"
 
         df = self.get_result(method, url, params=params)
-        return df
+        indicators = pd.DataFrame(df.pop("indicateurs").tolist())
+
+        df = df.join(indicators)
+
+        if(params["detail_service"]) :
+            details = pd.DataFrame(
+                pd.DataFrame(df.details.dropna().values.flatten().tolist())[0].values.tolist()
+            )
+            indicators = pd.DataFrame(details.pop("indicateurs").values.tolist())
+            details = details.join(indicators)
+            details = details.drop_duplicates(["code_service", "annee"])
+
+        else :
+            details = pd.DataFrame()
+
+        return df, details
 
     def get_indicators(self, **kwargs):
         """

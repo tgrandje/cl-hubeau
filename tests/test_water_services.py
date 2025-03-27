@@ -53,6 +53,25 @@ def mock_get_data(monkeypatch):
                                 "dummy_indicator": 0,
                             },
                             "code_commune_insee": "00000",
+                            "details": [
+                                {
+                                    "code_service": 000000,
+                                    "nom_service": "eau potable",
+                                    "codes_commune": [
+                                        "00000"
+                                    ],
+                                    "noms_commune": [
+                                        "City_name"
+                                    ],
+                                    "numero_siren": "000000000",
+                                    "type_collectivite": "Commune",
+                                    "mode_gestion": "Régie",
+                                    "annee": 2019,
+                                    "indicateurs": {
+                                        "dummy_indicator": 0,
+                                    }
+                                }
+                            ],
                             "annee": 2015,
                             "codes_service": [
                                 000000
@@ -103,7 +122,7 @@ def mock_get_data(monkeypatch):
                         ],
                         "annee": 2015,
                         "indicateurs": {
-                            "dummy_indicator": 0,
+                            "nom_indicateur": 0,
                         }
                     }
                 ]
@@ -131,4 +150,9 @@ def test_get_all_services_mocked(mock_get_data):
 def test_get_all_communes_mocked(mock_get_data):
     data = water_services.get_all_communes()
     assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) == 1
+
+def test_get_all_indicators_mocked(mock_get_data):
+    data = water_services.get_all_indicators()
+    assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
