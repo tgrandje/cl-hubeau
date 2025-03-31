@@ -169,6 +169,10 @@ class WaterServicesSession(BaseHubeauSession):
 
         df = self.get_result(method, url, params=params)
 
+        indicators = pd.DataFrame(df.pop("indicateurs").values.tolist())
+
+        df = df.join(indicators)
+
         return df
 
     def get_services(self, **kwargs) :

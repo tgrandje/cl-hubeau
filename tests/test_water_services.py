@@ -100,6 +100,11 @@ def mock_get_data(monkeypatch):
                         "type_collectivite": "Syndicat Intercommunal à Vocation Unique",
                         "mode_gestion": "Délégation",
                         "annee": 2015,
+                        "indicateurs": [
+                            {
+                                "dummy_indicator": 0,
+                            }
+                        ],
                         "indicateur": 1,
                         "uri_indicateur": "some_uri"
                     }
