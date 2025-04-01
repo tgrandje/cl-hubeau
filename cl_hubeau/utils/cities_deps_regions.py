@@ -144,7 +144,7 @@ def get_cities():
     return cities["CODE"].unique().tolist()
 
 
-def get_regions(latest: bool) -> list:
+def get_regions(latest=False) -> list:
     """
     Retrieve all unique regions' codes in the whole timeline.
 

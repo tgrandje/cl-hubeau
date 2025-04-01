@@ -13,7 +13,7 @@ from cl_hubeau import _config
 from cl_hubeau.utils import get_departements_from_regions, get_regions, prepare_kwargs_loops
 from datetime import datetime
 
-def get_all_communes(**kwargs) -> gpd.GeoDataFrame:
+def get_all_communes(code_region=None, **kwargs) -> gpd.GeoDataFrame:
     """
     Gets the services for every french city.
 
@@ -30,19 +30,30 @@ def get_all_communes(**kwargs) -> gpd.GeoDataFrame:
         GeoDataFrame of water services indicators for every french city.
 
     """
+    if(not kwargs.get("code_commune")):
+        if code_region :
+            deps = get_departements_from_regions(code_region)
+        elif kwargs.get("code_departement") :
+            deps = kwargs.get("code_departement")
+        else :
+            deps = get_departements_from_regions(get_regions(True))
     with WaterServicesSession() as session :
-        regions = get_regions(latest=True)
-        results = [
-            session.get_communes(
-                code_departement=get_departements_from_regions(reg), detail_service=True, format="geojson", **kwargs
-            )
-            for reg in tqdm(
-                regions,
-                desc="querying regions for communes",
-                leave=_config["TQDM_LEAVE"],
-                position=tqdm._get_free_pos(),
-            )
-        ]
+        if(kwargs.get("code_commune")) :
+            results = [session.get_communes(
+                code_commune=kwargs.get("code_commune")
+                )]
+        else:
+            results = [
+                session.get_communes(
+                    code_departement=get_departements_from_regions(dep), detail_service=True, format="geojson", **kwargs
+                )
+                for dep in tqdm(
+                    deps,
+                    desc="querying regions for communes",
+                    leave=_config["TQDM_LEAVE"],
+                    position=tqdm._get_free_pos(),
+                )
+            ]
     results = [x[0].dropna(axis=1, how="all") for x in results if not x[0].empty]
     results = gpd.pd.concat(results, ignore_index=True)
     try:
@@ -71,7 +82,7 @@ def get_all_services(**kwargs) -> pd.DataFrame:
 
     """
     with WaterServicesSession() as session:
-        regions = get_regions(latest=True)
+        regions = get_regions(True)
         results = []
         for reg in tqdm(
             regions, desc="Querying regions for services",
