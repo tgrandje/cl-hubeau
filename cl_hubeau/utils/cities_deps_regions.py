@@ -32,6 +32,12 @@ def silence_sirene_logs(func):
             and not record.msg.startswith(
                 "Remember to subscribe to SIRENE API"
             )
+            and not (
+                record.msg.startswith("Existing environment variable %s")
+                and (
+                    "http_proxy" in record.args or "https_proxy" in record.args
+                )
+            )
         )
 
     def wrapper(*args, **kwargs):

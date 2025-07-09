@@ -69,5 +69,5 @@ def cities_for_sage() -> dict:
     com = get_geodata("ADMINEXPRESS-COG-CARTO.LATEST:commune", crs=sages.crs)
 
     sages = sages.sjoin(com)
-    sages = sages.groupby("CodeNatZone")["insee_com"].agg(list).to_dict()
+    sages = sages.groupby("CodeNatZone")["code_insee"].agg(list).to_dict()
     return sages
