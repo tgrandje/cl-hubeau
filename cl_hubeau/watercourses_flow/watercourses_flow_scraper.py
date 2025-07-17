@@ -199,7 +199,13 @@ class WatercoursesFlowSession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/ecoulement/observations"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_observation_min",
+            time_end="date_observation_max",
+            params=params,
+        )
 
         return df
 
@@ -276,7 +282,13 @@ class WatercoursesFlowSession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/ecoulement/campagnes"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_campagne_min",
+            time_end="date_campagne_max",
+            params=params,
+        )
 
         return df
 
