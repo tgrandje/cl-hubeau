@@ -458,6 +458,11 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                         **kwargs,
                     )
                 )
+                results = [
+                    x.dropna(axis=1, how="all") for x in results if not x.empty
+                ]
+                if not results:
+                    return pd.DataFrame()
             return pd.concat(results)
 
         msg = f"{count_rows} expected results"
