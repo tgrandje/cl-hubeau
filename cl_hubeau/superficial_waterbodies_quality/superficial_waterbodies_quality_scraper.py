@@ -248,7 +248,13 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v2/qualite_rivieres/operation_pc"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_prelevement",
+            time_end="date_fin_prelevement",
+            params=params,
+        )
 
         try:
             df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
@@ -355,7 +361,13 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             self.BASE_URL
             + "/v2/qualite_rivieres/condition_environnementale_pc"
         )
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_prelevement",
+            time_end="date_fin_prelevement",
+            params=params,
+        )
 
         try:
             df["date_prelevement"] = pd.to_datetime(
@@ -492,7 +504,13 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v2/qualite_rivieres/analyse_pc"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_prelevement",
+            time_end="date_fin_prelevement",
+            params=params,
+        )
 
         try:
             df["date_prelevement"] = pd.to_datetime(
@@ -500,5 +518,12 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             )
         except KeyError:
             pass
+
+        # optimize to categorical, those dataframes are heavy
+        for x in df.loc[:, df.dtypes == "object"]:
+            try:
+                df[x] = pd.Categorical(df[x])
+            except TypeError:
+                pass
 
         return df

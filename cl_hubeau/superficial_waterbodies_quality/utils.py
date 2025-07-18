@@ -46,7 +46,17 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    deps = get_departements()
+    if "code_region" in kwargs:
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif "code_commune" in kwargs:
+        deps = [""]
+    else:
+        deps = get_departements()
 
     # Split by 20-something chunks
     deps = [deps[i : i + 20] for i in range(0, len(deps), 20)]
@@ -65,7 +75,11 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
         ]
         results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
 
+        if not results:
+            return gpd.GeoDataFrame()
+
         results = gpd.pd.concat(results, ignore_index=True)
+
     return results
 
 
@@ -98,8 +112,7 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
             "kwargs, for instance `get_operations(code_departement='02')`"
         )
 
-    # Set a loop for yearly querying as dataset are big
-
+    # Set a loop for Xth months as dataset are big
     start_auto_determination = False
     if "date_debut_prelevement" not in kwargs:
         start_auto_determination = True
@@ -110,15 +123,19 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
     if "code_region" in kwargs:
         # let's downcast to departemental loops
         reg = kwargs.pop("code_region")
-        if isinstance(reg, (list, tuple, set)):
-            deps = [
-                dep for r in reg for dep in get_departements_from_regions(r)
-            ]
-        else:
-            deps = get_departements_from_regions(reg)
-        kwargs["code_departement"] = deps
+        deps = get_departements_from_regions(reg)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif "code_commune" in kwargs:
+        deps = [""]
+    else:
+        deps = get_departements()
 
-    desc = "querying 6m/6m" + (
+    kwargs["code_departement"] = deps
+
+    desc = "querying 4m/4m" + (
         " & dep/dep" if "code_departement" in kwargs else ""
     )
 
@@ -127,6 +144,7 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
+        months=3,
     )
 
     with SuperficialWaterbodiesQualitySession() as session:
@@ -145,6 +163,10 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+
+    if not results:
+        return pd.DataFrame()
+
     results = pd.concat(results, ignore_index=True)
     return results
 
@@ -224,6 +246,10 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+
+    if not results:
+        return pd.DataFrame()
+
     results = pd.concat(results, ignore_index=True)
     return results
 
@@ -297,17 +323,23 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
     if "code_region" in kwargs:
-        # let's downcast to departemental loops
-        reg = kwargs.pop("code_region")
-        if isinstance(reg, (list, tuple, set)):
-            deps = [
-                dep for r in reg for dep in get_departements_from_regions(r)
-            ]
-        else:
-            deps = get_departements_from_regions(reg)
-        kwargs["code_departement"] = deps
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif "code_commune" in kwargs:
+        deps = [""]
+    else:
+        deps = get_departements()
 
-    desc = "querying year/year" + (
+    # Split by 20-something chunks
+    deps = [deps[i : i + 20] for i in range(0, len(deps), 20)]
+    kwargs["code_departement"] = deps
+
+    months = 6
+    desc = f"querying {months}m/{months}m" + (
         " & dep/dep" if "code_departement" in kwargs else ""
     )
 
@@ -316,6 +348,7 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
+        months=months,
     )
 
     with SuperficialWaterbodiesQualitySession() as session:
@@ -330,5 +363,16 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+
+    if not results:
+        return pd.DataFrame()
+
     results = pd.concat(results, ignore_index=True)
     return results
+
+
+# if __name__ == "__main__":
+#     df = get_all_analyses(
+#         code_departement=["59"], date_debut_prelevement="2022-01-01"
+#     )
+#     print(df.shape)
