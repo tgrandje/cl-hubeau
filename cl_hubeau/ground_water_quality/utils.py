@@ -119,7 +119,7 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
-        split_months=6,
+        months=6,
     )
 
     with GroundWaterQualitySession() as session:

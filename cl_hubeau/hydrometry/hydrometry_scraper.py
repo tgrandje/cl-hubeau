@@ -284,7 +284,13 @@ class HydrometrySession(BaseHubeauSession):
         method = "GET"
         url = self.BASE_URL + "/v2/hydrometrie/obs_elab"
 
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_obs_elab",
+            time_end="date_fin_obs_elab",
+            params=params,
+        )
 
         for f in "date_obs_elab", "date_prod":
             try:
@@ -388,7 +394,13 @@ class HydrometrySession(BaseHubeauSession):
         method = "GET"
         url = self.BASE_URL + "/v2/hydrometrie/observations_tr"
 
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_obs",
+            time_end="date_fin_obs",
+            params=params,
+        )
 
         for f in "date_debut_serie", "date_fin_serie", "date_obs":
             try:
