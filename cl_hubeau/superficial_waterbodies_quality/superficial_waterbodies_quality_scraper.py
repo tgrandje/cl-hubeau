@@ -5,6 +5,7 @@ hub'eau
 """
 import deprecation
 import pandas as pd
+import polars as pl
 
 from cl_hubeau import __version__
 from cl_hubeau.session import BaseHubeauSession
@@ -513,17 +514,13 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         )
 
         try:
-            df["date_prelevement"] = pd.to_datetime(
-                df["date_prelevement"], format="%Y-%m-%d"
+            df = df.with_columns(
+                date_prelevement=df["date_prelevement"].str.to_datetime(
+                    "%Y-%m-%d"
+                )
             )
-        except KeyError:
-            pass
 
-        # optimize to categorical, those dataframes are heavy
-        for x in df.loc[:, df.dtypes == "object"]:
-            try:
-                df[x] = pd.Categorical(df[x])
-            except TypeError:
-                pass
+        except pl.exceptions.ColumnNotFoundError:
+            pass
 
         return df

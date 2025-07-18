@@ -8,12 +8,11 @@ from datetime import date
 import warnings
 
 import deprecation
-import geopandas as gpd
-import pandas as pd
 from tqdm import tqdm
 
 
 from cl_hubeau import __version__
+from cl_hubeau.frames import GeoPolarsDataFrame, concat
 from cl_hubeau.superficial_waterbodies_quality import (
     SuperficialWaterbodiesQualitySession,
 )
@@ -25,7 +24,7 @@ from cl_hubeau.utils import (
 )
 
 
-def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
+def get_all_stations(**kwargs) -> GeoPolarsDataFrame:
     """
     Retrieve all stations for physical/chemical analyses on superficial
     waterbodies
@@ -41,7 +40,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     Returns
     -------
-    results : gpd.GeoDataFrame
+    results : GeoPolarsDataFrame
         DataFrame of networks (UDI) /cities coverage
 
     """
@@ -73,17 +72,17 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
                 position=tqdm._get_free_pos(),
             )
         ]
-        results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+        results = [x for x in results if len(x) > 0]
 
         if not results:
-            return gpd.GeoDataFrame()
+            return GeoPolarsDataFrame()
 
-        results = gpd.pd.concat(results, ignore_index=True)
+        results = concat(results, how="vertical_relaxed")
 
     return results
 
 
-def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
+def get_all_operations(**kwargs) -> GeoPolarsDataFrame:
     """
     Retrieve operations for measures.
 
@@ -101,7 +100,7 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
 
     Returns
     -------
-    results : gpd.GeoDataFrame
+    results : GeoPolarsDataFrame
         GeoDataFrame of operations
 
     """
@@ -160,16 +159,16 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
                 position=tqdm._get_free_pos(),
             )
         ]
-    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    results = [x for x in results if len(x) > 0]
 
     if not results:
-        return pd.DataFrame()
+        return GeoPolarsDataFrame()
 
-    results = pd.concat(results, ignore_index=True)
+    results = concat(results, how="vertical_relaxed")
     return results
 
 
-def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
+def get_all_environmental_conditions(**kwargs) -> GeoPolarsDataFrame:
     """
     Retrieve environmental conditions for measures.
 
@@ -243,12 +242,12 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
                 position=tqdm._get_free_pos(),
             )
         ]
-    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    results = [x for x in results if len(x) > 0]
 
     if not results:
-        return pd.DataFrame()
+        return GeoPolarsDataFrame()
 
-    results = pd.concat(results, ignore_index=True)
+    results = concat(results, how="vertical_relaxed")
     return results
 
 
@@ -258,7 +257,7 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     current_version=__version__,
     details="Please use `get_all_analyses` instead.",
 )
-def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
+def get_all_analysis(**kwargs) -> GeoPolarsDataFrame:
     """
     Retrieve analyses results from measures.
 
@@ -275,14 +274,14 @@ def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
 
     Returns
     -------
-    results : gpd.GeoDataFrame
+    results : GeoPolarsDataFrame
         GeoDataFrame of analyses results
 
     """
     return get_all_analyses(**kwargs)
 
 
-def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
+def get_all_analyses(**kwargs) -> GeoPolarsDataFrame:
     """
     Retrieve analyses results from measures.
 
@@ -299,7 +298,7 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
 
     Returns
     -------
-    results : gpd.GeoDataFrame
+    results : GeoPolarsDataFrame
         GeoDataFrame of analyses results
 
     """
@@ -357,10 +356,16 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
                 position=tqdm._get_free_pos(),
             )
         ]
-    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    results = [x for x in results if len(x) > 0]
 
     if not results:
-        return pd.DataFrame()
+        return GeoPolarsDataFrame()
 
-    results = pd.concat(results, ignore_index=True)
+    results = concat(results, how="vertical_relaxed")
     return results
+
+
+if __name__ == "__main__":
+    df = get_all_analyses(
+        code_departement="59", date_debut_prelevement="2022-01-01"
+    )
