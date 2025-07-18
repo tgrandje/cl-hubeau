@@ -135,16 +135,14 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
 
     kwargs["code_departement"] = deps
 
-    desc = "querying 4m/4m" + (
-        " & dep/dep" if "code_departement" in kwargs else ""
-    )
+    desc = "querying 6m/6m" + (" & dep/dep" if deps != [""] else "")
 
     kwargs_loop = prepare_kwargs_loops(
         "date_debut_prelevement",
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
-        months=3,
+        months=6,
     )
 
     with SuperficialWaterbodiesQualitySession() as session:
@@ -338,17 +336,14 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
     deps = [deps[i : i + 20] for i in range(0, len(deps), 20)]
     kwargs["code_departement"] = deps
 
-    months = 6
-    desc = f"querying {months}m/{months}m" + (
-        " & dep/dep" if "code_departement" in kwargs else ""
-    )
-
+    m = 6
+    desc = f"querying {m}m/{m}m" + (" & dep/dep" if deps != [""] else "")
     kwargs_loop = prepare_kwargs_loops(
         "date_debut_prelevement",
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
-        months=months,
+        months=m,
     )
 
     with SuperficialWaterbodiesQualitySession() as session:
@@ -369,10 +364,3 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
 
     results = pd.concat(results, ignore_index=True)
     return results
-
-
-# if __name__ == "__main__":
-#     df = get_all_analyses(
-#         code_departement=["59"], date_debut_prelevement="2022-01-01"
-#     )
-#     print(df.shape)
