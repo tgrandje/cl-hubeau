@@ -363,9 +363,3 @@ def get_all_analyses(**kwargs) -> GeoPolarsDataFrame:
 
     results = concat(results, how="vertical_relaxed")
     return results
-
-
-if __name__ == "__main__":
-    df = get_all_analyses(
-        code_departement="59", date_debut_prelevement="2022-01-01"
-    )
