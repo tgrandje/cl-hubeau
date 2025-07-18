@@ -7,16 +7,15 @@ Convenience functions for hydrometry consumption
 from datetime import date
 from itertools import product
 
-import pandas as pd
 from tqdm import tqdm
 
-
+from cl_hubeau.frames import GeoPolarsDataFrame, concat
 from cl_hubeau.drinking_water_quality import DrinkingWaterQualitySession
 from cl_hubeau import _config
 from cl_hubeau.utils import get_cities, prepare_kwargs_loops
 
 
-def get_all_water_networks(**kwargs) -> pd.DataFrame:
+def get_all_water_networks(**kwargs) -> GeoPolarsDataFrame:
     """
     Retrieve all UDI from France.
 
@@ -31,7 +30,7 @@ def get_all_water_networks(**kwargs) -> pd.DataFrame:
 
     Returns
     -------
-    results : pd.DataFrame
+    results : GeoPolarsDataFrame
         DataFrame of networks (UDI) /cities coverage
 
     """
@@ -53,15 +52,18 @@ def get_all_water_networks(**kwargs) -> pd.DataFrame:
                 position=tqdm._get_free_pos(),
             )
         ]
-        results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+        results = [x for x in results if len(x) > 0]
 
-        results = pd.concat(results, ignore_index=True)
+        if not results:
+            return GeoPolarsDataFrame()
+
+        results = concat(results, how="vertical_relaxed")
     return results
 
 
 def get_control_results(
     codes_reseaux: list = None, codes_communes: list = None, **kwargs
-) -> pd.DataFrame:
+) -> GeoPolarsDataFrame:
     """
     Retrieve sanitary controls' results.
 
@@ -85,7 +87,7 @@ def get_control_results(
 
     Returns
     -------
-    results : pd.DataFrame
+    results : GeoPolarsDataFrame
         DataFrame of sanitary control results.
 
     """
@@ -137,6 +139,10 @@ def get_control_results(
                 position=tqdm._get_free_pos(),
             )
         ]
-    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
-    results = pd.concat(results, ignore_index=True)
+    results = [x for x in results if len(x) > 0]
+
+    if not results:
+        return GeoPolarsDataFrame()
+
+    results = concat(results, how="vertical_relaxed")
     return results

@@ -3,7 +3,6 @@
 low level class to collect data from the drinking water quality API from
 hub'eau
 """
-import pandas as pd
 from cl_hubeau.session import BaseHubeauSession
 from cl_hubeau.exceptions import UnexpectedArguments
 
@@ -168,7 +167,11 @@ class DrinkingWaterQualitySession(BaseHubeauSession):
         )
 
         try:
-            df["date_prelevement"] = pd.to_datetime(df["date_prelevement"])
+            df = df.with_columns(
+                date_prelevement=df["date_prelevement"].str.to_datetime(
+                    "%Y-%m-%d"
+                )
+            )
         except KeyError:
             pass
 
