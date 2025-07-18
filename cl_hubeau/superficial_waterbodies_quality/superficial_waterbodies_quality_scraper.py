@@ -4,7 +4,6 @@ low level class to collect data from the drinking water quality API from
 hub'eau
 """
 import deprecation
-import pandas as pd
 import polars as pl
 
 from cl_hubeau import __version__
@@ -258,7 +257,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         )
 
         try:
-            df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
+            df = df.with_columns(date=df["date"].str.to_datetime("%Y-%m-%d"))
         except KeyError:
             pass
 
@@ -371,8 +370,10 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         )
 
         try:
-            df["date_prelevement"] = pd.to_datetime(
-                df["date_prelevement"], format="%Y-%m-%d"
+            df = df.with_columns(
+                date_prelevement=df["date_prelevement"].str.to_datetime(
+                    "%Y-%m-%d"
+                )
             )
         except KeyError:
             pass
