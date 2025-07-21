@@ -24,8 +24,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     ----------
     **kwargs :
         kwargs passed to PiezometrySession.get_stations (hence mostly intended
-        for hub'eau API's arguments). Do not use `code_departement` as it is
-        set by the current function.
+        for hub'eau API's arguments).
 
     Returns
     -------
@@ -84,8 +83,7 @@ def get_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
         List of code_bss codes for piezometers
     **kwargs :
         kwargs passed to PiezometrySession.get_chronicles (hence mostly
-        intended for hub'eau API's arguments). Do not use `code_bss` as they
-        are set by the current function.
+        intended for hub'eau API's arguments).
 
     Returns
     -------

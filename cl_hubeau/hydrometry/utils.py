@@ -23,8 +23,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     ----------
     **kwargs :
         kwargs passed to HydrometrySession.get_stations (hence mostly intended
-        for hub'eau API's arguments). Do not use `code_departement` as it is
-        set by the current function.
+        for hub'eau API's arguments).
 
     Returns
     -------
@@ -77,8 +76,7 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
     ----------
     **kwargs :
         kwargs passed to HydrometrySession.get_sites (hence mostly intended
-        for hub'eau API's arguments). Do not use `code_departement` as it is
-        set by the current function.
+        for hub'eau API's arguments).
 
     Returns
     -------
