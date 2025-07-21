@@ -67,6 +67,8 @@ def get_all_water_networks(**kwargs) -> pd.DataFrame:
         ]
         results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
 
+        if not results:
+            return pd.DataFrame()
         results = pd.concat(results, ignore_index=True)
     return results
 
@@ -165,11 +167,13 @@ def get_control_results(**kwargs) -> pd.DataFrame:
             )
             for kw_loop in tqdm(
                 kwargs_loop,
-                desc="querying network/network and year/year",
+                desc="querying network/network and 6m/6m",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = pd.concat(results, ignore_index=True)
     return results
