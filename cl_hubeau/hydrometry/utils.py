@@ -23,8 +23,8 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     ----------
     **kwargs :
         kwargs passed to HydrometrySession.get_stations (hence mostly intended
-        for hub'eau API's arguments). Do not use `format` or `code_departement`
-        as they are set by the current function.
+        for hub'eau API's arguments). Do not use `code_departement` as it is
+        set by the current function.
 
     Returns
     -------
@@ -35,11 +35,11 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     deps = get_departements()
 
+    kwargs["format"] = kwargs.get("format", "geojson")
+
     with HydrometrySession() as session:
         results = [
-            session.get_stations(
-                code_departement=dep, format="geojson", **kwargs
-            )
+            session.get_stations(code_departement=dep, **kwargs)
             for dep in tqdm(
                 deps,
                 desc="querying dep/dep",
@@ -65,8 +65,8 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
     ----------
     **kwargs :
         kwargs passed to HydrometrySession.get_sites (hence mostly intended
-        for hub'eau API's arguments). Do not use `format` or `code_departement`
-        as they are set by the current function.
+        for hub'eau API's arguments). Do not use `code_departement` as it is
+        set by the current function.
 
     Returns
     -------
@@ -77,9 +77,11 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
 
     deps = get_departements()
 
+    kwargs["format"] = kwargs.get("format", "geojson")
+
     with HydrometrySession() as session:
         results = [
-            session.get_sites(code_departement=dep, format="geojson", **kwargs)
+            session.get_sites(code_departement=dep, **kwargs)
             for dep in tqdm(
                 deps,
                 desc="querying dep/dep",
