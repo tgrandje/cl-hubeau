@@ -10,12 +10,15 @@ from tqdm import tqdm
 
 from cl_hubeau.piezometry.piezometry_scraper import PiezometrySession
 from cl_hubeau import _config
-from cl_hubeau.utils import get_departements
+from cl_hubeau.utils import get_departements, get_departements_from_regions
 
 
 def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve all piezometers from France.
+
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use a code_region argument to query the results on a given region
 
     Parameters
     ----------
@@ -31,9 +34,20 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
+    if "code_region" in kwargs:
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif "code_commune" in kwargs:
+        deps = [""]
+    else:
+        deps = get_departements()
+
     with PiezometrySession() as session:
 
-        deps = get_departements()
         kwargs["format"] = kwargs.get("format", "geojson")
 
         results = [
@@ -46,6 +60,8 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = gpd.pd.concat(results, ignore_index=True)
     try:
         results["code_bss"]
@@ -89,6 +105,8 @@ def get_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = pd.concat(results, ignore_index=True)
     return results
 
@@ -145,5 +163,7 @@ def get_realtime_chronicles(
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = pd.concat(results, ignore_index=True)
     return results
