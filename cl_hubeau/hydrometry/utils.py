@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 from cl_hubeau.hydrometry.hydrometry_scraper import HydrometrySession
 from cl_hubeau import _config
-from cl_hubeau.utils import get_departements
+from cl_hubeau.utils import get_departements, get_departements_from_regions
 
 
 def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
@@ -33,7 +33,17 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    deps = get_departements()
+    if "code_region" in kwargs:
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif "code_commune_station" in kwargs:
+        deps = [""]
+    else:
+        deps = get_departements()
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
@@ -48,6 +58,8 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = gpd.pd.concat(results, ignore_index=True)
     try:
         results["code_station"]
@@ -75,7 +87,17 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    deps = get_departements()
+    if "code_region" in kwargs:
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif "code_commune_site" in kwargs:
+        deps = [""]
+    else:
+        deps = get_departements()
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
@@ -90,6 +112,8 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
 
     results = gpd.pd.concat(results, ignore_index=True)
     try:
@@ -134,6 +158,8 @@ def get_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = pd.concat(results, ignore_index=True)
     return results
 
@@ -172,9 +198,7 @@ def get_realtime_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = pd.concat(results, ignore_index=True)
     return results
-
-
-# if __name__ == "__main__":
-#     gdf = get_all_sites()
