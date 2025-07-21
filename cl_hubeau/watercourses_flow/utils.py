@@ -18,8 +18,8 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     ----------
     **kwargs :
         kwargs passed to WatercoursesFlowSession.get_stations (hence mostly
-        intended for hub'eau API's arguments). Do not use `format` or
-        `code_departement` as they are set by the current function.
+        intended for hub'eau API's arguments). Do not use `code_departement` as
+        it is set by the current function.
 
     Returns
     -------
@@ -30,11 +30,11 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     with WatercoursesFlowSession() as session:
 
+        kwargs["format"] = kwargs.get("format", "geojson")
+
         deps = get_departements()
         results = [
-            session.get_stations(
-                code_departement=dep, format="geojson", **kwargs
-            )
+            session.get_stations(code_departement=dep, **kwargs)
             for dep in tqdm(
                 deps,
                 desc="querying dep/dep",
