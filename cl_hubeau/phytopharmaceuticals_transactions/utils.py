@@ -271,9 +271,12 @@ def get_all_active_substances_bought(
     Retrieve all active substances bought on a given territory.
 
     An inner loop is used to avoid reaching the 20k threshold (loop over
-    territories and years). To target a territory with a given desired mesh,
-    you can use two arguments which are not covered by hub'eau's endpoints:
-    see `filter_regions` and `filter_departements`.
+    territories and years).
+
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use either a `filter_regions` or `filter_departements` argument
+      to query the results on a given region/departement
+
 
     Parameters
     ----------
@@ -327,9 +330,11 @@ def get_all_phytopharmaceutical_products_bought(
     Retrieve all phytopharmaceutical products bought on a given territory.
 
     An inner loop is used to avoid reaching the 20k threshold (loop over
-    territories and years). To target a territory with a given desired mesh,
-    you can use two arguments which are not covered by hub'eau's endpoints:
-    see `filter_regions` and `filter_departements`.
+    territories and years).
+
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use either a `filter_regions` or `filter_departements` argument
+      to query the results on a given region/departement
 
     Parameters
     ----------
@@ -384,9 +389,11 @@ def get_all_active_substances_sold(
     Retrieve all active substances sold on a given territory.
 
     An inner loop is used to avoid reaching the 20k threshold (loop over
-    territories and years). To target a territory with a given desired mesh,
-    you can use two arguments which are not covered by hub'eau's endpoints:
-    see `filter_regions` and `filter_departements`.
+    territories and years).
+
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use either a `filter_regions` or `filter_departements` argument
+      to query the results on a given region/departement
 
     Parameters
     ----------
@@ -439,9 +446,11 @@ def get_all_phytopharmaceutical_products_sold(
     Retrieve all phytopharmaceutical products sold on a given territory.
 
     An inner loop is used to avoid reaching the 20k threshold (loop over
-    territories and years). To target a territory with a given desired mesh,
-    you can use two arguments which are not covered by hub'eau's endpoints:
-    see `filter_regions` and `filter_departements`.
+    territories and years).
+
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use either a `filter_regions` or `filter_departements` argument
+      to query the results on a given region/departement.
 
     Parameters
     ----------
