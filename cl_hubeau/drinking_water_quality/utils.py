@@ -83,9 +83,9 @@ def get_control_results(**kwargs) -> pd.DataFrame:
 
     Note the following differences from raw Hub'Eau endpoint :
     * you can use a code_region argument to query the results on a given region
-    * to optimize the loops, you should only user either code_region,
+    * to optimize the loops, you should only use either code_region,
       code_departement, code_commune in one hand OR code_reseau in the other
-      hand. Those subset are mutually exclusive.
+      hand. Those arguments are mutually exclusive.
 
     Parameters
     ----------
@@ -129,7 +129,7 @@ def get_control_results(**kwargs) -> pd.DataFrame:
             "'code_reseau' in the other hand."
         )
 
-    if not kwargs.get("code_reseau"):
+    elif not city_codes and not kwargs.get("code_reseau"):
         # neither code_region, code_departement, code_commune nor code_reseau
         # -> let's loop on all french cities
         city_codes = get_cities()
@@ -167,7 +167,7 @@ def get_control_results(**kwargs) -> pd.DataFrame:
             )
             for kw_loop in tqdm(
                 kwargs_loop,
-                desc="querying network/network and 6m/6m",
+                desc=f"querying {codes_names}/{codes_names} and 6m/6m",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
