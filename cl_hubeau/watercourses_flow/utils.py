@@ -38,7 +38,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
         deps = kwargs.pop("code_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_commune" in kwargs:
+    elif any(x in kwargs for x in ("code_commune", "code_station")):
         deps = [""]
     else:
         deps = get_departements()
@@ -99,7 +99,7 @@ def get_all_observations(**kwargs) -> gpd.GeoDataFrame:
         deps = kwargs.pop("code_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_commune" in kwargs:
+    elif any(x in kwargs for x in ("code_commune", "code_station")):
         deps = [""]
     else:
         deps = get_departements()
@@ -139,7 +139,7 @@ def get_all_observations(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def get_all_campaigns(**kwargs) -> gpd.GeoDataFrame:
+def get_all_campaigns(**kwargs) -> pd.DataFrame:
     """
     Retrieve all campaigns from France.
 
@@ -154,8 +154,8 @@ def get_all_campaigns(**kwargs) -> gpd.GeoDataFrame:
 
     Returns
     -------
-    results : gpd.GeoDataFrame
-        GeoDataFrame of campaigns
+    results : pd.DataFrame
+        DataFrame of campaigns
     """
 
     if "code_region" in kwargs:
