@@ -40,7 +40,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
         deps = kwargs.pop("code_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_commune" in kwargs:
+    elif any(x in kwargs for x in ("code_commune", "code_bss", "bss_id")):
         deps = [""]
     else:
         deps = get_departements()
@@ -70,7 +70,61 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def get_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
+def _get_codes_bss(kwargs) -> tuple[str, list]:
+    """
+    Retrieve the available `code_bss` for a given territory
+
+    Note: kwargs is changed **IN PLACE** by side-effect, this is not a
+    double-starred-kwargs !
+
+    Return : label, list_of_codes
+    """
+
+    if "code_bss" in kwargs or "bss_id" in kwargs:
+        label = "code_bss" if "code_bss" in kwargs else "bss_id"
+        codes = kwargs.pop(label)
+        if isinstance(codes, str):
+            codes = codes.split(",")
+
+        conflicts = [
+            "code_region",
+            "code_departement",
+            "code_commune",
+        ]
+        if any(x for x in conflicts if x in kwargs):
+            raise ValueError(
+                "only one argument allowed among either 'code_commune', "
+                "'code_departement', 'code_region' in the one hand AND "
+                f"'{label}' in the other hand."
+            )
+        if label == "code_bss" and "bss_id" in kwargs:
+            raise ValueError(
+                "only one argument allowed among 'code_bss' and 'bss_id' "
+                "is supported"
+            )
+
+    else:
+
+        kwargs_bss = {"format": "json"}
+        if "code_region" in kwargs:
+            code_region = kwargs.pop("code_region")
+            deps = get_departements_from_regions(code_region)
+            kwargs_bss["code_departement"] = deps
+        elif "code_departement" in kwargs:
+            deps = kwargs.pop("code_departement")
+            kwargs_bss["code_departement"] = deps
+        elif "code_commune" in kwargs:
+            kwargs_bss["code_commune"] = kwargs.pop("code_commune")
+
+        # retrieve code_entites
+        label = "code_bss"
+        codes_bss = get_all_stations(fields=[label], **kwargs_bss)
+        codes = codes_bss["code_bss"].tolist()
+
+    return label, codes
+
+
+def get_chronicles(**kwargs) -> pd.DataFrame:
     """
     Retrieve chronicles from multiple piezometers.
 
@@ -79,8 +133,6 @@ def get_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
 
     Parameters
     ----------
-    codes_bss : list
-        List of code_bss codes for piezometers
     **kwargs :
         kwargs passed to PiezometrySession.get_chronicles (hence mostly
         intended for hub'eau API's arguments).
@@ -91,6 +143,10 @@ def get_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
         DataFrame of results
 
     """
+
+    label, codes_bss = _get_codes_bss(kwargs)
+    if label != "code_bss":
+        raise ValueError("code_bss is mandatory")
 
     with PiezometrySession() as session:
         results = [
@@ -109,9 +165,7 @@ def get_chronicles(codes_bss: list, **kwargs) -> pd.DataFrame:
     return results
 
 
-def get_realtime_chronicles(
-    codes_bss: list = None, bss_ids: list = None, **kwargs
-) -> pd.DataFrame:
+def get_realtime_chronicles(**kwargs) -> pd.DataFrame:
     """
     Retrieve realtimes chronicles from multiple piezometers.
     Uses a reduced timeout for cache expiration.
@@ -120,10 +174,6 @@ def get_realtime_chronicles(
 
     Parameters
     ----------
-    codes_bss : list, optional
-        List of code_bss codes for piezometers. The default is None.
-    bss_ids : list, optional
-        List of bss_id codes for piezometers. The default is None.
     **kwargs :
         kwargs passed to PiezometrySession.get_realtime_chronicles (hence
         mostly intended for hub'eau API's arguments). Do not use `code_bss` as
@@ -136,23 +186,13 @@ def get_realtime_chronicles(
 
     """
 
-    if codes_bss and bss_ids:
-        raise ValueError(
-            "only one argument allowed among codes_bss and bss_ids"
-        )
-    if not codes_bss and not bss_ids:
-        raise ValueError(
-            "exactly one argument must be set among codes_bss and bss_ids"
-        )
-
-    code_names = "code_bss" if codes_bss else "bss_id"
-    codes = codes_bss if codes_bss else bss_ids
+    label, codes = _get_codes_bss(kwargs)
 
     with PiezometrySession(
         expire_after=_config["DEFAULT_EXPIRE_AFTER_REALTIME"]
     ) as session:
         results = [
-            session.get_realtime_chronicles(**{code_names: code}, **kwargs)
+            session.get_realtime_chronicles(**{label: code}, **kwargs)
             for code in tqdm(
                 codes,
                 desc="querying piezo/piezo",
