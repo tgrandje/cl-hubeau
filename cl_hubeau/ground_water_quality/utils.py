@@ -46,7 +46,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
         deps = kwargs.pop("code_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_commune" in kwargs:
+    elif any(x in kwargs for x in ("code_commune", "bss_id")):
         deps = [""]
     else:
         deps = get_departements()
