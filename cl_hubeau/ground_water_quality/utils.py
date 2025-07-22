@@ -39,11 +39,17 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
+    if "code_departement" in kwargs:
+        warnings.warn(
+            "kwargs code_departement was found, perhaps you meant "
+            "num_departement ?"
+        )
+
     if "code_region" in kwargs:
         code_region = kwargs.pop("code_region")
         deps = get_departements_from_regions(code_region)
-    elif "code_departement" in kwargs:
-        deps = kwargs.pop("code_departement")
+    elif "num_departement" in kwargs:
+        deps = kwargs.pop("num_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
     elif any(x in kwargs for x in ("code_commune", "bss_id")):

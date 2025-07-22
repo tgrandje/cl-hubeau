@@ -131,6 +131,10 @@ def get_chronicles(**kwargs) -> pd.DataFrame:
     Use an inner loop for multiple piezometers to avoid reaching 20k results
     threshold from hub'eau API.
 
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use a code_region, code_departement or code_commune argument to
+      query the results on a given area
+
     Parameters
     ----------
     **kwargs :
@@ -170,7 +174,12 @@ def get_realtime_chronicles(**kwargs) -> pd.DataFrame:
     Retrieve realtimes chronicles from multiple piezometers.
     Uses a reduced timeout for cache expiration.
 
-    Note that `codes_bss` and `bss_ids` are mutually exclusive!
+    Note that `code_bss` and `bss_id` are mutually exclusive to allow cl-hubeau
+    to handle the inner loop.
+
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use a code_region, code_departement or code_commune argument to
+      query the results on a given area
 
     Parameters
     ----------
