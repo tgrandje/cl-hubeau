@@ -116,6 +116,18 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
     if "date_fin_prelevement" not in kwargs:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
+    if "code_commune" in kwargs:
+        warnings.warn(
+            "kwargs code_commune was found, perhaps you meant "
+            "code_insee_actuel ?"
+        )
+
+    if "code_departement" in kwargs:
+        warnings.warn(
+            "kwargs code_departement was found, perhaps you meant "
+            "num_departement ?"
+        )
+
     if "code_region" in kwargs:
         code_region = kwargs.pop("code_region")
         deps = get_departements_from_regions(code_region)
