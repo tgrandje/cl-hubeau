@@ -129,7 +129,7 @@ def get_control_results(**kwargs) -> pd.DataFrame:
             "'code_reseau' in the other hand."
         )
 
-    elif not city_codes and not kwargs.get("code_reseau"):
+    if not city_codes and not kwargs.get("code_reseau"):
         # neither code_region, code_departement, code_commune nor code_reseau
         # -> let's loop on all french cities
         city_codes = get_cities()
