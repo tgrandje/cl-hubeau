@@ -157,7 +157,7 @@ def _get_territory_years_combination(
 
     if transaction == "bought":
         annee_min = kwargs.pop("annee_min", None) or 2013
-    if transaction == "sold":
+    elif transaction == "sold":
         annee_min = kwargs.pop("annee_min", None) or 2008
 
     annee_max = annee_max if annee_max else date.today().year
