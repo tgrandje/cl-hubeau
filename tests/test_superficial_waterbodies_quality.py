@@ -5,8 +5,6 @@
 Test high level functions
 """
 
-from datetime import date, timedelta
-
 import geopandas as gpd
 import pandas as pd
 import pytest
@@ -14,7 +12,7 @@ import re
 from requests_cache import CacheMixin
 
 from cl_hubeau import superficial_waterbodies_quality
-from .utils import silence_api_version_warning
+from tests.utils import silence_api_version_warning
 
 
 class MockResponse:
@@ -156,7 +154,9 @@ def test_get_operations_live():
 
 def test_get_environmental_conditions_live():
     data = superficial_waterbodies_quality.get_all_environmental_conditions(
-        code_region="04",
+        code_departement="974",
+        date_debut_prelevement="1990-01-01",
+        date_fin_prelevement="1990-07-01",
     )
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) >= 40
@@ -164,9 +164,10 @@ def test_get_environmental_conditions_live():
 
 def test_get_analyses_live():
     data = superficial_waterbodies_quality.get_all_analyses(
-        code_region="06",
+        code_departement="974",
         date_debut_prelevement="2020-01-01",
         date_fin_prelevement="2020-06-01",
+        libelle_parametre="Benzo(a)pyrène",
     )
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) >= 800

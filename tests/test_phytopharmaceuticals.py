@@ -14,13 +14,10 @@ import pytest
 from requests_cache import CacheMixin
 
 from cl_hubeau import phytopharmaceuticals_transactions
-from cl_hubeau.phytopharmaceuticals_transactions import (
-    PhytopharmaceuticalsSession,
-)
 from cl_hubeau.phytopharmaceuticals_transactions.utils import (
     _get_territory_years_combination,
 )
-from .utils import silence_api_version_warning
+from tests.utils import silence_api_version_warning
 
 
 class MockResponse:

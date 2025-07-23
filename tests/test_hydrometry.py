@@ -13,7 +13,7 @@ from requests_cache import CacheMixin
 
 from cl_hubeau import hydrometry
 from cl_hubeau.hydrometry import HydrometrySession
-from .utils import silence_api_version_warning
+from tests.utils import silence_api_version_warning
 
 # "get_all_stations",
 # "get_all_sites",

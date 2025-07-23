@@ -14,7 +14,7 @@ from requests_cache import CacheMixin
 
 from cl_hubeau import watercourses_flow
 from cl_hubeau.watercourses_flow import WatercoursesFlowSession
-from .utils import silence_api_version_warning
+from tests.utils import silence_api_version_warning
 
 
 class MockResponse:

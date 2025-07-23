@@ -11,7 +11,7 @@ import pytest
 from requests_cache import CacheMixin
 
 from cl_hubeau import ground_water_quality
-from .utils import silence_api_version_warning
+from tests.utils import silence_api_version_warning
 
 
 class MockResponse:
