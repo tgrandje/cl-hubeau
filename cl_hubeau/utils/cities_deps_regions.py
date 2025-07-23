@@ -4,6 +4,7 @@
 Get list of cities' and departements' codes
 """
 
+from datetime import date
 from itertools import chain
 import logging
 import os
@@ -11,12 +12,15 @@ from typing import Union
 
 import diskcache
 import geopandas as gpd
+from french_cities.ultramarine_pseudo_cog import _get_ultramarines_cities
+from french_cities import set_vintage
 import pandas as pd
 from pynsee import get_area_list, get_geo_list, get_geodata
 from pynsee.utils.init_connection import init_conn
 
-from cl_hubeau.config import _config
 from cl_hubeau.constants import DIR_CACHE, DISKCACHE
+from cl_hubeau.config import _config
+
 
 cache = diskcache.Cache(os.path.join(DIR_CACHE, DISKCACHE))
 
@@ -38,6 +42,12 @@ def silence_sirene_logs(func):
             )
             and not record.msg.startswith(
                 "Remember to subscribe to SIRENE API"
+            )
+            and not (
+                record.msg.startswith("Existing environment variable %s")
+                and (
+                    "http_proxy" in record.args or "https_proxy" in record.args
+                )
             )
         )
 
@@ -72,11 +82,74 @@ def init_pynsee_connection():
     init_conn(**kwargs)
 
 
+@cache.memoize(
+    tag="cities", expire=_config["DEFAULT_EXPIRE_AFTER"].total_seconds()
+)
 @silence_sirene_logs
-def _get_pynsee_arealist_cities() -> pd.DataFrame:
-    "Retrieve french cities for all times"
+def _get_pynsee_arealist_cities(
+    code_departement: tuple = None,
+    code_region: tuple = None,
+) -> pd.DataFrame:
+    """
+    Retrieve french cities for all times (including ultramarines)
+
+    Parameters
+    ----------
+    code_departement : Union[str, list, tuple, set], optional
+        If set, will restrict cities codes to the desired departements
+    code_region : Union[str, list, tuple, set], optional
+        If set, will restrict cities codes to the desired code_region
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame of cities
+    """
+
     init_pynsee_connection()
-    cities = get_area_list("communes", "*", silent=True)
+
+    cities = pd.concat(
+        [
+            get_area_list("communes", "*", silent=True),
+            _get_ultramarines_cities(
+                date.today().strftime("%Y-01-01"),
+                threads=_config["THREADS"],
+            ),
+        ]
+    ).drop_duplicates("CODE")
+
+    if code_departement or code_region:
+
+        restored, *_ = cache.get("cities_rich", tag="cities")
+        if restored is not None:
+            cities = restored
+        else:
+            cities["CODE_INIT"] = cities["CODE"]
+            cities = set_vintage(cities, date.today().year, "CODE")
+
+            kwargs = {"silent": True}
+            dep_reg = pd.concat(
+                [
+                    get_geo_list("communesAssociees", **kwargs),
+                    get_geo_list("communes", **kwargs),
+                    get_geo_list("communesDeleguees", **kwargs),
+                ]
+            )[["CODE", "CODE_REG", "CODE_DEP"]]
+
+            cities = cities.merge(dep_reg, on="CODE", how="left")
+
+            cache.set(
+                "cities_rich",
+                cities,
+                tag="cities",
+                expire=_config["DEFAULT_EXPIRE_AFTER"].total_seconds(),
+            )
+
+        if code_departement:
+            cities = cities[cities.CODE_DEP.isin(set(code_departement))]
+        if code_region:
+            cities = cities[cities.CODE_REG.isin(set(code_region))]
+
     return cities
 
 
@@ -151,24 +224,43 @@ def _get_pynsee_arealist_departements():
     return deps
 
 
-def get_cities():
+def get_cities(
+    code_departement: Union[str, list, tuple, set] = None,
+    code_region: Union[str, list, tuple, set] = None,
+):
     """
     Retrieve all unique cities' codes in the whole timeline.
 
     This allows to query datasets using Region codes even if you don't
     know the dataset's vintage.
 
+    Parameters
+    ----------
+    code_departement : Union[str, list, tuple, set], optional
+        If set, will restrict cities codes to the desired departements
+    code_region : Union[str, list, tuple, set], optional
+        If set, will restrict cities codes to the desired code_region
+
     Returns
     -------
     list
-        Codes of departements
+        Codes of cities (past or present)
 
     Examples
     -------
     >>> get_cities()
     ['01001', '01002', '01003', ..., '97615', '97616', '97617']
     """
-    cities = _get_pynsee_arealist_cities()
+
+    # Convert args to tuple to allow caching
+    kwargs = {"code_departement": code_departement, "code_region": code_region}
+    for key, val in kwargs.items():
+        if val:
+            if isinstance(val, str):
+                val = val.split(",")
+            kwargs[key] = tuple(val)
+
+    cities = _get_pynsee_arealist_cities(**kwargs)
     return cities["CODE"].unique().tolist()
 
 

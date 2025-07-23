@@ -30,8 +30,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     Retrieve all stations for physical/chemical analyses on superficial
     waterbodies
 
-    Use a loop to avoid reaching 20k results threshold. Do not use
-    `code_departement` or `format` as they are set by the current function.
+    Use a loop to avoid reaching 20k results threshold.
 
     Parameters
     ----------
@@ -46,16 +45,26 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    deps = get_departements()
+    if "code_region" in kwargs:
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif "code_commune" in kwargs:
+        deps = [""]
+    else:
+        deps = get_departements()
+
+    kwargs["format"] = kwargs.get("format", "geojson")
 
     # Split by 20-something chunks
     deps = [deps[i : i + 20] for i in range(0, len(deps), 20)]
 
     with SuperficialWaterbodiesQualitySession() as session:
         results = [
-            session.get_stations(
-                code_departement=dep, format="geojson", **kwargs
-            )
+            session.get_stations(code_departement=dep, **kwargs)
             for dep in tqdm(
                 deps,
                 desc="querying dep/dep",
@@ -65,7 +74,11 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
         ]
         results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
 
+        if not results:
+            return gpd.GeoDataFrame()
+
         results = gpd.pd.concat(results, ignore_index=True)
+
     return results
 
 
@@ -83,7 +96,6 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
     **kwargs :
         kwargs passed to SuperficialWaterbodiesQualitySession.get_operations
         (hence mostly intended for hub'eau API's arguments).
-        Do not use `format` which is used by this function.
 
     Returns
     -------
@@ -98,8 +110,7 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
             "kwargs, for instance `get_operations(code_departement='02')`"
         )
 
-    # Set a loop for yearly querying as dataset are big
-
+    # Set a loop for Xth months as dataset are big
     start_auto_determination = False
     if "date_debut_prelevement" not in kwargs:
         start_auto_determination = True
@@ -110,30 +121,34 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
     if "code_region" in kwargs:
         # let's downcast to departemental loops
         reg = kwargs.pop("code_region")
-        if isinstance(reg, (list, tuple, set)):
-            deps = [
-                dep for r in reg for dep in get_departements_from_regions(r)
-            ]
-        else:
-            deps = get_departements_from_regions(reg)
-        kwargs["code_departement"] = deps
+        deps = get_departements_from_regions(reg)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif "code_commune" in kwargs:
+        deps = [""]
+    else:
+        deps = get_departements()
 
-    desc = "querying 6m/6m" + (
-        " & dep/dep" if "code_departement" in kwargs else ""
-    )
+    kwargs["code_departement"] = deps
+
+    kwargs["format"] = kwargs.get("format", "geojson")
+
+    desc = "querying 6m/6m" + (" & dep/dep" if deps != [""] else "")
 
     kwargs_loop = prepare_kwargs_loops(
         "date_debut_prelevement",
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
+        months=6,
     )
 
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
             session.get_operations(
-                format="geojson",
                 **kwargs,
                 **kw_loop,
             )
@@ -145,6 +160,10 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+
+    if not results:
+        return pd.DataFrame()
+
     results = pd.concat(results, ignore_index=True)
     return results
 
@@ -155,7 +174,7 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
 
     Should only be used with additional arguments to avoid reaching the 20k
     threshold, in conjonction with the built-in loop (which will operate
-    on yearly subsets, even if date_min_prelevement/date_max_prelevement are
+    on 6 months subsets, even if date_min_prelevement/date_max_prelevement are
     not set.)
 
     Parameters
@@ -163,7 +182,6 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     **kwargs :
         kwargs passed to SuperficialWaterbodiesQualitySession.get_environmental_conditions
         (hence mostly intended for hub'eau API's arguments).
-        Do not use `format` which is used by this function.
 
     Returns
     -------
@@ -199,7 +217,9 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
             deps = get_departements_from_regions(reg)
         kwargs["code_departement"] = deps
 
-    desc = "querying year/year" + (
+    kwargs["format"] = kwargs.get("format", "geojson")
+
+    desc = "querying 6m/6m" + (
         " & dep/dep" if "code_departement" in kwargs else ""
     )
 
@@ -213,9 +233,7 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
-            session.get_environmental_conditions(
-                format="geojson", **kwargs, **kw_loop
-            )
+            session.get_environmental_conditions(**kwargs, **kw_loop)
             for kw_loop in tqdm(
                 kwargs_loop,
                 desc=desc,
@@ -224,6 +242,10 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+
+    if not results:
+        return pd.DataFrame()
+
     results = pd.concat(results, ignore_index=True)
     return results
 
@@ -264,7 +286,7 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
 
     Should only be used with additional arguments to avoid reaching the 20k
     threshold, in conjonction with the built-in loop (which will operate
-    on yearly subsets, even if date_min_prelevement/date_max_prelevement are
+    on 6 months subsets, even if date_min_prelevement/date_max_prelevement are
     not set.)
 
     Parameters
@@ -297,20 +319,24 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
     if "code_region" in kwargs:
-        # let's downcast to departemental loops
-        reg = kwargs.pop("code_region")
-        if isinstance(reg, (list, tuple, set)):
-            deps = [
-                dep for r in reg for dep in get_departements_from_regions(r)
-            ]
-        else:
-            deps = get_departements_from_regions(reg)
-        kwargs["code_departement"] = deps
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif "code_commune" in kwargs:
+        deps = [""]
+    else:
+        deps = get_departements()
 
-    desc = "querying year/year" + (
-        " & dep/dep" if "code_departement" in kwargs else ""
-    )
+    kwargs["format"] = kwargs.get("format", "geojson")
 
+    # Split by 20-something chunks
+    deps = [deps[i : i + 20] for i in range(0, len(deps), 20)]
+    kwargs["code_departement"] = deps
+
+    desc = "querying 6m/6m" + (" & dep/dep" if deps != [""] else "")
     kwargs_loop = prepare_kwargs_loops(
         "date_debut_prelevement",
         "date_fin_prelevement",
@@ -321,7 +347,7 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
-            session.get_analyses(format="geojson", **kwargs, **kw_loop)
+            session.get_analyses(**kwargs, **kw_loop)
             for kw_loop in tqdm(
                 kwargs_loop,
                 desc=desc,
@@ -330,5 +356,9 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+
+    if not results:
+        return pd.DataFrame()
+
     results = pd.concat(results, ignore_index=True)
     return results

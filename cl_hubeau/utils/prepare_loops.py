@@ -12,7 +12,7 @@ def prepare_kwargs_loops(
     key_end: str,
     kwargs: dict,
     start_auto_determination: bool,
-    split_months: int = 6,
+    months: float = 6,
 ) -> dict:
     """
     Prepare a list of kwargs of arguments to prepare a temporal loop.
@@ -31,7 +31,7 @@ def prepare_kwargs_loops(
         kwargs passed to a higher level function.
     start_auto_determination : bool
         Whether the dates were automatically set by the algorithm.
-    split_months : int
+    months : float
         Number of consecutive months to split the data into
 
     Returns
@@ -46,7 +46,12 @@ def prepare_kwargs_loops(
     start = datetime.strptime(kwargs.pop(key_start), "%Y-%m-%d").date()
     end = datetime.strptime(kwargs.pop(key_end), "%Y-%m-%d").date()
 
-    ranges = pd.date_range(start, end=end, freq=f"{split_months}MS")
+    if months == 0.5:
+        ranges = pd.date_range(start, end=end, freq="SME")
+    elif months == 0.25:
+        ranges = pd.date_range(start, end=end, freq="W")
+    else:
+        ranges = pd.date_range(start, end=end, freq=f"{months}MS")
     dates = pd.Series(ranges).to_frame("min")
     dates["max"] = dates["min"].shift(-1) - timedelta(days=1)
     dates.at[dates.index.max(), "max"] = pd.Timestamp(end)
@@ -83,13 +88,12 @@ def prepare_kwargs_loops(
         axis=1,
     )
 
-    if "code_departement" in kwargs:
-        deps = kwargs.pop("code_departement")
-        if isinstance(deps, str):
-            deps = [deps]
-        args = args.merge(
-            pd.Series(deps, name="code_departement"), how="cross"
-        )
+    for x in "code_region", "code_departement", "code_commune":
+        if x in kwargs:
+            territory = kwargs.pop(x)
+            if isinstance(territory, str):
+                territory = [territory]
+            args = args.merge(pd.Series(territory, name=x), how="cross")
 
     # Force restitution of new results at first hand, to trigger
     # ValueError >20k results faster
