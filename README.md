@@ -451,7 +451,7 @@ may fail. In theory, you could even query the API without specifying the substan
 you're tracking, but you will hit the 20k threshold and trigger an exception.
 
 In practice, you should call the same function with a territorial restriction or with
-specific bss_ids.
+specific `bss_id`s.
 For instance, you could use official city codes directly:
 
 ```python
@@ -479,7 +479,7 @@ Note that :
 with ground_water_quality.GroundWaterQualitySession() as session:
     df = session.get_stations(bss_id="01832B0600")
     df = session.get_analyses(
-        bss_ids=["BSS000BMMA"],
+        bss_id=["BSS000BMMA"],
         code_param="1461",
         )
 ```
