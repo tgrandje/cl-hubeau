@@ -3,10 +3,9 @@
 low level class to collect data from the drinking water quality API from
 hub'eau
 """
-import deprecation
 import polars as pl
+from deprecated import deprecated
 
-from cl_hubeau import __version__
 from cl_hubeau.session import BaseHubeauSession
 from cl_hubeau.exceptions import UnexpectedArguments
 
@@ -380,11 +379,9 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
 
         return df
 
-    @deprecation.deprecated(
-        deprecated_in="0.6.0",
-        removed_in="1.0",
-        current_version=__version__,
-        details=(
+    @deprecated(
+        version="0.6.0",
+        reason=(
             "Please use `SuperficialWaterbodiesQualitySession.get_analyses` "
             "instead.",
         ),

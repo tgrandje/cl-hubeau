@@ -23,12 +23,14 @@ def get_all_stations(**kwargs) -> GeoPolarsDataFrame:
     """
     Retrieve all stations from France.
 
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use a code_region argument to query the results on a given region
+
     Parameters
     ----------
     **kwargs :
         kwargs passed to PiezometrySession.get_stations (hence mostly intended
-        for hub'eau API's arguments). Do not use `format` or `code_departement`
-        as they are set by the current function.
+        for hub'eau API's arguments).
 
     Returns
     -------
@@ -37,13 +39,30 @@ def get_all_stations(**kwargs) -> GeoPolarsDataFrame:
 
     """
 
+    if "code_departement" in kwargs:
+        warnings.warn(
+            "kwargs code_departement was found, perhaps you meant "
+            "num_departement ?"
+        )
+
+    if "code_region" in kwargs:
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "num_departement" in kwargs:
+        deps = kwargs.pop("num_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif any(x in kwargs for x in ("code_commune", "bss_id")):
+        deps = [""]
+    else:
+        deps = get_departements()
+
     with GroundWaterQualitySession() as session:
 
-        deps = get_departements()
+        kwargs["format"] = kwargs.get("format", "geojson")
+
         results = [
-            session.get_stations(
-                num_departement=dep, format="geojson", **kwargs
-            )
+            session.get_stations(num_departement=dep, **kwargs)
             for dep in tqdm(
                 deps,
                 desc="querying dep/dep",
@@ -51,6 +70,7 @@ def get_all_stations(**kwargs) -> GeoPolarsDataFrame:
                 position=tqdm._get_free_pos(),
             )
         ]
+
     results = [x for x in results if len(x) > 0]
 
     if not results:
@@ -104,19 +124,34 @@ def get_all_analyses(**kwargs) -> GeoPolarsDataFrame:
     if "date_fin_prelevement" not in kwargs:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
+    if "code_commune" in kwargs:
+        warnings.warn(
+            "kwargs code_commune was found, perhaps you meant "
+            "code_insee_actuel ?"
+        )
+
+    if "code_departement" in kwargs:
+        warnings.warn(
+            "kwargs code_departement was found, perhaps you meant "
+            "num_departement ?"
+        )
+
     if "code_region" in kwargs:
-        # let's downcast to departemental loops
-        reg = kwargs.pop("code_region")
-        if isinstance(reg, (list, tuple, set)):
-            deps = [
-                dep for r in reg for dep in get_departements_from_regions(r)
-            ]
-        else:
-            deps = get_departements_from_regions(reg)
-        kwargs["num_departement"] = deps
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "num_departement" in kwargs:
+        deps = kwargs.pop("num_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif any(x in kwargs for x in ("code_insee_actuel", "bss_id")):
+        deps = [""]
+    else:
+        deps = get_departements()
+
+    kwargs["num_departement"] = deps
 
     desc = "querying 6m/6m" + (
-        " & dep/dep" if "num_departement" in kwargs else ""
+        " & dep/dep" if "num_departement" != [""] else ""
     )
 
     kwargs_loop = prepare_kwargs_loops(
@@ -124,7 +159,6 @@ def get_all_analyses(**kwargs) -> GeoPolarsDataFrame:
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
-        months=6,
     )
 
     with GroundWaterQualitySession() as session:
@@ -138,10 +172,12 @@ def get_all_analyses(**kwargs) -> GeoPolarsDataFrame:
                 position=tqdm._get_free_pos(),
             )
         ]
+
     results = [x for x in results if len(x) > 0]
 
     if not results:
         return GeoPolarsDataFrame()
 
     results = concat(results, how="vertical_relaxed")
+
     return results

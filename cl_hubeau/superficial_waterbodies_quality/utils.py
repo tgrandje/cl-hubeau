@@ -7,11 +7,11 @@ Convenience functions for superficial waterbodies quality inspections
 from datetime import date
 import warnings
 
-import deprecation
+from deprecated import deprecated
+import geopandas as gpd
 from tqdm import tqdm
 
 
-from cl_hubeau import __version__
 from cl_hubeau.frames import GeoPolarsDataFrame, concat
 from cl_hubeau.superficial_waterbodies_quality import (
     SuperficialWaterbodiesQualitySession,
@@ -29,8 +29,7 @@ def get_all_stations(**kwargs) -> GeoPolarsDataFrame:
     Retrieve all stations for physical/chemical analyses on superficial
     waterbodies
 
-    Use a loop to avoid reaching 20k results threshold. Do not use
-    `code_departement` or `format` as they are set by the current function.
+    Use a loop to avoid reaching 20k results threshold.
 
     Parameters
     ----------
@@ -52,19 +51,19 @@ def get_all_stations(**kwargs) -> GeoPolarsDataFrame:
         deps = kwargs.pop("code_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_commune" in kwargs:
+    elif any(x in kwargs for x in ("code_commune", "code_station")):
         deps = [""]
     else:
         deps = get_departements()
+
+    kwargs["format"] = kwargs.get("format", "geojson")
 
     # Split by 20-something chunks
     deps = [deps[i : i + 20] for i in range(0, len(deps), 20)]
 
     with SuperficialWaterbodiesQualitySession() as session:
         results = [
-            session.get_stations(
-                code_departement=dep, format="geojson", **kwargs
-            )
+            session.get_stations(code_departement=dep, **kwargs)
             for dep in tqdm(
                 deps,
                 desc="querying dep/dep",
@@ -96,7 +95,6 @@ def get_all_operations(**kwargs) -> GeoPolarsDataFrame:
     **kwargs :
         kwargs passed to SuperficialWaterbodiesQualitySession.get_operations
         (hence mostly intended for hub'eau API's arguments).
-        Do not use `format` which is used by this function.
 
     Returns
     -------
@@ -127,12 +125,14 @@ def get_all_operations(**kwargs) -> GeoPolarsDataFrame:
         deps = kwargs.pop("code_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_commune" in kwargs:
+    elif any(x in kwargs for x in ("code_commune", "code_station")):
         deps = [""]
     else:
         deps = get_departements()
 
     kwargs["code_departement"] = deps
+
+    kwargs["format"] = kwargs.get("format", "geojson")
 
     desc = "querying 6m/6m" + (" & dep/dep" if deps != [""] else "")
 
@@ -148,7 +148,6 @@ def get_all_operations(**kwargs) -> GeoPolarsDataFrame:
 
         results = [
             session.get_operations(
-                format="geojson",
                 **kwargs,
                 **kw_loop,
             )
@@ -174,7 +173,7 @@ def get_all_environmental_conditions(**kwargs) -> GeoPolarsDataFrame:
 
     Should only be used with additional arguments to avoid reaching the 20k
     threshold, in conjonction with the built-in loop (which will operate
-    on yearly subsets, even if date_min_prelevement/date_max_prelevement are
+    on 6 months subsets, even if date_min_prelevement/date_max_prelevement are
     not set.)
 
     Parameters
@@ -182,7 +181,6 @@ def get_all_environmental_conditions(**kwargs) -> GeoPolarsDataFrame:
     **kwargs :
         kwargs passed to SuperficialWaterbodiesQualitySession.get_environmental_conditions
         (hence mostly intended for hub'eau API's arguments).
-        Do not use `format` which is used by this function.
 
     Returns
     -------
@@ -208,17 +206,20 @@ def get_all_environmental_conditions(**kwargs) -> GeoPolarsDataFrame:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
     if "code_region" in kwargs:
-        # let's downcast to departemental loops
-        reg = kwargs.pop("code_region")
-        if isinstance(reg, (list, tuple, set)):
-            deps = [
-                dep for r in reg for dep in get_departements_from_regions(r)
-            ]
-        else:
-            deps = get_departements_from_regions(reg)
-        kwargs["code_departement"] = deps
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif any(x in kwargs for x in ("code_commune", "code_station")):
+        deps = [""]
+    else:
+        deps = get_departements()
 
-    desc = "querying year/year" + (
+    kwargs["format"] = kwargs.get("format", "geojson")
+
+    desc = "querying 6m/6m" + (
         " & dep/dep" if "code_departement" in kwargs else ""
     )
 
@@ -232,9 +233,7 @@ def get_all_environmental_conditions(**kwargs) -> GeoPolarsDataFrame:
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
-            session.get_environmental_conditions(
-                format="geojson", **kwargs, **kw_loop
-            )
+            session.get_environmental_conditions(**kwargs, **kw_loop)
             for kw_loop in tqdm(
                 kwargs_loop,
                 desc=desc,
@@ -251,13 +250,8 @@ def get_all_environmental_conditions(**kwargs) -> GeoPolarsDataFrame:
     return results
 
 
-@deprecation.deprecated(
-    deprecated_in="0.6.0",
-    removed_in="1.0",
-    current_version=__version__,
-    details="Please use `get_all_analyses` instead.",
-)
-def get_all_analysis(**kwargs) -> GeoPolarsDataFrame:
+@deprecated(version="0.6.0", reason="Please use `get_all_analyses` instead.")
+def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve analyses results from measures.
 
@@ -287,7 +281,7 @@ def get_all_analyses(**kwargs) -> GeoPolarsDataFrame:
 
     Should only be used with additional arguments to avoid reaching the 20k
     threshold, in conjonction with the built-in loop (which will operate
-    on yearly subsets, even if date_min_prelevement/date_max_prelevement are
+    on 6 months subsets, even if date_min_prelevement/date_max_prelevement are
     not set.)
 
     Parameters
@@ -326,29 +320,29 @@ def get_all_analyses(**kwargs) -> GeoPolarsDataFrame:
         deps = kwargs.pop("code_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_commune" in kwargs:
+    elif any(x in kwargs for x in ("code_commune", "code_station")):
         deps = [""]
     else:
         deps = get_departements()
+
+    kwargs["format"] = kwargs.get("format", "geojson")
 
     # Split by 20-something chunks
     deps = [deps[i : i + 20] for i in range(0, len(deps), 20)]
     kwargs["code_departement"] = deps
 
-    m = 6
-    desc = f"querying {m}m/{m}m" + (" & dep/dep" if deps != [""] else "")
+    desc = "querying 6m/6m" + (" & dep/dep" if deps != [""] else "")
     kwargs_loop = prepare_kwargs_loops(
         "date_debut_prelevement",
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
-        months=m,
     )
 
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
-            session.get_analyses(format="geojson", **kwargs, **kw_loop)
+            session.get_analyses(**kwargs, **kw_loop)
             for kw_loop in tqdm(
                 kwargs_loop,
                 desc=desc,

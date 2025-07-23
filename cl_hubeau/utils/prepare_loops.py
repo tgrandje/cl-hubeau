@@ -88,7 +88,14 @@ def prepare_kwargs_loops(
         axis=1,
     )
 
-    for x in "code_region", "code_departement", "code_commune":
+    for x in (
+        "code_region",
+        "code_departement",
+        "code_commune",
+        # groundwater quality endpoint:
+        "num_departement",
+        "code_insee_actuel",
+    ):
         if x in kwargs:
             territory = kwargs.pop(x)
             if isinstance(territory, str):

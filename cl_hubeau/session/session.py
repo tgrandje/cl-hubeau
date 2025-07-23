@@ -32,10 +32,12 @@ from cl_hubeau import _config, __version__
 from cl_hubeau.frames import GeoPolarsDataFrame
 from cl_hubeau.exceptions import UnexpectedValueError
 
+logger = logging.getLogger(__name__)
+
 
 @lru_cache(maxsize=None)
 def log_only_once(url):
-    logging.warning("api_version not found among API response")
+    logger.warning("api_version not found among API response")
 
 
 def map_func(
@@ -333,7 +335,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         *args,
         **kwargs,
     ):
-        logging.info(
+        logger.info(
             "method=%s url=%s args=%s kwargs=%s", method, url, args, kwargs
         )
         r = super().request(
@@ -424,7 +426,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             except KeyError:
                 log_only_once(url)
 
-        logging.debug(js)
+        logger.debug(js)
 
         page = "page" if "page" in js["first"] else "cursor"
 
@@ -464,7 +466,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             return pl.concat(results, how="vertical_relaxed")
 
         msg = f"{count_rows} expected results"
-        logging.info(msg)
+        logger.info(msg)
         count_pages = count_rows // self.size + (
             0 if count_rows % self.size == 0 else 1
         )

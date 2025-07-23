@@ -267,15 +267,15 @@ Get the sanitary controls's results for nitrates on all networks of Paris, Lyon 
 (uses a 30 days caching) for nitrates
 
 ```python
-networks = drinking_water_quality.get_all_water_networks()
+networks = drinking_water_quality.get_all_water_networks(code_region=["11", "84", "93"])
 networks = networks[
     networks.nom_commune.isin(["PARIS", "MARSEILLE", "LYON"])
     ]["code_reseau"].unique().tolist()
 
 df = drinking_water_quality.get_control_results(
-    codes_reseaux=networks,
-    code_parametre="1340"
+    code_reseau=networks, code_parametre="1340"
 )
+df = df[df.nom_commune.isin(["PARIS", "MARSEILLE", "LYON"])]
 ```
 
 Note that this query is heavy, even if this was already restricted to nitrates.
@@ -285,7 +285,7 @@ but you may hit the 20k threshold and trigger an exception.
 You can also call the same function, using official city codes directly:
 ```python
 df = drinking_water_quality.get_control_results(
-    codes_communes=['59350'],
+    code_commune=['59350'],
     code_parametre="1340"
 )
 ```
@@ -451,7 +451,7 @@ may fail. In theory, you could even query the API without specifying the substan
 you're tracking, but you will hit the 20k threshold and trigger an exception.
 
 In practice, you should call the same function with a territorial restriction or with
-specific bss_ids.
+specific `bss_id`s.
 For instance, you could use official city codes directly:
 
 ```python
@@ -479,7 +479,7 @@ Note that :
 with ground_water_quality.GroundWaterQualitySession() as session:
     df = session.get_stations(bss_id="01832B0600")
     df = session.get_analyses(
-        bss_ids=["BSS000BMMA"],
+        bss_id=["BSS000BMMA"],
         code_param="1461",
         )
 ```

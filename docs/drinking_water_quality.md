@@ -56,7 +56,7 @@ identifier un piézomètre sur ce point de sortie API).
 ```python
 from cl_hubeau import drinking_water_quality
 df = drinking_water_quality.get_control_results(
-    codes_reseaux=['013000519', '013000521'],
+    code_reseau=['013000519', '013000521'],
     code_parametre="1340"
 )
 ```
@@ -78,7 +78,7 @@ Par exemple :
 ```python
 from cl_hubeau import drinking_water_quality
 df = drinking_water_quality.get_control_results(
-    codes_communes=['59350'],
+    code_commune=['59350'],
     code_parametre="1340"
     )
 ```
