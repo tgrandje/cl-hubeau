@@ -141,13 +141,13 @@ def test_get_all_sites_mocked(mock_get_data):
 
 
 def test_get_chronicles_mocked(mock_get_data):
-    data = hydrometry.get_observations(codes_entites=["dummy_code"])
+    data = hydrometry.get_observations(code_entite=["dummy_code"])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
 
 def test_get_chronicles_real_time_mocked(mock_get_data):
-    data = hydrometry.get_realtime_observations(codes_entites=["dummy_code"])
+    data = hydrometry.get_realtime_observations(code_entite=["dummy_code"])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
@@ -170,7 +170,7 @@ def test_get_one_sites_live():
 
 def test_get_chronicles_live():
     data = hydrometry.get_observations(
-        codes_entites=["K437311001"],
+        code_entite=["K437311001"],
         fields=["resultat_obs_elab", "date_obs_elab"],
     )
     assert isinstance(data, pd.DataFrame)
@@ -180,7 +180,7 @@ def test_get_chronicles_live():
 
 def test_get_chronicles_real_time_live():
     data = hydrometry.get_realtime_observations(
-        codes_entites=["K437311001"],
+        code_entite=["K437311001"],
         fields=["grandeur_hydro", "resultat_obs", "date_obs"],
     )
     assert isinstance(data, pd.DataFrame)

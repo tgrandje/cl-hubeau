@@ -92,7 +92,7 @@ def test_get_one_station_live():
 
 def test_get_control_results_live():
     data = drinking_water_quality.get_control_results(
-        codes_communes="59350",
+        code_commune="59350",
         code_parametre="1340",
         date_min_prelevement="2023-01-01",
         date_max_prelevement="2023-12-31",

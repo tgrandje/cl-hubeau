@@ -110,13 +110,13 @@ def test_get_all_stations_mocked(mock_get_data):
 
 
 def test_get_chronicles_mocked(mock_get_data):
-    data = piezometry.get_chronicles(codes_bss=["dummy_code"])
+    data = piezometry.get_chronicles(code_bss=["dummy_code"])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
 
 def test_get_chronicles_real_time_mocked(mock_get_data):
-    data = piezometry.get_realtime_chronicles(codes_bss=["dummy_code"])
+    data = piezometry.get_realtime_chronicles(code_bss=["dummy_code"])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
@@ -132,7 +132,7 @@ def test_get_one_station_live():
 
 def test_get_chronicles_live():
     data = piezometry.get_chronicles(
-        codes_bss=["07548X0009/F"],
+        code_bss=["07548X0009/F"],
         fields=["timestamp_mesure", "niveau_nappe_eau", "date_mesure"],
     )
     assert isinstance(data, pd.DataFrame)
@@ -142,7 +142,7 @@ def test_get_chronicles_live():
 
 def test_get_chronicles_real_time_live():
     data = piezometry.get_realtime_chronicles(
-        codes_bss=["07548X0009/F"],
+        code_bss=["07548X0009/F"],
         fields=["timestamp_mesure", "niveau_eau_ngf", "date_mesure"],
     )
     assert isinstance(data, pd.DataFrame)
