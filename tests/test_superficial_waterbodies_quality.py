@@ -14,6 +14,7 @@ import re
 from requests_cache import CacheMixin
 
 from cl_hubeau import superficial_waterbodies_quality
+from .utils import silence_api_version_warning
 
 
 class MockResponse:
@@ -94,13 +95,15 @@ def mock_get_data(monkeypatch):
     monkeypatch.setattr(CacheMixin, "request", mock_request)
 
 
-def test_get_stations(mock_get_data):
+@silence_api_version_warning
+def test_get_stations_mocked(mock_get_data):
     data = superficial_waterbodies_quality.get_all_stations()
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 102
 
 
-def test_get_operations(mock_get_data):
+@silence_api_version_warning
+def test_get_operations_mocked(mock_get_data):
     data = superficial_waterbodies_quality.get_all_operations(
         code_station="dummy_code",
         date_debut_prelevement="2020-01-01",
@@ -111,7 +114,8 @@ def test_get_operations(mock_get_data):
     assert len(data) == 1
 
 
-def test_get_environmental_conditions(mock_get_data):
+@silence_api_version_warning
+def test_get_environmental_conditions_mocked(mock_get_data):
     data = superficial_waterbodies_quality.get_all_environmental_conditions(
         code_station="dummy_code",
         date_debut_prelevement="2020-01-01",
@@ -122,7 +126,8 @@ def test_get_environmental_conditions(mock_get_data):
     assert len(data) == 1
 
 
-def test_get_analyses(mock_get_data):
+@silence_api_version_warning
+def test_get_analyses_mocked(mock_get_data):
     data = superficial_waterbodies_quality.get_all_analyses(
         code_station="dummy_code",
         date_debut_prelevement="2020-01-01",

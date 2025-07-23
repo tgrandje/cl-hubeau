@@ -11,6 +11,7 @@ import pytest
 from requests_cache import CacheMixin
 
 from cl_hubeau import drinking_water_quality
+from .utils import silence_api_version_warning
 
 
 class MockResponse:
@@ -63,6 +64,7 @@ def mock_get_data(monkeypatch):
     monkeypatch.setattr(CacheMixin, "request", mock_request)
 
 
+@silence_api_version_warning
 def test_get_all_networks_mocked(mock_get_data):
     data = drinking_water_quality.get_all_water_networks()
     # remove duplicates issued from the mockup
@@ -71,8 +73,9 @@ def test_get_all_networks_mocked(mock_get_data):
     assert len(data) == 1
 
 
+@silence_api_version_warning
 def test_get_control_results_mocked(mock_get_data):
-    data = drinking_water_quality.get_control_results("dummy")
+    data = drinking_water_quality.get_control_results(code_reseau="dummy")
     # remove duplicates issued from the mockup
     data = data.drop_duplicates("date_prelevement")
     assert isinstance(data, pd.DataFrame)

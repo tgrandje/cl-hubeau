@@ -13,6 +13,7 @@ from requests_cache import CacheMixin
 
 from cl_hubeau import piezometry
 from cl_hubeau.piezometry import PiezometrySession
+from .utils import silence_api_version_warning
 
 
 class MockResponse:
@@ -103,18 +104,21 @@ def mock_get_data(monkeypatch):
     monkeypatch.setattr(CacheMixin, "request", mock_request)
 
 
+@silence_api_version_warning
 def test_get_all_stations_mocked(mock_get_data):
     data = piezometry.get_all_stations()
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 1
 
 
+@silence_api_version_warning
 def test_get_chronicles_mocked(mock_get_data):
     data = piezometry.get_chronicles(code_bss=["dummy_code"])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
 
+@silence_api_version_warning
 def test_get_chronicles_real_time_mocked(mock_get_data):
     data = piezometry.get_realtime_chronicles(code_bss=["dummy_code"])
     assert isinstance(data, pd.DataFrame)

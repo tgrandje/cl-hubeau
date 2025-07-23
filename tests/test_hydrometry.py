@@ -13,6 +13,7 @@ from requests_cache import CacheMixin
 
 from cl_hubeau import hydrometry
 from cl_hubeau.hydrometry import HydrometrySession
+from .utils import silence_api_version_warning
 
 # "get_all_stations",
 # "get_all_sites",
@@ -128,24 +129,28 @@ def mock_get_data(monkeypatch):
     monkeypatch.setattr(CacheMixin, "request", mock_request)
 
 
+@silence_api_version_warning
 def test_get_all_stations_mocked(mock_get_data):
     data = hydrometry.get_all_stations()
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 1
 
 
+@silence_api_version_warning
 def test_get_all_sites_mocked(mock_get_data):
     data = hydrometry.get_all_sites()
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 1
 
 
+@silence_api_version_warning
 def test_get_chronicles_mocked(mock_get_data):
     data = hydrometry.get_observations(code_entite=["dummy_code"])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
 
+@silence_api_version_warning
 def test_get_chronicles_real_time_mocked(mock_get_data):
     data = hydrometry.get_realtime_observations(code_entite=["dummy_code"])
     assert isinstance(data, pd.DataFrame)

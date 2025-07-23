@@ -20,6 +20,7 @@ from cl_hubeau.phytopharmaceuticals_transactions import (
 from cl_hubeau.phytopharmaceuticals_transactions.utils import (
     _get_territory_years_combination,
 )
+from .utils import silence_api_version_warning
 
 
 class MockResponse:
@@ -122,6 +123,7 @@ def mock_get_data(monkeypatch):
     monkeypatch.setattr(CacheMixin, "request", mock_request)
 
 
+@silence_api_version_warning
 def test_sold_substances_mocked(mock_get_data):
     df = phytopharmaceuticals_transactions.get_all_active_substances_sold(
         type_territoire="National",
@@ -136,6 +138,7 @@ def test_sold_substances_mocked(mock_get_data):
     assert len(df) == 1
 
 
+@silence_api_version_warning
 def test_sold_products_mocked(mock_get_data):
     df = phytopharmaceuticals_transactions.get_all_phytopharmaceutical_products_sold(
         type_territoire="National",
@@ -148,6 +151,7 @@ def test_sold_products_mocked(mock_get_data):
     assert len(df) == 1
 
 
+@silence_api_version_warning
 def test_bought_substances_mocked(mock_get_data):
     df = phytopharmaceuticals_transactions.get_all_active_substances_bought(
         type_territoire="National",
@@ -161,6 +165,7 @@ def test_bought_substances_mocked(mock_get_data):
     assert len(df) == 1
 
 
+@silence_api_version_warning
 def test_bought_products_mocked(mock_get_data):
     df = phytopharmaceuticals_transactions.get_all_phytopharmaceutical_products_bought(
         type_territoire="National",
