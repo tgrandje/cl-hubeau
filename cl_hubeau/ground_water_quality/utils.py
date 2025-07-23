@@ -141,7 +141,7 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
         deps = kwargs.pop("num_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_insee_actuel" in kwargs:
+    elif any(x in kwargs for x in ("code_insee_actuel", "bss_id")):
         deps = [""]
     else:
         deps = get_departements()
