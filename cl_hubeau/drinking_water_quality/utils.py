@@ -100,6 +100,22 @@ def get_control_results(**kwargs) -> pd.DataFrame:
 
     """
 
+    if "codes_reseaux" in kwargs:
+        msg = (
+            "`codes_reseaux` is deprecated and will be removed in a future "
+            "version, please use `code_reseau` instead"
+        )
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["code_reseau"] = kwargs.pop("codes_reseaux")
+
+    if "codes_communes" in kwargs:
+        msg = (
+            "`codes_communes` is deprecated and will be removed in a future "
+            "version, please use `code_commune` instead"
+        )
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["code_commune"] = kwargs.pop("codes_communes")
+
     advised = [
         "code_reseau",
         "code_commune",

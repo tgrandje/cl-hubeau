@@ -7,13 +7,12 @@ Convenience functions for superficial waterbodies quality inspections
 from datetime import date
 import warnings
 
-import deprecation
+import deprecated
 import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
 
 
-from cl_hubeau import __version__
 from cl_hubeau.superficial_waterbodies_quality import (
     SuperficialWaterbodiesQualitySession,
 )
@@ -251,12 +250,7 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-@deprecation.deprecated(
-    deprecated_in="0.6.0",
-    removed_in="1.0",
-    current_version=__version__,
-    details="Please use `get_all_analyses` instead.",
-)
+@deprecated(version="0.6.0", reason="Please use `get_all_analyses` instead.")
 def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve analyses results from measures.

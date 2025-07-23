@@ -7,6 +7,7 @@ Convenience functions for piezometry consumption
 import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
+import warnings
 
 from cl_hubeau.piezometry.piezometry_scraper import PiezometrySession
 from cl_hubeau import _config
@@ -148,6 +149,14 @@ def get_chronicles(**kwargs) -> pd.DataFrame:
 
     """
 
+    if "codes_bss" in kwargs:
+        msg = (
+            "`codes_bss` is deprecated and will be removed in a future "
+            "version, please use `code_bss` instead"
+        )
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["code_bss"] = kwargs.pop("codes_bss")
+
     label, codes_bss = _get_codes_bss(kwargs)
     if label != "code_bss":
         raise ValueError("code_bss is mandatory")
@@ -194,6 +203,22 @@ def get_realtime_chronicles(**kwargs) -> pd.DataFrame:
         DataFrame of results
 
     """
+
+    if "codes_bss" in kwargs:
+        msg = (
+            "`codes_bss` is deprecated and will be removed in a future "
+            "version, please use `code_bss` instead"
+        )
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["code_bss"] = kwargs.pop("codes_bss")
+
+    if "bss_ids" in kwargs:
+        msg = (
+            "`bss_ids` is deprecated and will be removed in a future "
+            "version, please use `bss_id` instead"
+        )
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["bss_id"] = kwargs.pop("bss_ids")
 
     label, codes = _get_codes_bss(kwargs)
 

@@ -6,8 +6,8 @@ Convenience functions for hydrometry consumption
 
 import geopandas as gpd
 import pandas as pd
+import warnings
 
-# import pebble
 from tqdm import tqdm
 
 from cl_hubeau.hydrometry.hydrometry_scraper import HydrometrySession
@@ -152,6 +152,14 @@ def get_observations(**kwargs) -> pd.DataFrame:
 
     """
 
+    if "codes_entites" in kwargs:
+        msg = (
+            "`codes_entites` is deprecated and will be removed in a future "
+            "version, please use `code_entite` instead"
+        )
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["code_entite"] = kwargs.pop("codes_entites")
+
     if "code_entite" in kwargs:
         codes_entites = kwargs.pop("code_entite")
         if isinstance(codes_entites, str):
@@ -236,6 +244,14 @@ def get_realtime_observations(**kwargs) -> pd.DataFrame:
         DataFrame of results
 
     """
+
+    if "codes_entites" in kwargs:
+        msg = (
+            "`codes_entites` is deprecated and will be removed in a future "
+            "version, please use `code_entite` instead"
+        )
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["code_entite"] = kwargs.pop("codes_entites")
 
     if "code_entite" in kwargs:
         codes_entites = kwargs.pop("code_entite")
