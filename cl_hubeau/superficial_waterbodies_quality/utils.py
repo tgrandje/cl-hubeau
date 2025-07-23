@@ -7,7 +7,7 @@ Convenience functions for superficial waterbodies quality inspections
 from datetime import date
 import warnings
 
-import deprecated
+from deprecated import deprecated
 import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm

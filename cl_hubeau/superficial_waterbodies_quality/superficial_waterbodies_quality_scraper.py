@@ -3,7 +3,7 @@
 low level class to collect data from the drinking water quality API from
 hub'eau
 """
-import deprecated
+from deprecated import deprecated
 import pandas as pd
 
 from cl_hubeau.session import BaseHubeauSession
