@@ -171,8 +171,7 @@ def get_control_results(**kwargs) -> pd.DataFrame:
     )
 
     kwargs_loop = list(product(codes, kwargs_loop))
-    [kwargs.update({codes_names: chunk}) for chunk, kwargs in kwargs_loop]
-    kwargs_loop = [x[1] for x in kwargs_loop]
+    kwargs_loop = [{**{codes_names: chunk}, **kw} for chunk, kw in kwargs_loop]
 
     with DrinkingWaterQualitySession() as session:
 
