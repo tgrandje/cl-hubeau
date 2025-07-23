@@ -87,6 +87,11 @@ class PiezometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        try:
+            params["fields"] = self.list_to_str_param(kwargs.pop("fields"))
+        except KeyError:
+            pass
+
         if kwargs:
             raise UnexpectedArguments(kwargs, self.DOC_URL)
 

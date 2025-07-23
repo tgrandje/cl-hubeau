@@ -11,6 +11,7 @@ import pytest
 from requests_cache import CacheMixin
 
 from cl_hubeau import ground_water_quality
+from tests.utils import silence_api_version_warning
 
 
 class MockResponse:
@@ -67,12 +68,14 @@ def mock_get_data(monkeypatch):
     monkeypatch.setattr(CacheMixin, "request", mock_request)
 
 
+@silence_api_version_warning
 def test_get_all_stations_mocked(mock_get_data):
     data = ground_water_quality.get_all_stations()
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
 
+@silence_api_version_warning
 def test_get_analyses_mocked(mock_get_data):
     data = ground_water_quality.get_all_analyses(
         bss_id="dummy_code",

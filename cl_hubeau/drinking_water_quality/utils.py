@@ -6,6 +6,7 @@ Convenience functions for hydrometry consumption
 
 from datetime import date
 from itertools import product
+import warnings
 
 import pandas as pd
 from tqdm import tqdm
@@ -20,8 +21,10 @@ def get_all_water_networks(**kwargs) -> pd.DataFrame:
     """
     Retrieve all UDI from France.
 
-    Use a loop to avoid reaching 20k results threshold. Do not use
-    `code_commune` as they are set by the current function.
+    Use a loop to avoid reaching 20k results threshold.
+
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use a code_region argument to query the results on a given region
 
     Parameters
     ----------
@@ -36,7 +39,16 @@ def get_all_water_networks(**kwargs) -> pd.DataFrame:
 
     """
 
-    city_codes = get_cities()
+    if "code_region" in kwargs:
+        city_codes = get_cities(code_region=kwargs.pop("code_region"))
+    elif "code_departement" in kwargs:
+        city_codes = get_cities(
+            code_departement=kwargs.pop("code_departement")
+        )
+    elif "code_commune" in kwargs:
+        city_codes = kwargs.pop("code_commune")
+    else:
+        city_codes = get_cities()
 
     # Split by 20-something chunks
     city_codes = [
@@ -55,13 +67,13 @@ def get_all_water_networks(**kwargs) -> pd.DataFrame:
         ]
         results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
 
+        if not results:
+            return pd.DataFrame()
         results = pd.concat(results, ignore_index=True)
     return results
 
 
-def get_control_results(
-    codes_reseaux: list = None, codes_communes: list = None, **kwargs
-) -> pd.DataFrame:
+def get_control_results(**kwargs) -> pd.DataFrame:
     """
     Retrieve sanitary controls' results.
 
@@ -69,19 +81,17 @@ def get_control_results(
     As queries may induce big datasets, loops are based on networks and 6 month
     timeranges, even if date_min_prelevement/date_max_prelevement are not set.
 
-    Note that `codes_reseaux` and `codes_communes` are mutually exclusive!
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use a code_region argument to query the results on a given region
+    * to optimize the loops, you should only use either code_region,
+      code_departement, code_commune in one hand OR code_reseau in the other
+      hand. Those arguments are mutually exclusive.
 
     Parameters
     ----------
-    codes_reseaux : list, optional
-        List of networks to retrieve data from. The default is None.
-    codes_communes : list, optional
-        List of city codes to retrieve data from. The default is None.
     **kwargs :
         kwargs passed to DrinkingWaterQualitySession.get_control_results
-        (hence mostly intended for hub'eau API's arguments). Do not use
-        `code_reseau` or `code_commune` as they are set by the current
-        function.
+        (hence mostly intended for hub'eau API's arguments).
 
     Returns
     -------
@@ -90,18 +100,59 @@ def get_control_results(
 
     """
 
-    if codes_reseaux and codes_communes:
-        raise ValueError(
-            "only one argument allowed among codes_reseaux and codes_communes"
+    if "codes_reseaux" in kwargs:
+        msg = (
+            "`codes_reseaux` is deprecated and will be removed in a future "
+            "version, please use `code_reseau` instead"
         )
-    if not codes_reseaux and not codes_communes:
-        raise ValueError(
-            "exactly one argument must be set among codes_reseaux and codes_communes"
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["code_reseau"] = kwargs.pop("codes_reseaux")
+
+    if "codes_communes" in kwargs:
+        msg = (
+            "`codes_communes` is deprecated and will be removed in a future "
+            "version, please use `code_commune` instead"
+        )
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["code_commune"] = kwargs.pop("codes_communes")
+
+    advised = [
+        "code_reseau",
+        "code_commune",
+        "code_departement",
+        "code_region",
+    ]
+    if not any(x in kwargs for x in advised):
+        warnings.warn(
+            "get_control_results should only be used with "
+            "kwargs, for instance `get_control_results(code_departement='02')`"
         )
 
+    city_codes = []
+    if "code_region" in kwargs:
+        city_codes = get_cities(code_region=kwargs.pop("code_region"))
+    elif "code_departement" in kwargs:
+        city_codes = get_cities(
+            code_departement=kwargs.pop("code_departement")
+        )
+    elif "code_commune" in kwargs:
+        city_codes = kwargs.pop("code_commune")
+
+    if city_codes and kwargs.get("code_reseau"):
+        raise ValueError(
+            "only one argument allowed among either 'code_commune', "
+            "'code_departement', 'code_region' in the one hand AND "
+            "'code_reseau' in the other hand."
+        )
+
+    if not city_codes and not kwargs.get("code_reseau"):
+        # neither code_region, code_departement, code_commune nor code_reseau
+        # -> let's loop on all french cities
+        city_codes = get_cities()
+
     # Split by 20-something chunks
-    codes_names = "code_commune" if codes_communes else "code_reseau"
-    codes = codes_communes if codes_communes else codes_reseaux
+    codes_names = "code_commune" if city_codes else "code_reseau"
+    codes = city_codes if city_codes else kwargs.pop("code_reseau")
     codes = [codes[i : i + 20] for i in range(0, len(codes), 20)]
 
     # Set a loop for yearly querying as dataset are big
@@ -120,8 +171,7 @@ def get_control_results(
     )
 
     kwargs_loop = list(product(codes, kwargs_loop))
-    [kwargs.update({codes_names: chunk}) for chunk, kwargs in kwargs_loop]
-    kwargs_loop = [x[1] for x in kwargs_loop]
+    kwargs_loop = [{**{codes_names: chunk}, **kw} for chunk, kw in kwargs_loop]
 
     with DrinkingWaterQualitySession() as session:
 
@@ -132,11 +182,13 @@ def get_control_results(
             )
             for kw_loop in tqdm(
                 kwargs_loop,
-                desc="querying network/network and year/year",
+                desc=f"querying {codes_names}/{codes_names} and 6m/6m",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = pd.concat(results, ignore_index=True)
     return results

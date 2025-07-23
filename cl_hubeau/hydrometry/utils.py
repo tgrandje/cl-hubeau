@@ -6,13 +6,13 @@ Convenience functions for hydrometry consumption
 
 import geopandas as gpd
 import pandas as pd
+import warnings
 
-# import pebble
 from tqdm import tqdm
 
 from cl_hubeau.hydrometry.hydrometry_scraper import HydrometrySession
 from cl_hubeau import _config
-from cl_hubeau.utils import get_departements
+from cl_hubeau.utils import get_departements, get_departements_from_regions
 
 
 def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
@@ -23,8 +23,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
     ----------
     **kwargs :
         kwargs passed to HydrometrySession.get_stations (hence mostly intended
-        for hub'eau API's arguments). Do not use `code_departement` as it is
-        set by the current function.
+        for hub'eau API's arguments).
 
     Returns
     -------
@@ -33,7 +32,20 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    deps = get_departements()
+    if "code_region" in kwargs:
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif any(
+        x in kwargs
+        for x in ("code_commune_station", "code_site", "code_station")
+    ):
+        deps = [""]
+    else:
+        deps = get_departements()
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
@@ -48,6 +60,8 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = gpd.pd.concat(results, ignore_index=True)
     try:
         results["code_station"]
@@ -65,8 +79,7 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
     ----------
     **kwargs :
         kwargs passed to HydrometrySession.get_sites (hence mostly intended
-        for hub'eau API's arguments). Do not use `code_departement` as it is
-        set by the current function.
+        for hub'eau API's arguments).
 
     Returns
     -------
@@ -75,7 +88,19 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    deps = get_departements()
+    if "code_region" in kwargs:
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif any(
+        x in kwargs for x in ("code_commune_site", "code_site", "code_station")
+    ):
+        deps = [""]
+    else:
+        deps = get_departements()
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
@@ -90,6 +115,8 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
 
     results = gpd.pd.concat(results, ignore_index=True)
     try:
@@ -100,21 +127,23 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def get_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
+def get_observations(**kwargs) -> pd.DataFrame:
     """
     Retrieve observations from multiple sites/stations.
 
     Use an inner loop for multiple piezometers to avoid reaching 20k results
     threshold from hub'eau API.
 
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use either a `code_region`, `code_departement` or `code_commune`
+      argument to query the results on a given region/departement/commune.
+      Those arguments are mutually exclusive with `code_entite`.
+
     Parameters
     ----------
-    codes_entites : list
-        List of site or station codes for hydrometry
     **kwargs :
         kwargs passed to PiezometrySession.get_chronicles (hence mostly
-        intended for hub'eau API's arguments). Do not use `code_entite` as they
-        are set by the current function.
+        intended for hub'eau API's arguments).
 
     Returns
     -------
@@ -122,6 +151,59 @@ def get_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
         DataFrame of results
 
     """
+
+    if "codes_entites" in kwargs:
+        msg = (
+            "`codes_entites` is deprecated and will be removed in a future "
+            "version, please use `code_entite` instead"
+        )
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["code_entite"] = kwargs.pop("codes_entites")
+
+    if "code_entite" in kwargs:
+        codes_entites = kwargs.pop("code_entite")
+        if isinstance(codes_entites, str):
+            codes_entites = codes_entites.split(",")
+
+        conflicts = ["code_region", "code_departement", "code_commune"]
+        if any(x for x in conflicts if x in kwargs):
+            raise ValueError(
+                "only one argument allowed among either 'code_commune', "
+                "'code_departement', 'code_region' in the one hand AND "
+                "'code_entite' in the other hand."
+            )
+
+    else:
+
+        kwargs_entites = {"format": "json"}
+        if "code_region" in kwargs:
+            code_region = kwargs.pop("code_region")
+            deps = get_departements_from_regions(code_region)
+            kwargs_entites["code_departement"] = deps
+        elif "code_departement" in kwargs:
+            deps = kwargs.pop("code_departement")
+            kwargs_entites["code_departement"] = deps
+        elif "code_commune" in kwargs:
+            kwargs_entites["code_commune"] = kwargs.pop("code_commune")
+
+        # retrieve code_entites
+        if "code_commune" in kwargs_entites:
+            kwargs_entites["code_commune_station"] = kwargs_entites.pop(
+                "code_commune"
+            )
+        stations = get_all_stations(fields=["code_station"], **kwargs_entites)
+
+        if "code_commune_station" in kwargs_entites:
+            kwargs_entites["code_commune_site"] = kwargs_entites.pop(
+                "code_commune_station"
+            )
+        sites = get_all_sites(fields=["code_site"], **kwargs_entites)
+
+        codes_entites = list(
+            set(
+                stations["code_station"].tolist() + sites["code_site"].tolist()
+            )
+        )
 
     with HydrometrySession() as session:
         results = [
@@ -134,23 +216,27 @@ def get_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = pd.concat(results, ignore_index=True)
     return results
 
 
-def get_realtime_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
+def get_realtime_observations(**kwargs) -> pd.DataFrame:
     """
     Retrieve realtimes observations from multiple sites/stations.
     Uses a reduced timeout for cache expiration.
 
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use either a `code_region`, `code_departement` or `code_commune`
+      argument to query the results on a given region/departement/commune.
+      Those arguments are mutually exclusive with `code_entite`.
+
     Parameters
     ----------
-    codes_entites : list
-        List of site or station codes for hydrometry
     **kwargs :
         kwargs passed to PiezometrySession.get_chronicles (hence mostly
-        intended for hub'eau API's arguments). Do not use `code_entite` as they
-        are set by the current function.
+        intended for hub'eau API's arguments).
 
     Returns
     -------
@@ -158,6 +244,59 @@ def get_realtime_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
         DataFrame of results
 
     """
+
+    if "codes_entites" in kwargs:
+        msg = (
+            "`codes_entites` is deprecated and will be removed in a future "
+            "version, please use `code_entite` instead"
+        )
+        warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        kwargs["code_entite"] = kwargs.pop("codes_entites")
+
+    if "code_entite" in kwargs:
+        codes_entites = kwargs.pop("code_entite")
+        if isinstance(codes_entites, str):
+            codes_entites = codes_entites.split(",")
+
+        conflicts = ["code_region", "code_departement", "code_commune"]
+        if any(x for x in conflicts if x in kwargs):
+            raise ValueError(
+                "only one argument allowed among either 'code_commune', "
+                "'code_departement', 'code_region' in the one hand AND "
+                "'code_entite' in the other hand."
+            )
+
+    else:
+
+        kwargs_entites = {"format": "json"}
+        if "code_region" in kwargs:
+            code_region = kwargs.pop("code_region")
+            deps = get_departements_from_regions(code_region)
+            kwargs_entites["code_departement"] = deps
+        elif "code_departement" in kwargs:
+            deps = kwargs.pop("code_departement")
+            kwargs_entites["code_departement"] = deps
+        elif "code_commune" in kwargs:
+            kwargs_entites["code_commune"] = kwargs.pop("code_commune")
+
+        # retrieve code_entites
+        if "code_commune" in kwargs_entites:
+            kwargs_entites["code_commune_station"] = kwargs_entites.pop(
+                "code_commune"
+            )
+        stations = get_all_stations(fields=["code_station"], **kwargs_entites)
+
+        if "code_commune_station" in kwargs_entites:
+            kwargs_entites["code_commune_site"] = kwargs_entites.pop(
+                "code_commune_station"
+            )
+        sites = get_all_sites(fields=["code_site"], **kwargs_entites)
+
+        codes_entites = list(
+            set(
+                stations["code_station"].tolist() + sites["code_site"].tolist()
+            )
+        )
 
     with HydrometrySession(
         expire_after=_config["DEFAULT_EXPIRE_AFTER_REALTIME"]
@@ -172,9 +311,7 @@ def get_realtime_observations(codes_entites: list, **kwargs) -> pd.DataFrame:
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
     results = pd.concat(results, ignore_index=True)
     return results
-
-
-# if __name__ == "__main__":
-#     gdf = get_all_sites()
