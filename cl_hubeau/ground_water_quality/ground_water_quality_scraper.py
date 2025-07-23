@@ -2,8 +2,7 @@
 """
 low level class to collect data from the ground water quality API from hub'eau
 """
-
-import pandas as pd
+import polars as pl
 
 from cl_hubeau.session import BaseHubeauSession
 from cl_hubeau.exceptions import UnexpectedArguments
@@ -129,11 +128,16 @@ class GroundWaterQualitySession(BaseHubeauSession):
         url = self.BASE_URL + "/v1/qualite_nappes/stations"
         df = self.get_result(method, url, params=params)
 
-        for f in ["date_fin_mesure", "date_debut_mesure"]:
-            try:
-                df[f] = pd.to_datetime(df[f], errors="coerce")
-            except KeyError:
-                continue
+        try:
+            df = df.with_columns(
+                [
+                    pl.col(x).str.to_datetime("%Y-%m-%d").name.keep()
+                    for x in ["date_fin_mesure", "date_debut_mesure"]
+                    if x in df.columns
+                ]
+            )
+        except KeyError:
+            pass
 
         return df
 
@@ -296,10 +300,10 @@ class GroundWaterQualitySession(BaseHubeauSession):
             params=params,
         )
 
-        for f in ["date_debut_prelevement"]:
-            try:
-                df[f] = pd.to_datetime(df[f], errors="coerce")
-            except KeyError:
-                continue
+        df = df.with_columns(
+            date_debut_prelevement=df[
+                "date_debut_prelevement"
+            ].str.to_datetime("%Y-%m-%d")
+        )
 
         return df

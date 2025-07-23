@@ -3,8 +3,8 @@
 low level class to collect data from the drinking water quality API from
 hub'eau
 """
+import polars as pl
 from deprecated import deprecated
-import pandas as pd
 
 from cl_hubeau.session import BaseHubeauSession
 from cl_hubeau.exceptions import UnexpectedArguments
@@ -256,7 +256,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         )
 
         try:
-            df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
+            df = df.with_columns(date=df["date"].str.to_datetime("%Y-%m-%d"))
         except KeyError:
             pass
 
@@ -369,8 +369,10 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         )
 
         try:
-            df["date_prelevement"] = pd.to_datetime(
-                df["date_prelevement"], format="%Y-%m-%d"
+            df = df.with_columns(
+                date_prelevement=df["date_prelevement"].str.to_datetime(
+                    "%Y-%m-%d"
+                )
             )
         except KeyError:
             pass
@@ -510,17 +512,13 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
         )
 
         try:
-            df["date_prelevement"] = pd.to_datetime(
-                df["date_prelevement"], format="%Y-%m-%d"
+            df = df.with_columns(
+                date_prelevement=df["date_prelevement"].str.to_datetime(
+                    "%Y-%m-%d"
+                )
             )
-        except KeyError:
-            pass
 
-        # optimize to categorical, those dataframes are heavy
-        for x in df.loc[:, df.dtypes == "object"]:
-            try:
-                df[x] = pd.Categorical(df[x])
-            except TypeError:
-                pass
+        except pl.exceptions.ColumnNotFoundError:
+            pass
 
         return df

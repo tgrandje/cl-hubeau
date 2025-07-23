@@ -15,9 +15,9 @@ from typing import Callable, Any, Union
 from urllib.parse import urlparse, parse_qs
 import warnings
 
-import geopandas as gpd
 import numpy as np
 import pandas as pd
+import polars as pl
 import pebble
 from pyrate_limiter import SQLiteBucket
 from requests import Session
@@ -29,6 +29,7 @@ from urllib3.util.retry import Retry
 
 from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, RATELIMITER_NAME
 from cl_hubeau import _config, __version__
+from cl_hubeau.frames import GeoPolarsDataFrame
 from cl_hubeau.exceptions import UnexpectedValueError
 
 logger = logging.getLogger(__name__)
@@ -362,7 +363,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         time_start: str = None,
         time_end: str = None,
         **kwargs,
-    ) -> pd.DataFrame:
+    ) -> GeoPolarsDataFrame:
         """
         Loop over API's results until last page is reached and aggregate
         results.
@@ -397,9 +398,8 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
 
         Returns
         -------
-        pd.DataFrame
-            API's results, which will be of (gpd.GeoDataFrame if format is
-            a geojson)
+        GeoPolarsDataFrame
+            API's results
 
         """
 
@@ -460,12 +460,10 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                         **kwargs,
                     )
                 )
-                results = [
-                    x.dropna(axis=1, how="all") for x in results if not x.empty
-                ]
+                results = [x for x in results if len(x) > 0]
                 if not results:
                     return pd.DataFrame()
-            return pd.concat(results)
+            return pl.concat(results, how="vertical_relaxed")
 
         msg = f"{count_rows} expected results"
         logger.info(msg)
@@ -533,14 +531,14 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
 
         if "format" in params and params["format"] == "geojson":
             if results:
-                results = gpd.GeoDataFrame.from_features(results, crs=4326)
+                results = GeoPolarsDataFrame.from_features(results, crs=4326)
             else:
-                results = gpd.GeoDataFrame()
+                results = GeoPolarsDataFrame()
         else:
             if results:
-                results = pd.DataFrame(results)
+                results = GeoPolarsDataFrame(results)
             else:
-                results = pd.DataFrame()
+                results = GeoPolarsDataFrame()
         if not len(results) == count_rows:
             # Note that for "big" realtime datasets, the result's length may
             # differ at the end from what was expected at the start of
@@ -550,4 +548,23 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                 f"expected {count_rows}, got {len(results)} instead"
             )
             warnings.warn(msg)
+
+        # Replace all columns of type List[null] by null values
+        results = results.with_columns(
+            [
+                pl.when(pl.col(s.name).list.len() == 0)
+                .then(None)
+                .otherwise(pl.col(s.name))
+                .name.keep()
+                for s in results.select(pl.col(pl.List))
+            ]
+        )
+
+        # Cast to pl.Null for all empty columns
+        null_cols = [
+            s.name for s in results if (s.null_count() == results.height)
+        ]
+        results = results.with_columns(
+            [pl.col(col).cast(pl.Null).name.keep() for col in null_cols]
+        )
         return results

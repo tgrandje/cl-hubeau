@@ -5,11 +5,11 @@ Convenience functions for ground water quality consumption
 """
 
 from datetime import date
-import geopandas as gpd
-import pandas as pd
+import polars as pl
 from tqdm import tqdm
 import warnings
 
+from cl_hubeau.frames import GeoPolarsDataFrame, concat
 from cl_hubeau.ground_water_quality import GroundWaterQualitySession
 from cl_hubeau import _config
 from cl_hubeau.utils import (
@@ -19,7 +19,7 @@ from cl_hubeau.utils import (
 )
 
 
-def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
+def get_all_stations(**kwargs) -> GeoPolarsDataFrame:
     """
     Retrieve all stations from France.
 
@@ -34,7 +34,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     Returns
     -------
-    results : gpd.GeoDataFrame
+    results : GeoPolarsDataFrame
         GeoDataFrame of piezometers
 
     """
@@ -70,21 +70,23 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
                 position=tqdm._get_free_pos(),
             )
         ]
-    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+
+    results = [x for x in results if len(x) > 0]
 
     if not results:
-        return pd.DataFrame()
+        return GeoPolarsDataFrame()
 
-    results = gpd.pd.concat(results, ignore_index=True)
+    results = concat(results, how="vertical_relaxed")
+
     try:
         results["code_bss"]
-        results = results.drop_duplicates("code_bss")
-    except KeyError:
+        results = results.unique("code_bss")
+    except pl.exceptions.ColumnNotFoundError:
         pass
     return results
 
 
-def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
+def get_all_analyses(**kwargs) -> GeoPolarsDataFrame:
     """
     Retrieve analyses for all/multiple qualitometers.
 
@@ -101,7 +103,7 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
 
     Returns
     -------
-    results : gpd.GeoDataFrame
+    results : GeoPolarsDataFrame
         GeoDataFrame of analysis results
 
     """
@@ -170,8 +172,12 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
                 position=tqdm._get_free_pos(),
             )
         ]
-    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+
+    results = [x for x in results if len(x) > 0]
+
     if not results:
-        return pd.DataFrame()
-    results = pd.concat(results, ignore_index=True)
+        return GeoPolarsDataFrame()
+
+    results = concat(results, how="vertical_relaxed")
+
     return results
