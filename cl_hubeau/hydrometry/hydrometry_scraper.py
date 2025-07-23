@@ -356,7 +356,7 @@ class HydrometrySession(BaseHubeauSession):
         try:
             params["timestep"] = kwargs.pop("timestep")
             try:
-                if len(",".split(params["code_entite"])) > 0:
+                if len(",".split(params["code_entite"])) > 1:
                     raise ValueError(
                         "timestep can only be set for one 'code_entite', "
                         f"found code_entite='{params['code_entite']}' instead"

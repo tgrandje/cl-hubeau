@@ -5,6 +5,7 @@ Created on Mon Jul 29 15:49:09 2024
 
 Test mostly high level functions
 """
+from datetime import date, timedelta
 
 import geopandas as gpd
 import pandas as pd
@@ -125,6 +126,24 @@ def test_get_chronicles_real_time_mocked(mock_get_data):
     assert len(data) == 1
 
 
+def test_get_all_stations_live():
+    data = piezometry.get_all_stations(code_region="06")
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 27
+    # Mayotte -> you can infer code_departement from code_region
+    assert (data.code_departement == "976").all()
+
+    data = piezometry.get_all_stations(code_departement="15")
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 4
+    assert (data.code_departement == "15").all()
+
+    data = piezometry.get_all_stations(code_commune="15234")
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 1
+    assert (data.code_commune_insee == "15234").all()
+
+
 def test_get_one_station_live():
     with PiezometrySession() as session:
         data = session.get_stations(
@@ -143,6 +162,33 @@ def test_get_chronicles_live():
     assert len(data) > 5000
     assert data.shape[1] == 3
 
+    data = piezometry.get_chronicles(
+        code_region="06",
+        fields=["date_mesure", "timestamp_mesure"],
+        date_debut_mesure="2020-01-01",
+        date_fin_mesure="2020-02-01",
+    )
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) == 528
+
+    data = piezometry.get_chronicles(
+        code_departement="15",
+        fields=["date_mesure", "timestamp_mesure"],
+        date_debut_mesure="2020-01-01",
+        date_fin_mesure="2020-02-01",
+    )
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) == 132
+
+    data = piezometry.get_chronicles(
+        code_commune="15234",
+        fields=["date_mesure", "timestamp_mesure"],
+        date_debut_mesure="2020-01-01",
+        date_fin_mesure="2020-02-01",
+    )
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) == 30
+
 
 def test_get_chronicles_real_time_live():
     data = piezometry.get_realtime_chronicles(
@@ -151,3 +197,32 @@ def test_get_chronicles_real_time_live():
     )
     assert isinstance(data, pd.DataFrame)
     assert len(data) > 1000
+
+    today = date.today().strftime("%Y-%m-%d")
+    past = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+    data = piezometry.get_realtime_chronicles(
+        code_region="06",
+        fields=["date_mesure", "timestamp_mesure"],
+        date_debut_mesure=past,
+        date_fin_mesure=today,
+    )
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) > 100
+
+    data = piezometry.get_realtime_chronicles(
+        code_departement="15",
+        fields=["date_mesure", "timestamp_mesure"],
+        date_debut_mesure=past,
+        date_fin_mesure=today,
+    )
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) > 50
+
+    data = piezometry.get_realtime_chronicles(
+        code_commune="15234",
+        fields=["date_mesure", "timestamp_mesure"],
+        date_debut_mesure=past,
+        date_fin_mesure=today,
+    )
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) > 10
