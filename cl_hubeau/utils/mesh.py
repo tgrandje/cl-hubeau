@@ -124,11 +124,15 @@ def _get_mesh(
         gdf = _get_pynsee_geodata_latest("commune", crs=4326)
 
         if code_region:
-            gdf = gdf.query(f"insee_reg.isin({d['code_region']})").copy()
+            gdf = gdf.query(
+                f"code_insee_de_la_region.isin({d['code_region']})"
+            ).copy()
         if code_departement:
-            gdf = gdf.query(f"insee_dep.isin({d['code_departement']})").copy()
+            gdf = gdf.query(
+                f"code_insee_du_departement.isin({d['code_departement']})"
+            ).copy()
         if code_commune:
-            gdf = gdf.query(f"insee_com.isin({d['code_commune']})").copy()
+            gdf = gdf.query(f"code_insee.isin({d['code_commune']})").copy()
 
     elif any(d.get(x) for x in ["code_bassin", "code_sous_bassin"]):
         gdf = _get_dce_subbasins(

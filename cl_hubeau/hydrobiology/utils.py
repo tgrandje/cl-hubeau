@@ -17,184 +17,14 @@ from tqdm import tqdm
 
 from cl_hubeau.hydrobiology.hydrobiology_scraper import HydrobiologySession
 from cl_hubeau import _config
-from cl_hubeau.utils import (
-    # get_departements,
-    # get_departements_from_regions,
-    _get_pynsee_geodata_latest,
-    _get_pynsee_geolist_cities,
-)
 
 from cl_hubeau.utils.mesh import _get_mesh
-from cl_hubeau.utils.hydro_perimeters_queries import _get_dce_subbasins
+from cl_hubeau.utils.fill_missing_fields import (
+    _fill_missing_cog,
+    _fill_missing_basin_subbasin,
+)
 
 # from cl_hubeau.utils import prepare_kwargs_loops
-
-
-def _fill_missing_cog(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """
-    Fill missing region, departement & cities elements (codes & labels) using
-    the closest geometry in an buffer of 10km.
-
-    Note: this is approximative, particularly on international borders but will
-    avoid missing stations when looping over (for instance) code_regions.
-
-    Parameters
-    ----------
-    gdf : gpd.GeoDataFrame
-        GeoDataFrame of results with missing official geographic data.
-
-    Returns
-    -------
-    gdf : gpd.GeoDataFrame
-        Filled results.
-
-    """
-
-    if gdf[gdf.code_region.isnull()].empty:
-        return gdf
-
-    # missing region_code, departement_code, commune_code, let's fill those
-    # with closest geometry, up to 10km
-    crs = gdf.crs
-    gdf = gdf.to_crs(2154)
-
-    coms = _get_pynsee_geodata_latest("commune", crs=2154)
-    cities_labels = _get_pynsee_geolist_cities()
-
-    # first exact spatial join
-    missing = gdf[
-        (gdf.code_commune.isnull())
-        | (gdf.code_departement.isnull())
-        | (gdf.code_region.isnull())
-    ].index
-    missing = (
-        gdf.loc[missing].sjoin(coms, how="left").drop("index_right", axis=1)
-    )
-    # get labels
-    missing = missing.merge(
-        cities_labels[["TITLE", "TITLE_DEP", "TITLE_REG", "CODE"]],
-        how="left",
-        left_on="code_commune",
-        right_on="CODE",
-    ).drop("CODE", axis=1)
-    coalesce = {
-        "code_commune": "insee_com",
-        "code_departement": "insee_dep",
-        "code_region": "insee_reg",
-        "libelle_commune": "TITLE",
-        "libelle_departement": "TITLE_DEP",
-        "libelle_region": "TITLE_REG",
-    }
-    for key, val in coalesce.items():
-        gdf[key] = gdf[key].combine_first(missing[val])
-
-    # spatial join to nearest, up to 10km
-    missing = gdf[
-        (gdf.code_commune.isnull())
-        | (gdf.code_departement.isnull())
-        | (gdf.code_region.isnull())
-    ].index
-    missing = (
-        gdf.loc[missing]
-        .sjoin_nearest(
-            coms,
-            how="left",
-            max_distance=10_000,
-        )
-        .drop("index_right", axis=1)
-    )
-    # get labels
-    missing = missing.merge(
-        cities_labels[["TITLE", "TITLE_DEP", "TITLE_REG", "CODE"]],
-        how="left",
-        left_on="code_commune",
-        right_on="CODE",
-    ).drop("CODE", axis=1)
-    coalesce = {
-        "code_commune": "insee_com",
-        "code_departement": "insee_dep",
-        "code_region": "insee_reg",
-        "libelle_commune": "TITLE",
-        "libelle_departement": "TITLE_DEP",
-        "libelle_region": "TITLE_REG",
-    }
-    for key, val in coalesce.items():
-        gdf[key] = gdf[key].combine_first(missing[val])
-
-    gdf = gdf.to_crs(crs)
-    return gdf
-
-
-def _fill_missing_basin_subbasin(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """
-    Fill missing basin & subbasins elements (codes & labels) using
-    the closest geometry in an buffer of 10km.
-
-    Note: this is approximative, particularly on international borders but will
-    avoid missing stations when looping over (for instance) basins.
-
-    Parameters
-    ----------
-    gdf : gpd.GeoDataFrame
-        GeoDataFrame of results with missing (sub)basins data.
-
-    Returns
-    -------
-    gdf : gpd.GeoDataFrame
-        Filled results.
-
-    """
-
-    if gdf[gdf.code_bassin.isnull()].empty:
-        return gdf
-
-    # missing code_bassin, code_sous_bassin, etc., let's fill those with
-    # closest geometry, up to 10km
-    crs = gdf.crs
-    gdf = gdf.to_crs(2154)
-
-    # spatial join to nearest, up to 10km
-    basins = _get_dce_subbasins(crs=2154)
-
-    missing = gdf[
-        (gdf.code_sous_bassin.isnull()) | (gdf.code_bassin.isnull())
-    ].index
-
-    missing = (
-        gdf.loc[missing].sjoin(basins, how="left").drop("index_right", axis=1)
-    )
-    coalesce = {
-        "code_sous_bassin": "CdEuSsBassinDCEAdmin",
-        "libelle_sous_bassin": "NomSsBassinDCEAdmin",
-        "code_bassin": "CdBassinDCE",
-        "libelle_bassin": "NomBassinDCE",
-    }
-    for key, val in coalesce.items():
-        gdf[key] = gdf[key].combine_first(missing[val])
-
-    missing = gdf[
-        (gdf.code_sous_bassin.isnull()) | (gdf.code_bassin.isnull())
-    ].index
-    missing = (
-        gdf.loc[missing]
-        .sjoin_nearest(
-            basins,
-            how="left",
-            max_distance=10_000,
-        )
-        .drop("index_right", axis=1)
-    )
-    coalesce = {
-        "code_sous_bassin": "CdEuSsBassinDCEAdmin",
-        "libelle_sous_bassin": "NomSsBassinDCEAdmin",
-        "code_bassin": "CdBassinDCE",
-        "libelle_bassin": "NomBassinDCE",
-    }
-    for key, val in coalesce.items():
-        gdf[key] = gdf[key].combine_first(missing[val])
-
-    gdf = gdf.to_crs(crs)
-    return gdf
 
 
 def get_all_stations(**kwargs) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
@@ -273,8 +103,22 @@ def get_all_stations(**kwargs) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
         # results is empty
         return gpd.GeoDataFrame()
 
-    results = _fill_missing_cog(results)
-    results = _fill_missing_basin_subbasin(results)
+    results = _fill_missing_cog(
+        results,
+        code_commune="code_commune",
+        code_departement="code_departement",
+        code_region="code_region",
+        libelle_commune="libelle_commune",
+        libelle_departement="libelle_departement",
+        libelle_region="libelle_region",
+    )
+    results = _fill_missing_basin_subbasin(
+        results,
+        code_sous_bassin="code_sous_bassin",
+        libelle_sous_bassin="libelle_sous_bassin",
+        code_bassin="code_bassin",
+        libelle_bassin="libelle_bassin",
+    )
 
     # filter from mesh
     if kept:
@@ -408,8 +252,21 @@ def get_all_indexes(**kwargs) -> gpd.GeoDataFrame:
         # results is empty
         return gpd.GeoDataFrame()
 
-    results = _fill_missing_cog(results)
-    results = _fill_missing_basin_subbasin(results)
+    results = _fill_missing_cog(
+        results,
+        code_commune="code_commune",
+        code_departement="code_departement",
+        code_region="code_region",
+        libelle_commune="libelle_commune",
+        libelle_departement="libelle_departement",
+        libelle_region="libelle_region",
+    )
+    results = _fill_missing_basin_subbasin(
+        results,
+        code_sous_bassin="code_sous_bassin",
+        libelle_sous_bassin="libelle_sous_bassin",
+        code_bassin="code_bassin",
+    )
 
     # filter from mesh
     # if kept:
@@ -430,6 +287,6 @@ def get_all_taxa(**kwargs) -> gpd.GeoDataFrame:
 
 
 if __name__ == "__main__":
-    # df = get_all_stations(code_region="32")
-    df = get_all_indexes()
-    df.plot()
+    df = get_all_stations()
+    # df = get_all_indexes()
+    # df.plot()
