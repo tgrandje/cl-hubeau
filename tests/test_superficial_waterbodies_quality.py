@@ -31,17 +31,16 @@ def mock_get_data(monkeypatch):
         self, method, url, *args = args
 
         if re.search("station_pc$", url):
-            deps = kwargs["params"]["code_departement"].split(",")
+            bbox = kwargs["params"]["bbox"].split(",")
             data = {
-                "count": len(deps),
+                "count": 1,
                 "first": "blah_page",
                 "features": [
                     {
                         "type": "Feature",
                         "properties": {
-                            "code_station": f"dummy_code_{dep}",
+                            "code_station": f"dummy_code_{bbox}",
                             "libelle_station": "dummy_label",
-                            "code_departement": dep,
                         },
                         "geometry": {
                             "type": "Point",
@@ -54,7 +53,6 @@ def mock_get_data(monkeypatch):
                             "coordinates": [0, 0],
                         },
                     }
-                    for dep in deps
                 ],
             }
 
