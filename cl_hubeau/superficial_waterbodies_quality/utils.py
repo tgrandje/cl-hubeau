@@ -126,9 +126,12 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
         if isinstance(kwargs["fields"], str):
             kwargs["fields"] = kwargs["fields"].split(",")
 
-        for area, val in area_dict.items():
-            if val:
-                kwargs["fields"].append(area)
+        try:
+            for area, val in area_dict.items():
+                if val:
+                    kwargs["fields"].append(area)
+        except UnboundLocalError:
+            pass
 
     with SuperficialWaterbodiesQualitySession() as session:
         if bbox != [""]:
@@ -162,23 +165,26 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
             libelle_region="libelle_region",
         )
 
-        try:
-            # Quick and dirty hack, there is a bug on this endpoint changing
-            # fields labels whether format='json' or format='geojson' is used
-            # https://github.com/BRGM/hubeau/issues/246
-            results["codeBassinDce"]
-        except KeyError:
-            code_bassin = "code_bassin"
-        else:
-            code_bassin = "codeBassinDce"
-
-        results = _fill_missing_basin_subbasin(
-            results,
-            code_sous_bassin="code_eu_sous_bassin",
-            libelle_sous_bassin="nom_sous_bassin",
-            code_bassin=code_bassin,
-            libelle_bassin="nom_bassin",
+        # Quick and dirty hack, there is a bug on this endpoint changing
+        # fields labels whether format='json' or format='geojson' is used
+        # https://github.com/BRGM/hubeau/issues/246
+        code_bassin = (
+            "codeBassinDce" if kwargs["format"] == "geojson" else "code_bassin"
         )
+
+        # Note : on some areas, those columns are totally empty and not returned
+        try:
+            results[code_bassin]
+        except KeyError:
+            pass
+        else:
+            results = _fill_missing_basin_subbasin(
+                results,
+                code_sous_bassin="code_eu_sous_bassin",
+                libelle_sous_bassin="nom_sous_bassin",
+                code_bassin=code_bassin,
+                libelle_bassin="nom_bassin",
+            )
 
     # filter from mesh
     try:
@@ -324,8 +330,6 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     stations = [
         stations[i : i + 50] for i in range(0, len(stations), 50)  # noqa
     ]
-
-    kwargs["code_departement"] = deps
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
