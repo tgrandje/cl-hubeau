@@ -113,7 +113,7 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
     else:
         # using keys from areas_without_mesh which are not covered by _get_mesh
         # so let's use built-in hub'eau queries
-        pass
+        bbox = [""]
 
     if "format" in kwargs and kwargs["format"] != "geojson":
         warnings.warn(
