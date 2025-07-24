@@ -97,7 +97,7 @@ def mock_get_data(monkeypatch):
 def test_get_stations_mocked(mock_get_data):
     data = superficial_waterbodies_quality.get_all_stations()
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) == 102
+    assert len(data) == 103
 
 
 @silence_api_version_warning
@@ -154,12 +154,12 @@ def test_get_operations_live():
 
 def test_get_environmental_conditions_live():
     data = superficial_waterbodies_quality.get_all_environmental_conditions(
-        code_departement="974",
+        code_departement="59",
         date_debut_prelevement="1990-01-01",
         date_fin_prelevement="1990-07-01",
     )
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 40
+    assert len(data) >= 709
 
 
 def test_get_analyses_live():

@@ -325,6 +325,8 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
         stations[i : i + 50] for i in range(0, len(stations), 50)  # noqa
     ]
 
+    kwargs["code_departement"] = deps
+
     kwargs["format"] = kwargs.get("format", "geojson")
 
     desc = "querying 6m/6m & station/station"
