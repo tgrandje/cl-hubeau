@@ -233,8 +233,8 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
     stations = get_all_stations(**copy, fill_values=False)
     stations = stations["code_station"].values.tolist()
     stations = [
-        stations[i : i + 50] for i in range(0, len(stations), 50)
-    ]  # noqa
+        stations[i : i + 50] for i in range(0, len(stations), 50)  # noqa
+    ]
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
@@ -322,8 +322,8 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     stations = get_all_stations(**copy, fill_values=False)
     stations = stations["code_station"].values.tolist()
     stations = [
-        stations[i : i + 50] for i in range(0, len(stations), 50)
-    ]  # noqa
+        stations[i : i + 50] for i in range(0, len(stations), 50)  # noqa
+    ]
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
@@ -433,8 +433,8 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
     stations = get_all_stations(**copy, fill_values=False)
     stations = stations["code_station"].values.tolist()
     stations = [
-        stations[i : i + 50] for i in range(0, len(stations), 50)
-    ]  # noqa
+        stations[i : i + 50] for i in range(0, len(stations), 50)  # noqa
+    ]
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
