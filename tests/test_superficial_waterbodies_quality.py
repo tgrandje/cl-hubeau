@@ -97,7 +97,7 @@ def mock_get_data(monkeypatch):
 def test_get_stations_mocked(mock_get_data):
     data = superficial_waterbodies_quality.get_all_stations()
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) == 102
+    assert len(data) == 103
 
 
 @silence_api_version_warning
