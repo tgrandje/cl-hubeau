@@ -5,6 +5,7 @@ Convenience functions for superficial waterbodies quality inspections
 """
 
 from datetime import date
+from itertools import product
 import warnings
 
 from deprecated import deprecated
@@ -17,14 +18,43 @@ from cl_hubeau.superficial_waterbodies_quality import (
     SuperficialWaterbodiesQualitySession,
 )
 from cl_hubeau import _config
-from cl_hubeau.utils import (
-    get_departements,
-    get_departements_from_regions,
-    prepare_kwargs_loops,
+from cl_hubeau.utils.mesh import _get_mesh
+from cl_hubeau.utils import prepare_kwargs_loops
+from cl_hubeau.utils.fill_missing_fields import (
+    _fill_missing_cog,
+    _fill_missing_basin_subbasin,
 )
 
+PROPAGATION_OK = {
+    "bbox",
+    "code_banque_reference",
+    "code_bassin_dce",
+    "code_commune",
+    "code_cours_eau",
+    "code_departement",
+    "code_eu_masse_eau",
+    "code_masse_eau",
+    "code_region",
+    "code_reseau",
+    "code_sous_bassin",
+    "code_station",
+    "distance",
+    "latitude",
+    "libelle_commune",
+    "libelle_departement",
+    "libelle_masse_eau",
+    "libelle_region",
+    "libelle_reseau",
+    "libelle_station",
+    "longitude",
+    "nom_bassin_dce",
+    "nom_cours_eau",
+    "nom_sous_bassin",
+    "type_entite_hydro",
+}
 
-def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
+
+def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve all stations for physical/chemical analyses on superficial
     waterbodies
@@ -33,6 +63,9 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     Parameters
     ----------
+    **fill_values :
+        if True, will try to consolidate data (french official geographic code,
+        basin and subbasins). Default is True
     **kwargs :
         kwargs passed to SuperficialWaterbodiesQualitySession.get_stations
         (hence mostly intended for hub'eau API's arguments).
@@ -44,39 +77,115 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
 
     """
 
-    if "code_region" in kwargs:
-        code_region = kwargs.pop("code_region")
-        deps = get_departements_from_regions(code_region)
-    elif "code_departement" in kwargs:
-        deps = kwargs.pop("code_departement")
-        if not isinstance(deps, (list, set, tuple)):
-            deps = [deps]
-    elif any(x in kwargs for x in ("code_commune", "code_station")):
-        deps = [""]
+    areas_from_fixed_mesh = {
+        "code_region",
+        "code_departement",
+        "code_commune",
+        "code_bassin_dce",
+        "code_sous_bassin",
+    }
+    areas_without_mesh = {"code_masse_eau", "code_cours_eau", "code_station"}
+    if "bbox" in kwargs:
+        # bbox is set, use it directly and hope for the best
+        bbox = kwargs.pop("bbox", "")
+        if isinstance(bbox, str):
+            bbox = bbox.split(",")
+    elif not any(
+        kwargs.get(x) for x in areas_from_fixed_mesh | areas_without_mesh
+    ):
+        # no specific location -> let's set a default mesh to avoid reaching
+        # the 20k threshold
+        bbox = _get_mesh(side=1.5)
+    elif any(kwargs.get(x) for x in areas_from_fixed_mesh):
+        # a key has been given for which cl-hubeau fixes the queries, using a
+        # custom mesh/bbox
+        area_dict = {
+            k: v for k, v in kwargs.items() if k in areas_from_fixed_mesh
+        }
+        for k in areas_from_fixed_mesh:
+            kwargs.pop(k, None)
+
+        # quick and dirty hack as this endpoint uses code_bassin_dce instead
+        # of code_bassin which is _get_mesh's kwarg
+        area_dict["code_bassin"] = area_dict.pop("code_bassin_dce", None)
+
+        bbox = _get_mesh(**area_dict)
     else:
-        deps = get_departements()
+        # using keys from areas_without_mesh which are not covered by _get_mesh
+        # so let's use built-in hub'eau queries
+        pass
 
-    kwargs["format"] = kwargs.get("format", "geojson")
+    if "format" in kwargs and kwargs["format"] != "geojson":
+        warnings.warn(
+            "get_all_stations forces `format='geojson'` in order to perform "
+            "data consolidation with some geodatasets"
+        )
+    kwargs["format"] = "geojson"
 
-    # Split by 20-something chunks
-    deps = [deps[i : i + 20] for i in range(0, len(deps), 20)]
+    if "fields" in kwargs:
+        if isinstance(kwargs["fields"], str):
+            kwargs["fields"] = kwargs["fields"].split(",")
+
+        for area, val in area_dict.items():
+            if val:
+                kwargs["fields"].append(area)
 
     with SuperficialWaterbodiesQualitySession() as session:
-        results = [
-            session.get_stations(code_departement=dep, **kwargs)
-            for dep in tqdm(
-                deps,
-                desc="querying dep/dep",
-                leave=_config["TQDM_LEAVE"],
-                position=tqdm._get_free_pos(),
-            )
-        ]
-        results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+        if bbox != [""]:
+            results = [
+                session.get_stations(bbox=this_bbox, **kwargs)
+                for this_bbox in tqdm(
+                    bbox,
+                    desc="querying stations",
+                    leave=_config["TQDM_LEAVE"],
+                    position=tqdm._get_free_pos(),
+                )
+            ]
+        else:
+            results = [session.get_stations(**kwargs)]
+    if not results:
+        return gpd.GeoDataFrame()
 
-        if not results:
-            return gpd.GeoDataFrame()
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return pd.DataFrame()
+    results = gpd.pd.concat(results, ignore_index=True)
 
-        results = gpd.pd.concat(results, ignore_index=True)
+    if fill_values:
+        results = _fill_missing_cog(
+            results,
+            code_commune="code_commune",
+            code_departement="code_departement",
+            code_region="code_region",
+            libelle_commune="libelle_commune",
+            libelle_departement="libelle_departement",
+            libelle_region="libelle_region",
+        )
+
+        try:
+            # Quick and dirty hack, there is a bug on this endpoint changing
+            # fields labels whether format='json' or format='geojson' is used
+            # https://github.com/BRGM/hubeau/issues/246
+            results["codeBassinDce"]
+        except KeyError:
+            code_bassin = "code_bassin"
+        else:
+            code_bassin = "codeBassinDce"
+
+        results = _fill_missing_basin_subbasin(
+            results,
+            code_sous_bassin="code_eu_sous_bassin",
+            libelle_sous_bassin="nom_sous_bassin",
+            code_bassin=code_bassin,
+            libelle_bassin="nom_bassin",
+        )
+
+    # filter from mesh
+    try:
+        query = " & ".join(f"({k}=='{v}')" for k, v in area_dict.items() if v)
+        results = results.query(query)
+    except UnboundLocalError:
+        pass
 
     return results
 
@@ -117,24 +226,19 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
     if "date_fin_prelevement" not in kwargs:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
-    if "code_region" in kwargs:
-        # let's downcast to departemental loops
-        reg = kwargs.pop("code_region")
-        deps = get_departements_from_regions(reg)
-    elif "code_departement" in kwargs:
-        deps = kwargs.pop("code_departement")
-        if not isinstance(deps, (list, set, tuple)):
-            deps = [deps]
-    elif any(x in kwargs for x in ("code_commune", "code_station")):
-        deps = [""]
-    else:
-        deps = get_departements()
-
-    kwargs["code_departement"] = deps
+    # safe arguments to propagate to the station endpoint:
+    propagation_ok = PROPAGATION_OK
+    copy = {k: v for k, v in kwargs.items() if k in propagation_ok}
+    copy.update({"fields": "code_station", "format": "geojson"})
+    stations = get_all_stations(**copy, fill_values=False)
+    stations = stations["code_station"].values.tolist()
+    stations = [
+        stations[i : i + 50] for i in range(0, len(stations), 50)
+    ]  # noqa
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
-    desc = "querying 6m/6m" + (" & dep/dep" if deps != [""] else "")
+    desc = "querying 6m/6m & station/station"
 
     kwargs_loop = prepare_kwargs_loops(
         "date_debut_prelevement",
@@ -143,6 +247,11 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
         start_auto_determination,
         months=6,
     )
+
+    kwargs_loop = list(product(stations, kwargs_loop))
+    kwargs_loop = [
+        {**{"code_station": chunk}, **kw} for chunk, kw in kwargs_loop
+    ]
 
     with SuperficialWaterbodiesQualitySession() as session:
 
@@ -205,30 +314,33 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     if "date_fin_prelevement" not in kwargs:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
-    if "code_region" in kwargs:
-        code_region = kwargs.pop("code_region")
-        deps = get_departements_from_regions(code_region)
-    elif "code_departement" in kwargs:
-        deps = kwargs.pop("code_departement")
-        if not isinstance(deps, (list, set, tuple)):
-            deps = [deps]
-    elif any(x in kwargs for x in ("code_commune", "code_station")):
-        deps = [""]
-    else:
-        deps = get_departements()
+    # safe arguments to propagate to the station endpoint:
+    propagation_ok = PROPAGATION_OK
+    copy = {k: v for k, v in kwargs.items() if k in propagation_ok}
+    [kwargs.pop(x) for x in copy]
+    copy.update({"fields": "code_station", "format": "geojson"})
+    stations = get_all_stations(**copy, fill_values=False)
+    stations = stations["code_station"].values.tolist()
+    stations = [
+        stations[i : i + 50] for i in range(0, len(stations), 50)
+    ]  # noqa
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
-    desc = "querying 6m/6m" + (
-        " & dep/dep" if "code_departement" in kwargs else ""
-    )
+    desc = "querying 6m/6m & station/station"
 
     kwargs_loop = prepare_kwargs_loops(
         "date_debut_prelevement",
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
+        months=6,
     )
+
+    kwargs_loop = list(product(stations, kwargs_loop))
+    kwargs_loop = [
+        {**{"code_station": chunk}, **kw} for chunk, kw in kwargs_loop
+    ]
 
     with SuperficialWaterbodiesQualitySession() as session:
 
@@ -313,31 +425,33 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
     if "date_fin_prelevement" not in kwargs:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
-    if "code_region" in kwargs:
-        code_region = kwargs.pop("code_region")
-        deps = get_departements_from_regions(code_region)
-    elif "code_departement" in kwargs:
-        deps = kwargs.pop("code_departement")
-        if not isinstance(deps, (list, set, tuple)):
-            deps = [deps]
-    elif any(x in kwargs for x in ("code_commune", "code_station")):
-        deps = [""]
-    else:
-        deps = get_departements()
+    # safe arguments to propagate to the station endpoint:
+    propagation_ok = PROPAGATION_OK
+    copy = {k: v for k, v in kwargs.items() if k in propagation_ok}
+    [kwargs.pop(x) for x in copy]
+    copy.update({"fields": "code_station", "format": "geojson"})
+    stations = get_all_stations(**copy, fill_values=False)
+    stations = stations["code_station"].values.tolist()
+    stations = [
+        stations[i : i + 50] for i in range(0, len(stations), 50)
+    ]  # noqa
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
-    # Split by 20-something chunks
-    deps = [deps[i : i + 20] for i in range(0, len(deps), 20)]
-    kwargs["code_departement"] = deps
+    desc = "querying 6m/6m & station/station"
 
-    desc = "querying 6m/6m" + (" & dep/dep" if deps != [""] else "")
     kwargs_loop = prepare_kwargs_loops(
         "date_debut_prelevement",
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
+        months=6,
     )
+
+    kwargs_loop = list(product(stations, kwargs_loop))
+    kwargs_loop = [
+        {**{"code_station": chunk}, **kw} for chunk, kw in kwargs_loop
+    ]
 
     with SuperficialWaterbodiesQualitySession() as session:
 

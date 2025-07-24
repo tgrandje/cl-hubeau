@@ -149,7 +149,7 @@ def test_get_operations_live():
         date_fin_prelevement="2020-06-01",
     )
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 29
+    assert len(data) == 40
 
 
 def test_get_environmental_conditions_live():

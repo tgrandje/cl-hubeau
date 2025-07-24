@@ -80,7 +80,7 @@ def get_all_stations(**kwargs) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
             bbox = bbox.split(",")
         kept = None
 
-    kwargs["format"] = kwargs.pop("format", "geojson")
+    kwargs["format"] = kwargs.get("format", "geojson")
 
     with HydrobiologySession() as session:
         if bbox != [""]:

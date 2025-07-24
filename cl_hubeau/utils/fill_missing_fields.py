@@ -69,9 +69,9 @@ def _fill_missing_cog(
 
     # first pass, perform an exact spatial join
     missing = gdf[
-        (gdf.code_commune.isnull())
-        | (gdf.code_departement.isnull())
-        | (gdf.code_region.isnull())
+        (gdf[code_commune].isnull())
+        | (gdf[code_departement].isnull())
+        | (gdf[code_region].isnull())
     ].index
     missing = (
         gdf.loc[missing].sjoin(coms, how="left").drop("index_right", axis=1)
@@ -97,9 +97,9 @@ def _fill_missing_cog(
 
     # second pass, perform a spatial join to nearest, up to 10km
     missing = gdf[
-        (gdf.code_commune.isnull())
-        | (gdf.code_departement.isnull())
-        | (gdf.code_region.isnull())
+        (gdf[code_commune].isnull())
+        | (gdf[code_departement].isnull())
+        | (gdf[code_region].isnull())
     ].index
     missing = (
         gdf.loc[missing]
@@ -160,7 +160,7 @@ def _fill_missing_basin_subbasin(
 
     """
 
-    if gdf[gdf.code_bassin.isnull()].empty:
+    if gdf[gdf[code_bassin].isnull()].empty:
         return gdf
 
     # missing code_bassin, code_sous_bassin, etc., let's fill those with
@@ -172,7 +172,7 @@ def _fill_missing_basin_subbasin(
     basins = _get_dce_subbasins(crs=2154)
 
     missing = gdf[
-        (gdf.code_sous_bassin.isnull()) | (gdf.code_bassin.isnull())
+        (gdf[code_sous_bassin].isnull()) | (gdf[code_bassin].isnull())
     ].index
 
     missing = (
@@ -189,7 +189,7 @@ def _fill_missing_basin_subbasin(
         gdf[key] = gdf[key].combine_first(missing[val])
 
     missing = gdf[
-        (gdf.code_sous_bassin.isnull()) | (gdf.code_bassin.isnull())
+        (gdf[code_sous_bassin].isnull()) | (gdf[code_bassin].isnull())
     ].index
     missing = (
         gdf.loc[missing]
