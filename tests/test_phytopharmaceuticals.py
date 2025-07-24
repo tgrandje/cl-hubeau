@@ -278,7 +278,7 @@ def test_get_territory_years_combination():
         {"type_territoire": "Département"}, "bought"
     )
     df = pd.DataFrame(df, columns=["territory", "year"])
-    assert len(df.territory.drop_duplicates().tolist()) == 102
+    assert len(df.territory.drop_duplicates().tolist()) == 103
 
     df = _get_territory_years_combination(
         {"type_territoire": "Zone postale"},

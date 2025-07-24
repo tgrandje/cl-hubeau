@@ -217,6 +217,8 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     else:
         deps = get_departements()
 
+    kwargs["code_departement"] = deps
+
     kwargs["format"] = kwargs.get("format", "geojson")
 
     desc = "querying 6m/6m" + (
