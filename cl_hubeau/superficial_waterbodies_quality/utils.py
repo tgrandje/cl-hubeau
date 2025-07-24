@@ -7,13 +7,12 @@ Convenience functions for superficial waterbodies quality inspections
 from datetime import date
 import warnings
 
-import deprecation
+from deprecated import deprecated
 import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
 
 
-from cl_hubeau import __version__
 from cl_hubeau.superficial_waterbodies_quality import (
     SuperficialWaterbodiesQualitySession,
 )
@@ -52,7 +51,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
         deps = kwargs.pop("code_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_commune" in kwargs:
+    elif any(x in kwargs for x in ("code_commune", "code_station")):
         deps = [""]
     else:
         deps = get_departements()
@@ -126,7 +125,7 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
         deps = kwargs.pop("code_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_commune" in kwargs:
+    elif any(x in kwargs for x in ("code_commune", "code_station")):
         deps = [""]
     else:
         deps = get_departements()
@@ -207,15 +206,16 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
         kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
 
     if "code_region" in kwargs:
-        # let's downcast to departemental loops
-        reg = kwargs.pop("code_region")
-        if isinstance(reg, (list, tuple, set)):
-            deps = [
-                dep for r in reg for dep in get_departements_from_regions(r)
-            ]
-        else:
-            deps = get_departements_from_regions(reg)
-        kwargs["code_departement"] = deps
+        code_region = kwargs.pop("code_region")
+        deps = get_departements_from_regions(code_region)
+    elif "code_departement" in kwargs:
+        deps = kwargs.pop("code_departement")
+        if not isinstance(deps, (list, set, tuple)):
+            deps = [deps]
+    elif any(x in kwargs for x in ("code_commune", "code_station")):
+        deps = [""]
+    else:
+        deps = get_departements()
 
     kwargs["format"] = kwargs.get("format", "geojson")
 
@@ -250,12 +250,7 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-@deprecation.deprecated(
-    deprecated_in="0.6.0",
-    removed_in="1.0",
-    current_version=__version__,
-    details="Please use `get_all_analyses` instead.",
-)
+@deprecated(version="0.6.0", reason="Please use `get_all_analyses` instead.")
 def get_all_analysis(**kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve analyses results from measures.
@@ -325,7 +320,7 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
         deps = kwargs.pop("code_departement")
         if not isinstance(deps, (list, set, tuple)):
             deps = [deps]
-    elif "code_commune" in kwargs:
+    elif any(x in kwargs for x in ("code_commune", "code_station")):
         deps = [""]
     else:
         deps = get_departements()
