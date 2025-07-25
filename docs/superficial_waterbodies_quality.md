@@ -37,7 +37,7 @@ au client python.
 > d'implémenter des boucles satisfaisantes en utilisant les critères définis par
 > l'API.
 >
-> A la place Les données stations sont requêtées en utilisant une grille
+> A la place, les données stations sont requêtées en utilisant une grille
 > spatiale basée sur l'enveloppe des territoires présents dans les jeux de
 > données AdminExpress de l'IGN. Cette grille est ensuite utilisée pour boucler
 > sur les "boîtes" (usage du paramètre `bbox`).
@@ -49,8 +49,8 @@ au client python.
 > * en second lieu une jointure spatiale approximative (dans une limite de 10km)
 >
 > Ces données consolidées sont ensuite utilisées pour le requêtage de chaque
-> endpoint de l'API *Qualité des Eaux Superficielles*. Aucune consolidation
-> n'est effectuée sur les autres jeux de données, l'utilisateur est à la place
+> endpoint de l'API *Qualité des Eaux Superficielles*. **Aucune consolidation
+> n'est effectuée sur les autres jeux de données** : l'utilisateur est à la place
 > invité à créer les liaisons pertinentes avec le jeu de données des stations.
 >
 > Par la suite, toutes les données datées seront requêtées par tranches de
@@ -74,14 +74,6 @@ récupérée à ce jour.
 > Dans le cas où vous souhaiteriez voir ajouter une couche de consolidation,
 > merci de créer une issue sur le repo, si possible en sourçant un jeu de
 > données national APIsé ad hoc.
-
-Par conséquent, les données des territoires non représentés dans le jeux de
-données AdminExpress (certains territoires d'outre-mer) ne peuvent pas être
-récupérée à ce jour.
-
-
-Chacune des fonctions de haut niveau implémente une consolidation des données
-"station" : c
 
 
 ### Récupération de la totalité des stations
