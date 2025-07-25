@@ -194,7 +194,11 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
         area_dict["code_eu_sous_bassin"] = area_dict.pop(
             "code_sous_bassin", None
         )
-        query = " & ".join(f"({k}=='{v}')" for k, v in area_dict.items() if v)
+        query = " & ".join(
+            f"({k}=='{v}')" if isinstance(v, str) else f"{k}.isin({v})"
+            for k, v in area_dict.items()
+            if v
+        )
         results = results.query(query)
     except UnboundLocalError:
         pass
