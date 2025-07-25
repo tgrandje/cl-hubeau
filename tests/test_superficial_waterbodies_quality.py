@@ -141,7 +141,31 @@ def test_get_analyses_mocked(mock_get_data):
 def test_get_stations_live():
     data = superficial_waterbodies_quality.get_all_stations(code_region="06")
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 29
+    assert len(data) >= 30
+
+    data = superficial_waterbodies_quality.get_all_stations(
+        code_departement="75"
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 5
+
+    data = superficial_waterbodies_quality.get_all_stations(
+        code_commune="75056"
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 5
+
+    data = superficial_waterbodies_quality.get_all_stations(
+        code_bassin_dce="M"
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 30
+
+    data = superficial_waterbodies_quality.get_all_stations(
+        code_sous_bassin="FRB2_SAMB"
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 31
 
 
 def test_get_operations_live():
