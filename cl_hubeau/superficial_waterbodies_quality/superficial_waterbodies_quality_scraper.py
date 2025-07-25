@@ -3,10 +3,9 @@
 low level class to collect data from the drinking water quality API from
 hub'eau
 """
-import deprecation
+from deprecated import deprecated
 import pandas as pd
 
-from cl_hubeau import __version__
 from cl_hubeau.session import BaseHubeauSession
 from cl_hubeau.exceptions import UnexpectedArguments
 
@@ -248,7 +247,13 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v2/qualite_rivieres/operation_pc"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_prelevement",
+            time_end="date_fin_prelevement",
+            params=params,
+        )
 
         try:
             df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
@@ -355,7 +360,13 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             self.BASE_URL
             + "/v2/qualite_rivieres/condition_environnementale_pc"
         )
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_prelevement",
+            time_end="date_fin_prelevement",
+            params=params,
+        )
 
         try:
             df["date_prelevement"] = pd.to_datetime(
@@ -366,11 +377,9 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
 
         return df
 
-    @deprecation.deprecated(
-        deprecated_in="0.6.0",
-        removed_in="1.0",
-        current_version=__version__,
-        details=(
+    @deprecated(
+        version="0.6.0",
+        reason=(
             "Please use `SuperficialWaterbodiesQualitySession.get_analyses` "
             "instead.",
         ),
@@ -492,7 +501,13 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v2/qualite_rivieres/analyse_pc"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_prelevement",
+            time_end="date_fin_prelevement",
+            params=params,
+        )
 
         try:
             df["date_prelevement"] = pd.to_datetime(
@@ -500,5 +515,12 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
             )
         except KeyError:
             pass
+
+        # optimize to categorical, those dataframes are heavy
+        for x in df.loc[:, df.dtypes == "object"]:
+            try:
+                df[x] = pd.Categorical(df[x])
+            except TypeError:
+                pass
 
         return df

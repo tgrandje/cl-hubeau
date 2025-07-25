@@ -11,11 +11,12 @@ import hashlib
 import logging
 import os
 import socket
-from typing import Callable, Any
+from typing import Callable, Any, Union
 from urllib.parse import urlparse, parse_qs
 import warnings
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pebble
 from pyrate_limiter import SQLiteBucket
@@ -30,10 +31,12 @@ from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, RATELIMITER_NAME
 from cl_hubeau import _config, __version__
 from cl_hubeau.exceptions import UnexpectedValueError
 
+logger = logging.getLogger(__name__)
+
 
 @lru_cache(maxsize=None)
 def log_only_once(url):
-    logging.warning("api_version not found among API response")
+    logger.warning("api_version not found among API response")
 
 
 def map_func(
@@ -212,6 +215,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         x: list,
         max_authorized_values: int = None,
         exact_authorized_values: int = None,
+        authorized_values: Union[list, set, tuple] = None,
     ) -> str:
         """
         Join array of arguments to an accepted string format
@@ -224,6 +228,9 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             Maximum authorized values in the list
         exact_authorized_values : int, optional
             Exact authorized values in the list
+        authorized_values : Union[list, set, tuple], optional
+            If set, each individual value from x should be among
+            authorized_values. Default is None.
 
         Returns
         -------
@@ -246,6 +253,13 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     f"found {len(x)} instead"
                 )
                 raise ValueError(msg)
+            if authorized_values:
+                authorized_values = {str(y) for y in authorized_values}
+                violation = [str(y) for y in x if y not in authorized_values]
+                if violation:
+                    raise ValueError(
+                        f"unauthorized values found for {x} : {violation}"
+                    )
 
             return ",".join([str(y) for y in x])
         raise ValueError(f"unexpected format found on {x}")
@@ -320,7 +334,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         *args,
         **kwargs,
     ):
-        logging.info(
+        logger.info(
             "method=%s url=%s args=%s kwargs=%s", method, url, args, kwargs
         )
         r = super().request(
@@ -341,7 +355,13 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         return r
 
     def get_result(
-        self, method: str, url: str, params: dict, **kwargs
+        self,
+        method: str,
+        url: str,
+        params: dict,
+        time_start: str = None,
+        time_end: str = None,
+        **kwargs,
     ) -> pd.DataFrame:
         """
         Loop over API's results until last page is reached and aggregate
@@ -355,6 +375,18 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             url to query
         params : dict
             params to add to request
+        time_start : str, optional
+            Can be set in order to auto-adjust the temporal loop when > 20k
+            results have been found. In that case, time_start must take the
+            value of Hub'Eau's argument on the start of the timeserie
+            (for instance, "date_debut_prelevement"). The default is None which
+            will deactivate this option.
+        time_end : str, optional
+            Can be set in order to auto-adjust the temporal loop when > 20k
+            results have been found. In that case, time_end must take the
+            value of Hub'Eau's argument on the end of the timeserie
+            (for instance, "date_fin_prelevement"). The default is None which
+            will deactivate this option.
         **kwargs :
             other arguments are passed to CachedSession.request
 
@@ -394,18 +426,49 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             except KeyError:
                 log_only_once(url)
 
-        logging.debug(js)
+        logger.debug(js)
 
         page = "page" if "page" in js["first"] else "cursor"
 
         count_rows = js["count"]
         if count_rows > 20_000:
-            raise ValueError(
-                "this request won't be handled by hubeau "
-                f"( {count_rows} > 20k results)"
+            if not (time_start and time_end):
+                raise ValueError(
+                    "this request won't be handled by hubeau "
+                    f"( {count_rows} > 20k results) - query was {params}"
+                )
+
+            timeranges = pd.date_range(
+                start=params[time_start], end=params[time_end], freq="D"
             )
+            timeranges = np.array_split(timeranges, 2)
+            results = []
+            for window in timeranges:
+                params.update(
+                    {
+                        time_start: window.min().strftime("%Y-%m-%d"),
+                        time_end: window.max().strftime("%Y-%m-%d"),
+                    }
+                )
+                results.append(
+                    self.get_result(
+                        method,
+                        url,
+                        params,
+                        time_start=time_start,
+                        time_end=time_end,
+                        **kwargs,
+                    )
+                )
+                results = [
+                    x.dropna(axis=1, how="all") for x in results if not x.empty
+                ]
+                if not results:
+                    return pd.DataFrame()
+            return pd.concat(results)
+
         msg = f"{count_rows} expected results"
-        logging.info(msg)
+        logger.info(msg)
         count_pages = count_rows // self.size + (
             0 if count_rows % self.size == 0 else 1
         )

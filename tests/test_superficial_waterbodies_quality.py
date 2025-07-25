@@ -5,8 +5,6 @@
 Test high level functions
 """
 
-from datetime import date, timedelta
-
 import geopandas as gpd
 import pandas as pd
 import pytest
@@ -14,6 +12,8 @@ import re
 from requests_cache import CacheMixin
 
 from cl_hubeau import superficial_waterbodies_quality
+import cl_hubeau.utils.mesh
+from tests.utils import silence_api_version_warning
 
 
 class MockResponse:
@@ -28,21 +28,22 @@ class MockResponse:
 @pytest.fixture
 def mock_get_data(monkeypatch):
 
+    def mock_get_mesh(*args, **kwargs):
+        return [[0, 0, 1, 1], [1, 1, 2, 2]]
+
     def mock_request(*args, **kwargs):
         self, method, url, *args = args
 
         if re.search("station_pc$", url):
-            deps = kwargs["params"]["code_departement"].split(",")
             data = {
-                "count": len(deps),
+                "count": 1,
                 "first": "blah_page",
                 "features": [
                     {
                         "type": "Feature",
                         "properties": {
-                            "code_station": f"dummy_code_{dep}",
+                            "code_station": f"dummy_code_{kwargs}",
                             "libelle_station": "dummy_label",
-                            "code_departement": dep,
                         },
                         "geometry": {
                             "type": "Point",
@@ -55,7 +56,6 @@ def mock_get_data(monkeypatch):
                             "coordinates": [0, 0],
                         },
                     }
-                    for dep in deps
                 ],
             }
 
@@ -92,15 +92,18 @@ def mock_get_data(monkeypatch):
         return MockResponse(data)
 
     monkeypatch.setattr(CacheMixin, "request", mock_request)
+    monkeypatch.setattr(cl_hubeau.utils.mesh, "_get_mesh", mock_get_mesh)
 
 
-def test_get_stations(mock_get_data):
-    data = superficial_waterbodies_quality.get_all_stations()
+@silence_api_version_warning
+def test_get_stations_mocked(mock_get_data):
+    data = superficial_waterbodies_quality.get_all_stations(fill_values=False)
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) == 102
+    assert len(data) == 2
 
 
-def test_get_operations(mock_get_data):
+@silence_api_version_warning
+def test_get_operations_mocked(mock_get_data):
     data = superficial_waterbodies_quality.get_all_operations(
         code_station="dummy_code",
         date_debut_prelevement="2020-01-01",
@@ -111,7 +114,8 @@ def test_get_operations(mock_get_data):
     assert len(data) == 1
 
 
-def test_get_environmental_conditions(mock_get_data):
+@silence_api_version_warning
+def test_get_environmental_conditions_mocked(mock_get_data):
     data = superficial_waterbodies_quality.get_all_environmental_conditions(
         code_station="dummy_code",
         date_debut_prelevement="2020-01-01",
@@ -122,7 +126,8 @@ def test_get_environmental_conditions(mock_get_data):
     assert len(data) == 1
 
 
-def test_get_analyses(mock_get_data):
+@silence_api_version_warning
+def test_get_analyses_mocked(mock_get_data):
     data = superficial_waterbodies_quality.get_all_analyses(
         code_station="dummy_code",
         date_debut_prelevement="2020-01-01",
@@ -136,7 +141,31 @@ def test_get_analyses(mock_get_data):
 def test_get_stations_live():
     data = superficial_waterbodies_quality.get_all_stations(code_region="06")
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 29
+    assert len(data) >= 30
+
+    data = superficial_waterbodies_quality.get_all_stations(
+        code_departement="75"
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 5
+
+    data = superficial_waterbodies_quality.get_all_stations(
+        code_commune="75056"
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 5
+
+    data = superficial_waterbodies_quality.get_all_stations(
+        code_bassin_dce="M"
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 30
+
+    data = superficial_waterbodies_quality.get_all_stations(
+        code_sous_bassin="FRB2_SAMB"
+    )
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 31
 
 
 def test_get_operations_live():
@@ -146,22 +175,25 @@ def test_get_operations_live():
         date_fin_prelevement="2020-06-01",
     )
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 29
+    assert len(data) == 40
 
 
 def test_get_environmental_conditions_live():
     data = superficial_waterbodies_quality.get_all_environmental_conditions(
-        code_region="04",
+        code_departement="59",
+        date_debut_prelevement="1990-01-01",
+        date_fin_prelevement="1990-07-01",
     )
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 40
+    assert len(data) >= 709
 
 
 def test_get_analyses_live():
     data = superficial_waterbodies_quality.get_all_analyses(
-        code_region="06",
+        code_departement="974",
         date_debut_prelevement="2020-01-01",
         date_fin_prelevement="2020-06-01",
+        libelle_parametre="Benzo(a)pyrène",
     )
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) >= 800
