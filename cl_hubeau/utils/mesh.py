@@ -30,6 +30,40 @@ cache = diskcache.Cache(os.path.join(DIR_CACHE, DISKCACHE))
 
 
 @cache.memoize(
+    tag="bbox_mesh_grid",
+    expire=_config["DEFAULT_EXPIRE_AFTER"].total_seconds(),
+)
+def _set_grid(
+    crs: int = 4326,
+    buffer: int = 10_000,
+    side: int = 0.5,
+) -> list:
+
+    gdf = _get_pynsee_geodata_latest("commune", crs=2154)
+    geom = gpd.GeoSeries([gdf.union_all()], crs=2154).simplify(buffer / 10)
+    geom = geom.buffer(buffer).to_crs(4326)
+
+    xmin, ymin, xmax, ymax = geom.total_bounds
+    cols = list(np.arange(xmin, xmax + side, side))
+    rows = list(np.arange(ymin, ymax + side, side))
+    polygons = []
+    for x in cols[:-1]:
+        for y in rows[:-1]:
+            polygons.append(
+                Polygon(
+                    [
+                        (x, y),
+                        (x + side, y),
+                        (x + side, y + side),
+                        (x, y + side),
+                    ]
+                )
+            )
+    grid = gpd.GeoDataFrame({"geometry": polygons}, crs=4326)
+    return grid
+
+
+@cache.memoize(
     tag="bbox_mesh",
     expire=_config["DEFAULT_EXPIRE_AFTER"].total_seconds(),
 )
@@ -52,7 +86,6 @@ def _get_mesh(
 
     Note that bounding boxes will overlap if CRS is not 4326. In that case,
     mesh might not be consisted of squares.
-
 
     Parameters
     ----------
@@ -118,53 +151,35 @@ def _get_mesh(
             if isinstance(d[x], str):
                 d[x] = d[x].split(",")
 
-    if any(
-        d.get(x) for x in ["code_region", "code_departement", "code_commune"]
-    ):
+    # 1. create a fixed grid based on commune geodataset
+    grid = _set_grid(crs, buffer, side)
+
+    # 2. select squares from the fixed grid according to kwargs
+    if code_region or code_departement or code_commune:
         gdf = _get_pynsee_geodata_latest("commune", crs=4326)
+    elif code_bassin or code_sous_bassin:
+        gdf = _get_dce_subbasins(crs=4326)
+    elif code_sage:
+        gdf = _get_sage()
 
-        if code_region:
-            gdf = gdf.query(
-                f"code_insee_de_la_region.isin({d['code_region']})"
-            ).copy()
-        if code_departement:
-            gdf = gdf.query(
-                f"code_insee_du_departement.isin({d['code_departement']})"
-            ).copy()
-        if code_commune:
-            gdf = gdf.query(f"code_insee.isin({d['code_commune']})").copy()
-
-    elif any(d.get(x) for x in ["code_bassin", "code_sous_bassin"]):
-        gdf = _get_dce_subbasins(
-            subbasin=d.get("code_sous_bassin"),
-            basin=d.get("code_bassin"),
-            crs=4326,
-        )
-    elif d.get("code_sage"):
-        gdf = _get_sage(sage=d.get("code_sage"))
-    else:
-        # whole of France
-        gdf = _get_pynsee_geodata_latest("commune", crs=4326)
-
-    gdf.geometry = gdf.geometry.to_crs(2154).buffer(buffer).to_crs(4326)
-
-    xmin, ymin, xmax, ymax = gdf.total_bounds
-    cols = list(np.arange(xmin, xmax + side, side))
-    rows = list(np.arange(ymin, ymax + side, side))
-    polygons = []
-    for x in cols[:-1]:
-        for y in rows[:-1]:
-            polygons.append(
-                Polygon(
-                    [
-                        (x, y),
-                        (x + side, y),
-                        (x + side, y + side),
-                        (x, y + side),
-                    ]
-                )
-            )
-    grid = gpd.GeoDataFrame({"geometry": polygons}, crs=4326)
+    if code_region:
+        gdf = gdf.query(
+            f"code_insee_de_la_region.isin({d['code_region']})"
+        ).copy()
+    if code_departement:
+        gdf = gdf.query(
+            f"code_insee_du_departement.isin({d['code_departement']})"
+        ).copy()
+    if code_commune:
+        gdf = gdf.query(f"code_insee.isin({d['code_commune']})").copy()
+    if code_bassin:
+        gdf = gdf.query(f"CdBassinDCE.isin({d['code_bassin']})").copy()
+    if code_sous_bassin:
+        gdf = gdf.query(
+            f"CdEuSsBassinDCEAdmin.isin({d['code_sous_bassin']})"
+        ).copy()
+    if code_sage:
+        gdf = gdf.query(f"CodeNatZone.isin({d['code_sage']})").copy()
 
     grid = grid.sjoin(
         gpd.GeoSeries([gdf.union_all()], crs=4326).to_frame(),
@@ -174,7 +189,3 @@ def _get_mesh(
     grid = grid.to_crs(crs)
 
     return grid.geometry.bounds.values.tolist()
-
-
-if __name__ == "__main__":
-    _get_mesh(side=1.5)

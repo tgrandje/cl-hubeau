@@ -73,7 +73,9 @@ def _inner_sages() -> gpd.GeoDataFrame:
     return df
 
 
-def _get_sage(sage: Union[str, None, list, tuple, set], crs: int = 4326):
+def _get_sage(
+    sage: Union[str, None, list, tuple, set] = None, crs: int = 4326
+):
     """
     Get GeoDataFrame of SAGE(s). This should only be used to generate a
     mesh of selected bounding boxes when hub'eau's internal dataset misses some
@@ -83,7 +85,7 @@ def _get_sage(sage: Union[str, None, list, tuple, set], crs: int = 4326):
     Parameters
     ----------
     sage : Union[str, None, list, tuple, set]
-        Desired SAGE code.
+        Desired SAGE code. Default is None.
     crs : int, optional
         Desired projection. The default is 4326.
 

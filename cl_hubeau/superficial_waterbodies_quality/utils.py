@@ -109,7 +109,7 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
         # of code_bassin which is _get_mesh's kwarg
         area_dict["code_bassin"] = area_dict.pop("code_bassin_dce", None)
 
-        bbox = cl_hubeau.utils.mesh._get_mesh(**area_dict)
+        bbox = cl_hubeau.utils.mesh._get_mesh(**area_dict, side=1.5)
     else:
         # using keys from areas_without_mesh which are not covered by _get_mesh
         # so let's use built-in hub'eau queries
@@ -165,16 +165,12 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
             libelle_region="libelle_region",
         )
 
-        # Quick and dirty hack, there is a bug on this endpoint changing
-        # fields labels whether format='json' or format='geojson' is used
+        # Note 1: code_bassin label will change according to the output format
         # https://github.com/BRGM/hubeau/issues/246
-        code_bassin = (
-            "codeBassinDce" if kwargs["format"] == "geojson" else "code_bassin"
-        )
-
-        # Note : on some areas, those columns are totally empty and not returned
+        # Note 2 : on some areas, those columns are totally empty and not
+        # returned: in that case, just skip data consolidation
         try:
-            results[code_bassin]
+            results["codeBassinDce"]
         except KeyError:
             pass
         else:
@@ -182,12 +178,16 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
                 results,
                 code_sous_bassin="code_eu_sous_bassin",
                 libelle_sous_bassin="nom_sous_bassin",
-                code_bassin=code_bassin,
+                code_bassin="codeBassinDce",
                 libelle_bassin="nom_bassin",
             )
 
     # filter from mesh
     try:
+        area_dict["codeBassinDce"] = area_dict.pop("code_bassin", None)
+        area_dict["code_eu_sous_bassin"] = area_dict.pop(
+            "code_sous_bassin", None
+        )
         query = " & ".join(f"({k}=='{v}')" for k, v in area_dict.items() if v)
         results = results.query(query)
     except UnboundLocalError:
