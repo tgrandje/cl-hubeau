@@ -30,18 +30,72 @@ au client python.
 
 ## Fonctions de haut niveau
 
+{: .warning }
+> Certaines stations ont des paramètres géographiques incomplets (
+> `code_region`, `code_departement`, `code_commune`, `code_bassin_dce`,
+> `code_sous_bassin` notamment). Il n'est donc pas possible pour cl-hubeau
+> d'implémenter des boucles satisfaisantes en utilisant les critères définis par
+> l'API.
+>
+> A la place Les données stations sont requêtées en utilisant une grille
+> spatiale basée sur l'enveloppe des territoires présents dans les jeux de
+> données AdminExpress de l'IGN. Cette grille est ensuite utilisée pour boucler
+> sur les "boîtes" (usage du paramètre `bbox`).
+>
+> Un post-traitement est ensuite utilisé pour compléter les champs manquants
+> dans le dataframe retourné. Cette consolidation est effectuée en deux étapes :
+>
+> * en premier lieu une jointure spatiale
+> * en second lieu une jointure spatiale approximative (dans une limite de 10km)
+>
+> Ces données consolidées sont ensuite utilisées pour le requêtage de chaque
+> endpoint de l'API *Qualité des Eaux Superficielles*. Aucune consolidation
+> n'est effectuée sur les autres jeux de données, l'utilisateur est à la place
+> invité à créer les liaisons pertinentes avec le jeu de données des stations.
+>
+> Par la suite, toutes les données datées seront requêtées par tranches de
+> 6 mois calendaires pour optimiser le cache ; dans le cas d'atteinte du
+> seuil de 20k résultats, les périodes seront automatiquement divisées par deux
+> pour garantir l'obtention des résultats.
+
+{: .critical }
+Par conséquent, les données des territoires non représentés dans le jeux de
+données AdminExpress (certains territoires d'outre-mer) ne peuvent pas être
+récupérée à ce jour.
+
+{: .critical }
+> Afin de limiter le temps de calcul lié à la consolidation des résultats, tous
+> les champs ne sont pas comblés. A ce jour, seules les clefs de requêtage les
+> plus courantes ont été implémentées :
+>
+> * données du code officiel géographique (région, département, commune)
+> * bassins DCE et sous-bassins
+>
+> Dans le cas où vous souhaiteriez voir ajouter une couche de consolidation,
+> merci de créer une issue sur le repo, si possible en sourçant un jeu de
+> données national APIsé ad hoc.
+
+Par conséquent, les données des territoires non représentés dans le jeux de
+données AdminExpress (certains territoires d'outre-mer) ne peuvent pas être
+récupérée à ce jour.
+
+
+Chacune des fonctions de haut niveau implémente une consolidation des données
+"station" : c
+
+
 ### Récupération de la totalité des stations
 
-Cette fonction permet de récupérer les stations de mesures physicochimique en cours d'eau de la France entière.
+Cette fonction permet de récupérer les stations de mesures physicochimique en
+cours d'eau de la France entière.
 
 ```python
 from cl_hubeau import superficial_waterbodies_quality
 df = superficial_waterbodies_quality.get_all_stations()
 ```
 
-Il est également possible de spécifier des arguments à la fonction, parmi ceux supportés
-par le point de sortie "station_pc" de l'API, à l'exception de :
-* `code_departement` (utilisé pour boucler sur les codes départements)
+Il est également possible de spécifier des arguments à la fonction, parmi ceux
+supportés par le point de sortie "station_pc" de l'API.
 
 Par exemple :
 ```python
@@ -51,8 +105,8 @@ gdf = superficial_waterbodies_quality.get_all_stations(code_region="32")
 
 ### Récupération des opérations
 
-Cette fonction permet de récupérer les opérations physicochimiques sur des cours d'eau et plan d'eau
-en France métropolitaine et DROM.
+Cette fonction permet de récupérer les opérations physicochimiques sur des cours
+d'eau et plan d'eau en France métropolitaine et DROM.
 
 ```python
 from cl_hubeau import superficial_waterbodies_quality
@@ -61,22 +115,18 @@ df = superficial_waterbodies_quality.get_all_operations()
 
 {: .warning }
 Ce type de requêtage induit rapidement des résultats volumineux.
-S'il est en théorie possible de requêter l'API sans paramétrage via cette fonction, il est fortement
-conseillé d'utiliser des arguments suplémentaires pour restreindre les résultats.
+S'il est en théorie possible de requêter l'API sans paramétrage via cette
+fonction, il est fortement conseillé d'utiliser des arguments suplémentaires
+pour restreindre les résultats.
 
 Il est ainsi possible de spécifier des arguments à la fonction, parmi ceux supportés
 par le point de sortie "operation_pc" de l'API.
-
-En l'état, cette fonction implémente déjà des boucles :
-* sur les codes départementaux (y compris en cas de recherche par code région) ;
-* sur les périodes, en requêtant par tranche de 6 mois (ce qui permet une scalabilité de l'algorithme dans le temps
-et optimise l'usage du cache).
 
 Par exemple :
 
 ```python
 from cl_hubeau import superficial_waterbodies_quality
-gdf = superficial_waterbodies_quality.get_all_stations(code_region=['32'])
+gdf = superficial_waterbodies_quality.get_all_operations(code_region=['32'])
 ```
 
 ### Récupération des conditions environnementales
@@ -92,16 +142,12 @@ df = superficial_waterbodies_quality.get_all_environmental_conditions()
 
 {: .warning }
 Ce type de requêtage induit rapidement des résultats volumineux.
-S'il est en théorie possible de requêter l'API sans paramétrage via cette fonction, il est fortement
-conseillé d'utiliser des arguments suplémentaires pour restreindre les résultats.
+S'il est en théorie possible de requêter l'API sans paramétrage via cette
+fonction, il est fortement conseillé d'utiliser des arguments suplémentaires
+pour restreindre les résultats.
 
-Il est ainsi possible de spécifier des arguments à la fonction, parmi ceux supportés
-par le point de sortie "condition_environnementale_pc" de l'API.
-
-En l'état, cette fonction implémente déjà des boucles :
-* sur les codes départementaux (y compris en cas de recherche par code région) ;
-* sur les périodes, en requêtant par tranche de 6 mois (ce qui permet une scalabilité de l'algorithme dans le temps
-et optimise l'usage du cache).
+Il est ainsi possible de spécifier des arguments à la fonction, parmi ceux
+supportés par le point de sortie "condition_environnementale_pc" de l'API.
 
 Par exemple :
 
@@ -121,23 +167,41 @@ from cl_hubeau import superficial_waterbodies_quality
 df = superficial_waterbodies_quality.get_all_analyses()
 ```
 
-{: .warning }
-Ce type de requêtage induit des résultats volumineux. Cette API ne **peut pas** être
-requêtée sans paramétrage supplémentaire (dépassement du nombre de 20 000 résultats).
-Il est de la responsabilité de l'utilisateur d'optimiser le requêtage par
-zone géographique (code département, etc.) et/ou en ciblant certaines substances.
+{: .critical }
+> Ce type de requêtage induit des résultats volumineux. Cette API ne **peut pas**
+> être requêtée sans paramétrage supplémentaire (le résultat ne tenant pas en
+> mémoire sur des machines usuelles).
+> Il est de la responsabilité de l'utilisateur d'optimiser le requêtage par
+> zone géographique (code département, etc.) et en ciblant certaines substances.
+> Il est par ailleurs conseillé de basculer
+> sur un format json avec seuls les champs utiles.
 
-Il est ainsi possible de spécifier des arguments à la fonction, parmi ceux supportés
-par le point de sortie "analyse_pc" de l'API.
-
-En l'état, cette fonction implémente déjà une boucle sur les périodes, en requêtant par
-années calendaires (ce qui permet une scalabilité de l'algorithme dans le temps et optimise l'usage du cache).
+Il est ainsi possible de spécifier des arguments à la fonction, parmi ceux
+supportés par le point de sortie "analyse_pc" de l'API.
 
 Par exemple :
 
 ```python
 from cl_hubeau import superficial_waterbodies_quality
-gdf = superficial_waterbodies_quality.get_all_analyses(code_departement="59", code_parametre="1313")
+gdf = superficial_waterbodies_quality.get_all_analyses(
+    code_departement="59",
+    code_parametre="1313",
+    format="json",
+    fields=[
+        "code_station",
+        "code_parametre",
+        "code_fraction",
+        "code_analyse",
+        "code_qualification",
+        "code_statut",
+        "date_prelevement",
+        "heure_prelevement",
+        "resultat",
+        "incertitude_analytique",
+        "limite_detection",
+        "symbole_unite",
+    ]
+)
 ```
 
 ## Fonctions de bas niveau
