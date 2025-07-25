@@ -12,6 +12,7 @@ import re
 from requests_cache import CacheMixin
 
 from cl_hubeau import superficial_waterbodies_quality
+import cl_hubeau.utils.mesh
 from tests.utils import silence_api_version_warning
 
 
@@ -27,11 +28,13 @@ class MockResponse:
 @pytest.fixture
 def mock_get_data(monkeypatch):
 
+    def mock_get_mesh(*args, **kwargs):
+        return [[0, 0, 1, 1], [1, 1, 2, 2]]
+
     def mock_request(*args, **kwargs):
         self, method, url, *args = args
 
         if re.search("station_pc$", url):
-            bbox = kwargs["params"]["bbox"].split(",")
             data = {
                 "count": 1,
                 "first": "blah_page",
@@ -39,7 +42,7 @@ def mock_get_data(monkeypatch):
                     {
                         "type": "Feature",
                         "properties": {
-                            "code_station": f"dummy_code_{bbox}",
+                            "code_station": f"dummy_code_{kwargs}",
                             "libelle_station": "dummy_label",
                         },
                         "geometry": {
@@ -89,13 +92,14 @@ def mock_get_data(monkeypatch):
         return MockResponse(data)
 
     monkeypatch.setattr(CacheMixin, "request", mock_request)
+    monkeypatch.setattr(cl_hubeau.utils.mesh, "_get_mesh", mock_get_mesh)
 
 
 @silence_api_version_warning
 def test_get_stations_mocked(mock_get_data):
-    data = superficial_waterbodies_quality.get_all_stations()
+    data = superficial_waterbodies_quality.get_all_stations(fill_values=False)
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) == 103
+    assert len(data) == 2
 
 
 @silence_api_version_warning
