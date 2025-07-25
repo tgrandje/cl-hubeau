@@ -135,14 +135,15 @@ def cities_for_sage() -> dict:
 
     """
 
-    # TODO : deprecate function?
+    # TODO : deprecate function when all APIs are covered by data consolidation
+    # with hydrological datasets
 
     sages = _inner_sages()
 
     com = get_geodata("ADMINEXPRESS-COG-CARTO.LATEST:commune", crs=sages.crs)
 
     sages = sages.sjoin(com)
-    sages = sages.groupby("CodeNatZone")["insee_com"].agg(list).to_dict()
+    sages = sages.groupby("CodeNatZone")["code_insee"].agg(list).to_dict()
     return sages
 
 
@@ -280,8 +281,3 @@ def _get_dce_subbasins(
             basin = [basin]
         gdf = gdf.query(f"CdBassinDCE.isin({basin})")
     return gdf.to_crs(crs)
-
-
-if __name__ == "__main__":
-    df = _get_dce_subbasins(basin="G")
-    # gdf = get_sage("SAGE06022")
