@@ -11,6 +11,7 @@ import warnings
 from deprecated import deprecated
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 
 
@@ -168,19 +169,24 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
         # Note 1: code_bassin label will change according to the output format
         # https://github.com/BRGM/hubeau/issues/246
         # Note 2 : on some areas, those columns are totally empty and not
-        # returned: in that case, just skip data consolidation
+        # returned
         try:
             results["codeBassinDce"]
         except KeyError:
-            pass
-        else:
-            results = _fill_missing_basin_subbasin(
-                results,
-                code_sous_bassin="code_eu_sous_bassin",
-                libelle_sous_bassin="nom_sous_bassin",
-                code_bassin="codeBassinDce",
-                libelle_bassin="nom_bassin",
+            results = results.assign(
+                codeBassinDce=np.nan,
+                code_eu_sous_bassin=np.nan,
+                nom_sous_bassin=np.nan,
+                nom_bassin=np.nan,
             )
+
+        results = _fill_missing_basin_subbasin(
+            results,
+            code_sous_bassin="code_eu_sous_bassin",
+            libelle_sous_bassin="nom_sous_bassin",
+            code_bassin="codeBassinDce",
+            libelle_bassin="nom_bassin",
+        )
 
     # filter from mesh
     try:
