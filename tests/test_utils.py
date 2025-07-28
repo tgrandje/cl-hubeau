@@ -13,6 +13,7 @@ from cl_hubeau.utils.fill_missing_fields import (
     _fill_missing_basin_subbasin,
 )
 from cl_hubeau.utils import _get_pynsee_geodata_latest
+from cl_hubeau.utils import _get_mesh
 
 
 def test_postcodes():
@@ -58,3 +59,7 @@ def test_fill_territories():
 
     for x in columns:
         assert not sample[x].isnull().any()
+
+
+def test_mesh():
+    _get_mesh()
