@@ -181,11 +181,16 @@ def _get_mesh(
     if code_sage:
         gdf = gdf.query(f"CodeNatZone.isin({d['code_sage']})").copy()
 
-    grid = grid.sjoin(
-        gpd.GeoSeries([gdf.union_all()], crs=4326).to_frame(),
-        how="inner",
-        predicate="intersects",
-    )
+    try:
+        grid = grid.sjoin(
+            gpd.GeoSeries([gdf.union_all()], crs=4326).to_frame(),
+            how="inner",
+            predicate="intersects",
+        )
+    except UnboundLocalError:
+        # keep full mesh for whole territory
+        pass
+
     grid = grid.to_crs(crs)
 
     return grid.geometry.bounds.values.tolist()
