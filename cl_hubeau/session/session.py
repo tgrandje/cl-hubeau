@@ -334,7 +334,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         *args,
         **kwargs,
     ):
-        logger.debug(
+        logger.info(
             "method=%s url=%s args=%s kwargs=%s", method, url, args, kwargs
         )
         r = super().request(

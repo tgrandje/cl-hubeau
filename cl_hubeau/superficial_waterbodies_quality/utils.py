@@ -5,6 +5,7 @@ Convenience functions for superficial waterbodies quality inspections
 """
 
 from datetime import date
+from functools import partial
 from itertools import product
 import warnings
 
@@ -12,6 +13,7 @@ from deprecated import deprecated
 import geopandas as gpd
 import pandas as pd
 import numpy as np
+
 from tqdm import tqdm
 
 
@@ -53,6 +55,14 @@ PROPAGATION_OK = {
     "nom_sous_bassin",
     "type_entite_hydro",
 }
+
+tqdm_partial = partial(
+    tqdm,
+    leave=_config["TQDM_LEAVE"],
+    position=tqdm._get_free_pos(),
+    mininterval=_config["TQDM_MININTERVAL"],
+    maxinterval=_config["TQDM_MAXINTERVAL"],
+)
 
 
 def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
@@ -138,11 +148,9 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
         if bbox != [""]:
             results = [
                 session.get_stations(bbox=this_bbox, **kwargs)
-                for this_bbox in tqdm(
+                for this_bbox in tqdm_partial(
                     bbox,
                     desc="querying stations",
-                    leave=_config["TQDM_LEAVE"],
-                    position=tqdm._get_free_pos(),
                 )
             ]
         else:
@@ -312,11 +320,9 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
                 **kwargs,
                 **kw_loop,
             )
-            for kw_loop in tqdm(
+            for kw_loop in tqdm_partial(
                 kwargs_loop,
                 desc=desc,
-                leave=_config["TQDM_LEAVE"],
-                position=tqdm._get_free_pos(),
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
@@ -357,18 +363,16 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
             "`get_all_environmental_conditions(code_department='02')`"
         )
 
-    kwargs, kwargs_loop = _prepare_kwargs(kwargs)
+    kwargs, kwargs_loop = _prepare_kwargs(kwargs, chunks=200, months=6)
 
-    desc = "querying 6m/6m & station/station"
+    desc = "querying 6m / 6m & 200 stations / 200 stations"
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
             session.get_environmental_conditions(**kwargs, **kw_loop)
-            for kw_loop in tqdm(
+            for kw_loop in tqdm_partial(
                 kwargs_loop,
                 desc=desc,
-                leave=_config["TQDM_LEAVE"],
-                position=tqdm._get_free_pos(),
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
@@ -441,11 +445,9 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
 
         results = [
             session.get_analyses(**kwargs, **kw_loop)
-            for kw_loop in tqdm(
+            for kw_loop in tqdm_partial(
                 kwargs_loop,
                 desc=desc,
-                leave=_config["TQDM_LEAVE"],
-                position=tqdm._get_free_pos(),
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
