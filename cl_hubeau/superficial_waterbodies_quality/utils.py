@@ -13,7 +13,6 @@ from deprecated import deprecated
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-
 from tqdm import tqdm
 
 
@@ -21,6 +20,7 @@ from cl_hubeau.superficial_waterbodies_quality import (
     SuperficialWaterbodiesQualitySession,
 )
 from cl_hubeau import _config
+from cl_hubeau.utils.tqdm_utils import tqdm_custom
 import cl_hubeau.utils.mesh
 from cl_hubeau.utils import prepare_kwargs_loops
 from cl_hubeau.utils.fill_missing_fields import (
@@ -57,7 +57,7 @@ PROPAGATION_OK = {
 }
 
 tqdm_partial = partial(
-    tqdm,
+    tqdm_custom,
     leave=_config["TQDM_LEAVE"],
     position=tqdm._get_free_pos(),
     mininterval=_config["TQDM_MININTERVAL"],
