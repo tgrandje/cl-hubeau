@@ -154,6 +154,7 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
     if not results:
         return pd.DataFrame()
     results = gpd.pd.concat(results, ignore_index=True)
+    results = results.drop_duplicates("code_station")
 
     if fill_values:
         results = _fill_missing_cog(
