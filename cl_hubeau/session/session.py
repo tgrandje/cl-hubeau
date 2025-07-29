@@ -334,7 +334,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         *args,
         **kwargs,
     ):
-        logger.info(
+        logger.debug(
             "method=%s url=%s args=%s kwargs=%s", method, url, args, kwargs
         )
         r = super().request(
@@ -437,6 +437,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     "this request won't be handled by hubeau "
                     f"( {count_rows} > 20k results) - query was {params}"
                 )
+            logger.info("> 20k results reached, splitting queries")
 
             timeranges = pd.date_range(
                 start=params[time_start], end=params[time_end], freq="D"
@@ -468,7 +469,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             return pd.concat(results)
 
         msg = f"{count_rows} expected results"
-        logger.info(msg)
+        logger.debug(msg)
         count_pages = count_rows // self.size + (
             0 if count_rows % self.size == 0 else 1
         )

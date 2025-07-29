@@ -207,7 +207,9 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
     return results
 
 
-def _prepare_kwargs(kwargs) -> tuple[dict, list[dict]]:
+def _prepare_kwargs(
+    kwargs, chunks: int = 50, months: int = 6
+) -> tuple[dict, list[dict]]:
     """
     Prepare kwargs & kwargs_loop to run temporal loops to acquire all results.
 
@@ -217,9 +219,14 @@ def _prepare_kwargs(kwargs) -> tuple[dict, list[dict]]:
 
     Parameters
     ----------
-    kwargs : TYPE
+    kwargs :
         initial kwargs passed to the upper-level function (hence should
         correspond to the API's available arguments)
+    chunks : int, optional
+        defines the size of the chunk (consecutive stations to be downloaded
+        simultaneously). Default is 50.
+    months : int, optional
+        Number of consecutive months to split the data into. The default is 6.
 
     Returns
     -------
@@ -245,7 +252,8 @@ def _prepare_kwargs(kwargs) -> tuple[dict, list[dict]]:
     stations = get_all_stations(**copy, fill_values=False)
     stations = stations["code_station"].values.tolist()
     stations = [
-        stations[i : i + 50] for i in range(0, len(stations), 50)  # noqa
+        stations[i : i + chunks]
+        for i in range(0, len(stations), chunks)  # noqa
     ]
 
     kwargs["format"] = kwargs.get("format", "geojson")
@@ -255,7 +263,7 @@ def _prepare_kwargs(kwargs) -> tuple[dict, list[dict]]:
         "date_fin_prelevement",
         kwargs,
         start_auto_determination,
-        months=6,
+        months=months,
     )
 
     kwargs_loop = list(product(stations, kwargs_loop))
@@ -294,9 +302,9 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
             "kwargs, for instance `get_operations(code_departement='02')`"
         )
 
-    kwargs, kwargs_loop = _prepare_kwargs(kwargs)
+    kwargs, kwargs_loop = _prepare_kwargs(kwargs, chunks=200, months=12)
 
-    desc = "querying 6m/6m & station/station"
+    desc = "querying year/year & 200 stations/ 200 stations"
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [

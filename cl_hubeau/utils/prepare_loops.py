@@ -47,11 +47,14 @@ def prepare_kwargs_loops(
     end = datetime.strptime(kwargs.pop(key_end), "%Y-%m-%d").date()
 
     if months == 0.5:
-        ranges = pd.date_range(start, end=end, freq="SME")
+        freq = "SME"
     elif months == 0.25:
-        ranges = pd.date_range(start, end=end, freq="W")
+        freq = "W"
+    elif months % 12 == 0:
+        freq = f"{months//12}YS"
     else:
-        ranges = pd.date_range(start, end=end, freq=f"{months}MS")
+        freq = f"{months}MS"
+    ranges = pd.date_range(start, end=end, freq=freq)
     dates = pd.Series(ranges).to_frame("min")
     dates["max"] = dates["min"].shift(-1) - timedelta(days=1)
     dates.at[dates.index.max(), "max"] = pd.Timestamp(end)
