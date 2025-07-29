@@ -11,6 +11,7 @@ import warnings
 from deprecated import deprecated
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 
 
@@ -18,7 +19,7 @@ from cl_hubeau.superficial_waterbodies_quality import (
     SuperficialWaterbodiesQualitySession,
 )
 from cl_hubeau import _config
-from cl_hubeau.utils.mesh import _get_mesh
+import cl_hubeau.utils.mesh
 from cl_hubeau.utils import prepare_kwargs_loops
 from cl_hubeau.utils.fill_missing_fields import (
     _fill_missing_cog,
@@ -95,7 +96,7 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
     ):
         # no specific location -> let's set a default mesh to avoid reaching
         # the 20k threshold
-        bbox = _get_mesh(side=1.5)
+        bbox = cl_hubeau.utils.mesh._get_mesh(side=1.5)
     elif any(kwargs.get(x) for x in areas_from_fixed_mesh):
         # a key has been given for which cl-hubeau fixes the queries, using a
         # custom mesh/bbox
@@ -109,11 +110,11 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
         # of code_bassin which is _get_mesh's kwarg
         area_dict["code_bassin"] = area_dict.pop("code_bassin_dce", None)
 
-        bbox = _get_mesh(**area_dict)
+        bbox = cl_hubeau.utils.mesh._get_mesh(**area_dict, side=1.5)
     else:
         # using keys from areas_without_mesh which are not covered by _get_mesh
         # so let's use built-in hub'eau queries
-        pass
+        bbox = [""]
 
     if "format" in kwargs and kwargs["format"] != "geojson":
         warnings.warn(
@@ -126,9 +127,12 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
         if isinstance(kwargs["fields"], str):
             kwargs["fields"] = kwargs["fields"].split(",")
 
-        for area, val in area_dict.items():
-            if val:
-                kwargs["fields"].append(area)
+        try:
+            for area, val in area_dict.items():
+                if val:
+                    kwargs["fields"].append(area)
+        except UnboundLocalError:
+            pass
 
     with SuperficialWaterbodiesQualitySession() as session:
         if bbox != [""]:
@@ -150,6 +154,7 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
     if not results:
         return pd.DataFrame()
     results = gpd.pd.concat(results, ignore_index=True)
+    results = results.drop_duplicates("code_station")
 
     if fill_values:
         results = _fill_missing_cog(
@@ -162,32 +167,103 @@ def get_all_stations(fill_values: bool = True, **kwargs) -> gpd.GeoDataFrame:
             libelle_region="libelle_region",
         )
 
+        # Note 1: code_bassin label will change according to the output format
+        # https://github.com/BRGM/hubeau/issues/246
+        # Note 2 : on some areas, those columns are totally empty and not
+        # returned
         try:
-            # Quick and dirty hack, there is a bug on this endpoint changing
-            # fields labels whether format='json' or format='geojson' is used
-            # https://github.com/BRGM/hubeau/issues/246
             results["codeBassinDce"]
         except KeyError:
-            code_bassin = "code_bassin"
-        else:
-            code_bassin = "codeBassinDce"
+            results = results.assign(
+                codeBassinDce=np.nan,
+                code_eu_sous_bassin=np.nan,
+                nom_sous_bassin=np.nan,
+                nom_bassin=np.nan,
+            )
 
         results = _fill_missing_basin_subbasin(
             results,
             code_sous_bassin="code_eu_sous_bassin",
             libelle_sous_bassin="nom_sous_bassin",
-            code_bassin=code_bassin,
+            code_bassin="codeBassinDce",
             libelle_bassin="nom_bassin",
         )
 
     # filter from mesh
     try:
-        query = " & ".join(f"({k}=='{v}')" for k, v in area_dict.items() if v)
+        area_dict["codeBassinDce"] = area_dict.pop("code_bassin", None)
+        area_dict["code_eu_sous_bassin"] = area_dict.pop(
+            "code_sous_bassin", None
+        )
+        query = " & ".join(
+            f"({k}=='{v}')" if isinstance(v, str) else f"{k}.isin({v})"
+            for k, v in area_dict.items()
+            if v
+        )
         results = results.query(query)
     except UnboundLocalError:
         pass
 
     return results
+
+
+def _prepare_kwargs(kwargs) -> tuple[dict, list[dict]]:
+    """
+    Prepare kwargs & kwargs_loop to run temporal loops to acquire all results.
+
+    This allow to gather all stations corresponding to given kwargs and then
+    prepare the kwargs / kwargs_loop to run a double loop on stations and
+    6 months subsets.
+
+    Parameters
+    ----------
+    kwargs : TYPE
+        initial kwargs passed to the upper-level function (hence should
+        correspond to the API's available arguments)
+
+    Returns
+    -------
+    kwargs : dict
+        Fixed kwargs to pass to the API low-level function
+    kwargs_loop : list[dict]
+        kwargs to pass to the API low-level function, varying at each iteration
+        of the loop
+
+    """
+    start_auto_determination = False
+    if "date_debut_prelevement" not in kwargs:
+        start_auto_determination = True
+        kwargs["date_debut_prelevement"] = "1960-01-01"
+    if "date_fin_prelevement" not in kwargs:
+        kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
+
+    # safe arguments to propagate to the station endpoint:
+    propagation_ok = PROPAGATION_OK
+    copy = {k: v for k, v in kwargs.items() if k in propagation_ok}
+    [kwargs.pop(x) for x in copy]
+    copy.update({"fields": "code_station", "format": "geojson"})
+    stations = get_all_stations(**copy, fill_values=False)
+    stations = stations["code_station"].values.tolist()
+    stations = [
+        stations[i : i + 50] for i in range(0, len(stations), 50)  # noqa
+    ]
+
+    kwargs["format"] = kwargs.get("format", "geojson")
+
+    kwargs_loop = prepare_kwargs_loops(
+        "date_debut_prelevement",
+        "date_fin_prelevement",
+        kwargs,
+        start_auto_determination,
+        months=6,
+    )
+
+    kwargs_loop = list(product(stations, kwargs_loop))
+    kwargs_loop = [
+        {**{"code_station": chunk}, **kw} for chunk, kw in kwargs_loop
+    ]
+
+    return kwargs, kwargs_loop
 
 
 def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
@@ -218,41 +294,9 @@ def get_all_operations(**kwargs) -> gpd.GeoDataFrame:
             "kwargs, for instance `get_operations(code_departement='02')`"
         )
 
-    # Set a loop for Xth months as dataset are big
-    start_auto_determination = False
-    if "date_debut_prelevement" not in kwargs:
-        start_auto_determination = True
-        kwargs["date_debut_prelevement"] = "1960-01-01"
-    if "date_fin_prelevement" not in kwargs:
-        kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
-
-    # safe arguments to propagate to the station endpoint:
-    propagation_ok = PROPAGATION_OK
-    copy = {k: v for k, v in kwargs.items() if k in propagation_ok}
-    copy.update({"fields": "code_station", "format": "geojson"})
-    stations = get_all_stations(**copy, fill_values=False)
-    stations = stations["code_station"].values.tolist()
-    stations = [
-        stations[i : i + 50] for i in range(0, len(stations), 50)  # noqa
-    ]
-
-    kwargs["format"] = kwargs.get("format", "geojson")
+    kwargs, kwargs_loop = _prepare_kwargs(kwargs)
 
     desc = "querying 6m/6m & station/station"
-
-    kwargs_loop = prepare_kwargs_loops(
-        "date_debut_prelevement",
-        "date_fin_prelevement",
-        kwargs,
-        start_auto_determination,
-        months=6,
-    )
-
-    kwargs_loop = list(product(stations, kwargs_loop))
-    kwargs_loop = [
-        {**{"code_station": chunk}, **kw} for chunk, kw in kwargs_loop
-    ]
-
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
@@ -305,43 +349,9 @@ def get_all_environmental_conditions(**kwargs) -> gpd.GeoDataFrame:
             "`get_all_environmental_conditions(code_department='02')`"
         )
 
-    # Set a loop for yearly querying as dataset are big
-
-    start_auto_determination = False
-    if "date_debut_prelevement" not in kwargs:
-        start_auto_determination = True
-        kwargs["date_debut_prelevement"] = "1960-01-01"
-    if "date_fin_prelevement" not in kwargs:
-        kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
-
-    # safe arguments to propagate to the station endpoint:
-    propagation_ok = PROPAGATION_OK
-    copy = {k: v for k, v in kwargs.items() if k in propagation_ok}
-    [kwargs.pop(x) for x in copy]
-    copy.update({"fields": "code_station", "format": "geojson"})
-    stations = get_all_stations(**copy, fill_values=False)
-    stations = stations["code_station"].values.tolist()
-    stations = [
-        stations[i : i + 50] for i in range(0, len(stations), 50)  # noqa
-    ]
-
-    kwargs["format"] = kwargs.get("format", "geojson")
+    kwargs, kwargs_loop = _prepare_kwargs(kwargs)
 
     desc = "querying 6m/6m & station/station"
-
-    kwargs_loop = prepare_kwargs_loops(
-        "date_debut_prelevement",
-        "date_fin_prelevement",
-        kwargs,
-        start_auto_determination,
-        months=6,
-    )
-
-    kwargs_loop = list(product(stations, kwargs_loop))
-    kwargs_loop = [
-        {**{"code_station": chunk}, **kw} for chunk, kw in kwargs_loop
-    ]
-
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
@@ -416,43 +426,9 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
             "`get_all_analyses(code_department='02')`"
         )
 
-    # Set a loop for yearly querying as dataset are big
-
-    start_auto_determination = False
-    if "date_debut_prelevement" not in kwargs:
-        start_auto_determination = True
-        kwargs["date_debut_prelevement"] = "1960-01-01"
-    if "date_fin_prelevement" not in kwargs:
-        kwargs["date_fin_prelevement"] = date.today().strftime("%Y-%m-%d")
-
-    # safe arguments to propagate to the station endpoint:
-    propagation_ok = PROPAGATION_OK
-    copy = {k: v for k, v in kwargs.items() if k in propagation_ok}
-    [kwargs.pop(x) for x in copy]
-    copy.update({"fields": "code_station", "format": "geojson"})
-    stations = get_all_stations(**copy, fill_values=False)
-    stations = stations["code_station"].values.tolist()
-    stations = [
-        stations[i : i + 50] for i in range(0, len(stations), 50)  # noqa
-    ]
-
-    kwargs["format"] = kwargs.get("format", "geojson")
+    kwargs, kwargs_loop = _prepare_kwargs(kwargs)
 
     desc = "querying 6m/6m & station/station"
-
-    kwargs_loop = prepare_kwargs_loops(
-        "date_debut_prelevement",
-        "date_fin_prelevement",
-        kwargs,
-        start_auto_determination,
-        months=6,
-    )
-
-    kwargs_loop = list(product(stations, kwargs_loop))
-    kwargs_loop = [
-        {**{"code_station": chunk}, **kw} for chunk, kw in kwargs_loop
-    ]
-
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [

@@ -73,7 +73,9 @@ def _inner_sages() -> gpd.GeoDataFrame:
     return df
 
 
-def _get_sage(sage: Union[str, None, list, tuple, set], crs: int = 4326):
+def _get_sage(
+    sage: Union[str, None, list, tuple, set] = None, crs: int = 4326
+):
     """
     Get GeoDataFrame of SAGE(s). This should only be used to generate a
     mesh of selected bounding boxes when hub'eau's internal dataset misses some
@@ -83,7 +85,7 @@ def _get_sage(sage: Union[str, None, list, tuple, set], crs: int = 4326):
     Parameters
     ----------
     sage : Union[str, None, list, tuple, set]
-        Desired SAGE code.
+        Desired SAGE code. Default is None.
     crs : int, optional
         Desired projection. The default is 4326.
 
@@ -135,14 +137,15 @@ def cities_for_sage() -> dict:
 
     """
 
-    # TODO : deprecate function?
+    # TODO : deprecate function when all APIs are covered by data consolidation
+    # with hydrological datasets
 
     sages = _inner_sages()
 
     com = get_geodata("ADMINEXPRESS-COG-CARTO.LATEST:commune", crs=sages.crs)
 
     sages = sages.sjoin(com)
-    sages = sages.groupby("CodeNatZone")["insee_com"].agg(list).to_dict()
+    sages = sages.groupby("CodeNatZone")["code_insee"].agg(list).to_dict()
     return sages
 
 
@@ -280,8 +283,3 @@ def _get_dce_subbasins(
             basin = [basin]
         gdf = gdf.query(f"CdBassinDCE.isin({basin})")
     return gdf.to_crs(crs)
-
-
-if __name__ == "__main__":
-    df = _get_dce_subbasins(basin="G")
-    # gdf = get_sage("SAGE06022")

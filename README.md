@@ -62,6 +62,11 @@ Starting with `pynsee 0.2.0`, no API keys are needed anymore.
 
 In case of bugs, please open an issue [on the repo](https://github.com/tgrandje/cl-hubeau/issues).
 
+You will find in the present README a basic documentation in english.
+For further information, please refer to :
+* the docstrings (which are mostly up-to-date);
+* the complete documentation (in french) available [here](https://tgrandje.github.io/cl-hubeau/).
+
 ## Contribution
 Any help is welcome. Please refer to the [CONTRIBUTING file](https://github.com/tgrandje/cl-hubeau/CONTRIBUTING.md).
 
