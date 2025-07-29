@@ -278,6 +278,9 @@ def _prepare_kwargs(
     kwargs_loop = [
         {**{"code_station": chunk}, **kw} for chunk, kw in kwargs_loop
     ]
+    kwargs_loop = sorted(
+        kwargs_loop, key=lambda x: x["date_debut_prelevement"], reverse=True
+    )
 
     return kwargs, kwargs_loop
 
@@ -445,7 +448,7 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
         param = kwargs.get("code_parametre")
         if isinstance(param, str):
             param = param.split(",")
-        chunks = 50
+        chunks = 100
         months = round(12 / len(param))
         # note : 50 stations for one parameter on 1 analysis/day on 365 day
         # = 18_250 expected results max
@@ -456,9 +459,6 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
         f"querying {months}m/{months}m & {chunks} stations / {chunks} stations"
     )
 
-    kwargs, kwargs_loop = _prepare_kwargs(kwargs, chunks=20, months=3)
-
-    desc = "querying 3m/3m & 20 stations / 20 stations"
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [
