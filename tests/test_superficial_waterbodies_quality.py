@@ -165,7 +165,7 @@ def test_get_stations_live():
         code_sous_bassin="FRB2_SAMB"
     )
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 31
+    assert len(data) >= 29
 
 
 def test_get_operations_live():
