@@ -438,9 +438,9 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
             "`get_all_analyses(code_department='02')`"
         )
 
-    kwargs, kwargs_loop = _prepare_kwargs(kwargs)
+    kwargs, kwargs_loop = _prepare_kwargs(kwargs, chunks=20, months=3)
 
-    desc = "querying 6m/6m & station/station"
+    desc = "querying 3m/3m & 20 stations / 20 stations"
     with SuperficialWaterbodiesQualitySession() as session:
 
         results = [

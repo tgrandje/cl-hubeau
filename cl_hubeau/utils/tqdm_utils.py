@@ -10,7 +10,9 @@ from tqdm_loggable.utils import is_interactive_session, is_stdout_only_session
 
 
 def tqdm_custom(*args, **kwargs):
-    "small patch to adapt tqdm_loggable behaviour"
+    """
+    small patch to adapt tqdm_loggable behaviour for spyder
+    """
 
     if is_interactive_session() or is_stdout_only_session():
         from tqdm import tqdm
