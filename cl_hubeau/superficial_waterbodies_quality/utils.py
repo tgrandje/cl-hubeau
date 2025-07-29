@@ -438,6 +438,24 @@ def get_all_analyses(**kwargs) -> gpd.GeoDataFrame:
             "`get_all_analyses(code_department='02')`"
         )
 
+    if not kwargs.get("code_parametre"):
+        chunks = 20
+        months = 3
+    else:
+        param = kwargs.get("code_parametre")
+        if isinstance(param, str):
+            param = param.split(",")
+        chunks = 50
+        months = round(12 / len(param))
+        # note : 50 stations for one parameter on 1 analysis/day on 365 day
+        # = 18_250 expected results max
+
+    kwargs, kwargs_loop = _prepare_kwargs(kwargs, chunks=chunks, months=months)
+
+    desc = (
+        f"querying {months}m/{months}m & {chunks} stations / {chunks} stations"
+    )
+
     kwargs, kwargs_loop = _prepare_kwargs(kwargs, chunks=20, months=3)
 
     desc = "querying 3m/3m & 20 stations / 20 stations"
