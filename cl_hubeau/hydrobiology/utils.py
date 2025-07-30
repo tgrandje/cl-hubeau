@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Convenience functions for hydrobiology consumption
 """
@@ -187,8 +188,10 @@ def get_all_indexes(**kwargs) -> gpd.GeoDataFrame:
     """
     Retrieve all indexes from France.
 
-    If no location is specified (neither geographic nor hydrographic locator)
-    a loop will be introduced on each departement.
+    Should only be used with additional arguments to avoid reaching the 20k
+    threshold, in conjonction with the built-in loop (which will operate
+    on yearly subsets, even if date_debut_prelevement/date_fin_prelevement are
+    not set.)
 
     Parameters
     ----------
@@ -199,7 +202,7 @@ def get_all_indexes(**kwargs) -> gpd.GeoDataFrame:
     Returns
     -------
     results : Union[gpd.GeoDataFrame, pd.DataFrame]
-        (Geo)DataFrame of stations. The result will be of type DataFrame only
+        (Geo)DataFrame of indexes. The result will be of type DataFrame only
         if `format="json"` has been specifically set.
 
     """
@@ -239,36 +242,75 @@ def get_all_indexes(**kwargs) -> gpd.GeoDataFrame:
         # results is empty
         return gpd.GeoDataFrame()
 
-    results = _fill_missing_cog(
-        results,
-        code_commune="code_commune",
-        code_departement="code_departement",
-        code_region="code_region",
-        libelle_commune="libelle_commune",
-        libelle_departement="libelle_departement",
-        libelle_region="libelle_region",
-    )
-    results = _fill_missing_basin_subbasin(
-        results,
-        code_sous_bassin="code_sous_bassin",
-        libelle_sous_bassin="libelle_sous_bassin",
-        code_bassin="code_bassin",
-    )
-
-    try:
-        results = results.drop_duplicates("code_station_hydrobio")
-    except KeyError:
-        pass
-
     return results
 
 
 def get_all_taxa(**kwargs) -> gpd.GeoDataFrame:
-    # TODO
-    pass
+    """
+    Retrieve all taxa from France.
+
+    Should only be used with additional arguments to avoid reaching the 20k
+    threshold, in conjonction with the built-in loop (which will operate
+    on yearly subsets, even if date_debut_prelevement/date_fin_prelevement are
+    not set.)
+
+    Parameters
+    ----------
+    **kwargs :
+        kwargs passed to HydrobiologySession.get_taxa (intended for hub'eau
+        API's arguments).
+
+    Returns
+    -------
+    results : Union[gpd.GeoDataFrame, pd.DataFrame]
+        (Geo)DataFrame of taxa. The result will be of type DataFrame only
+        if `format="json"` has been specifically set.
+
+    """
+
+    if not kwargs:
+        warnings.warn(
+            "get_all_taxa should only be used with "
+            "kwargs, for instance `get_all_taxa(code_departement='02')`"
+        )
+
+    kwargs, kwargs_loop = _prepare_kwargs(
+        kwargs,
+        chunks=50,
+        months=24,
+        date_start_label="date_debut_prelevement",
+        date_end_label="date_fin_prelevement",
+        start_date="1970-01-01",
+        propagation_safe=PROPAGATION_OK,
+        code_entity_primary_key="code_station_hydrobio",
+        get_entities_func=get_all_stations,
+    )
+
+    desc = "querying year/year & 50 stations/ 50 stations"
+    with HydrobiologySession() as session:
+        results = [
+            session.get_taxa(**kwargs, **kw_loop)
+            for kw_loop in tqdm_partial(
+                kwargs_loop,
+                desc=desc,
+            )
+        ]
+
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    try:
+        results = gpd.pd.concat(results, ignore_index=True)
+    except ValueError:
+        # results is empty
+        return gpd.GeoDataFrame()
+
+    return results
 
 
 if __name__ == "__main__":
     # df = get_all_stations()
-    df = get_all_indexes(date_debut_prelevement="2020-01-01")
+
+    # get_all_indexes(date_debut_prelevement="2020-01-01")
+    # 100 stations & 12 mois -> environ 24 min
+
+    df = get_all_taxa(date_debut_prelevement="2020-01-01")
     # df.plot()

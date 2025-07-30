@@ -130,7 +130,13 @@ class HydrobiologySession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/hydrobio/indices"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            params=params,
+            time_start="date_debut_prelevement",
+            time_end="date_fin_prelevement",
+        )
 
         return df
 
@@ -358,7 +364,13 @@ class HydrobiologySession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/hydrobio/taxons"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            params=params,
+            time_start="date_debut_prelevement",
+            time_end="date_fin_prelevement",
+        )
 
         return df
 
