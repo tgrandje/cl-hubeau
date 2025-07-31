@@ -10,6 +10,7 @@ from typing import Union
 import warnings
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -104,7 +105,7 @@ def get_all_stations(
         }
         for k in areas_from_fixed_mesh:
             kwargs.pop(k, None)
-        bbox = cl_hubeau.utils.mesh._get_mesh(**area_dict, side=1.5)
+        bbox = cl_hubeau.utils.mesh._get_mesh(**area_dict, side=5)
     else:
         # using keys from areas_without_mesh which are not covered by _get_mesh
         # so let's use built-in hub'eau queries
@@ -162,6 +163,19 @@ def get_all_stations(
             libelle_departement="libelle_departement",
             libelle_region="libelle_region",
         )
+
+        # Note : on some areas, those columns are totally empty and not
+        # returned
+        try:
+            results["code_bassin"]
+        except KeyError:
+            results = results.assign(
+                code_bassin=np.nan,
+                code_sous_bassin=np.nan,
+                libelle_sous_bassin=np.nan,
+                libelle_bassin=np.nan,
+            )
+
         results = _fill_missing_basin_subbasin(
             results,
             code_sous_bassin="code_sous_bassin",
@@ -304,13 +318,3 @@ def get_all_taxa(**kwargs) -> gpd.GeoDataFrame:
         return gpd.GeoDataFrame()
 
     return results
-
-
-if __name__ == "__main__":
-    # df = get_all_stations()
-
-    # get_all_indexes(date_debut_prelevement="2020-01-01")
-    # 100 stations & 12 mois -> environ 24 min
-
-    df = get_all_taxa(date_debut_prelevement="2020-01-01")
-    # df.plot()

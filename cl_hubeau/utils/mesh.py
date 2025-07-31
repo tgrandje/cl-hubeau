@@ -182,8 +182,11 @@ def _get_mesh(
     if code_sage:
         gdf = gdf.query(f"CodeNatZone.isin({d['code_sage']})").copy()
 
-    if not gdf:
+    try:
+        gdf
+    except UnboundLocalError:
         gdf = _get_pynsee_geodata_latest("commune", crs=4326)
+
     grid = grid.sjoin(
         gpd.GeoSeries([gdf.union_all()], crs=4326).to_frame(),
         how="inner",

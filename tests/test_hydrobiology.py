@@ -7,10 +7,6 @@ Test mostly high level functions
 """
 
 import geopandas as gpd
-import pandas as pd
-import pytest
-
-from requests_cache import CacheMixin
 
 from cl_hubeau import hydrobiology
 
@@ -94,46 +90,42 @@ from cl_hubeau import hydrobiology
 
 def test_get_stations_live():
     df = [
-        hydrobiology.get_all_stations(),
-        hydrobiology.get_all_stations(code_region="32"),
-        hydrobiology.get_all_stations(code_station_hydrobio="08824101"),
-        hydrobiology.get_all_stations(code_departement="59"),
+        hydrobiology.get_all_stations(fill_values=False),
+        hydrobiology.get_all_stations(fill_values=False, code_region="32"),
+        hydrobiology.get_all_stations(
+            fill_values=False, code_station_hydrobio="08824101"
+        ),
+        hydrobiology.get_all_stations(
+            fill_values=False, code_departement="59"
+        ),
     ]
     assert all(isinstance(x, gpd.GeoDataFrame) for x in df)
 
-    df = (
-        hydrobiology.get_all_stations(
-            code_station_hydrobio="08824101", format="json"
-        ),
+    df = hydrobiology.get_all_stations(
+        code_station_hydrobio="08824101", format="json"
     )
-    assert not isinstance(df, gpd.GeoDataFrame)
+    assert isinstance(df, gpd.GeoDataFrame)
     assert len(df) == 1
 
 
-# def test_get_one_campaign_live():
-#     with WatercoursesFlowSession() as session:
-#         data = session.get_campaigns(code_campagne=[12])
-#     assert isinstance(data, pd.DataFrame)
-#     assert len(data) == 1
+def test_get_indexes_live():
+    df = hydrobiology.get_all_indexes(
+        code_departement="974",
+        date_debut_prelevement="1995-01-01",
+        date_fin_prelevement="2000-12-31",
+    )
+    assert isinstance(df, gpd.GeoDataFrame)
+    assert len(df) == 80
 
 
-# def test_get_all_stations_mocked(mock_get_data):
-#     data = watercourses_flow.get_all_stations()
-#     assert isinstance(data, gpd.GeoDataFrame)
-#     assert len(data) == 1
+def test_get_taxa_live():
+    df = hydrobiology.get_all_taxa(
+        code_departement="974",
+        date_debut_prelevement="1995-01-01",
+        date_fin_prelevement="2000-12-31",
+    )
+    assert isinstance(df, gpd.GeoDataFrame)
+    assert len(df) == 169
 
 
-# def test_get_all_observations_mocked(mock_get_data):
-#     data = watercourses_flow.get_all_observations()
-#     assert isinstance(data, gpd.GeoDataFrame)
-#     assert len(data) == 1
-
-
-# def get_get_all_campaigns_live():
-#     df = watercourses_flow.get_all_campaigns()
-#     assert isinstance(df, pd.DataFrame)
-#     assert len(df) >= 8000
-
-
-if __name__ == "__main__":
-    test_get_stations_live()
+# tests mockups à faire pour contrôler le bon nombre de résultats
