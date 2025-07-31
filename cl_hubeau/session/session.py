@@ -442,7 +442,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     f"( {count_rows} > 20k results) - query was {params}"
                 )
 
-            logger.warning("> 20k results reached, splitting queries")
+            logger.info("> 20k results reached, splitting queries")
 
             timeranges = pd.date_range(
                 start=params[time_start], end=params[time_end], freq="D"
