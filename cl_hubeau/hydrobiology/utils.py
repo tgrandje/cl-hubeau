@@ -276,8 +276,8 @@ def get_all_taxa(**kwargs) -> gpd.GeoDataFrame:
 
     kwargs, kwargs_loop = _prepare_kwargs(
         kwargs,
-        chunks=50,
-        months=24,
+        chunks=100,
+        months=12,
         date_start_label="date_debut_prelevement",
         date_end_label="date_fin_prelevement",
         start_date="1970-01-01",
@@ -286,7 +286,7 @@ def get_all_taxa(**kwargs) -> gpd.GeoDataFrame:
         get_entities_func=get_all_stations,
     )
 
-    desc = "querying year/year & 50 stations/ 50 stations"
+    desc = "querying year/year & 100 stations/ 100 stations"
     with HydrobiologySession() as session:
         results = [
             session.get_taxa(**kwargs, **kw_loop)

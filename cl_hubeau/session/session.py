@@ -11,6 +11,7 @@ import hashlib
 import logging
 import os
 import socket
+from sqlite3 import InterfaceError
 from typing import Callable, Any, Union
 from urllib.parse import urlparse, parse_qs
 import warnings
@@ -81,7 +82,10 @@ def map_func(
                 ".*Connection pool is full, discarding connection.*",
             )
             with pebble.ThreadPool(threads) as pool:
-                future = pool.map(func, iterables)
+                # Set a timeout as there is a potentiallly infinite loop
+                # added to patch SQLite InterfaceError (due to requests-cache
+                # and requests-ratelimiter both using sqlite backends)
+                future = pool.map(func, iterables, timeout=60)
                 iterator = future.result()
                 while True:
                     try:
@@ -337,22 +341,22 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         logger.info(
             "method=%s url=%s args=%s kwargs=%s", method, url, args, kwargs
         )
-        r = super().request(
-            method,
-            url,
-            *args,
-            **kwargs,
-        )
-        if not r.ok:
-            try:
-                error = r.json()
-            except JSONDecodeError:
-                error = str(r.content)
-            raise ValueError(
-                f"Connection error on {method=} {url=} with {kwargs=}, "
-                f"got {error} : got result {r.status_code}"
-            )
-        return r
+        try:
+            r = super().request(method, url, *args, **kwargs)
+        except InterfaceError:
+            # SQLite Error due to requests-cache -> retry it !
+            return self.request(method, url, *args, **kwargs)
+        else:
+            if not r.ok:
+                try:
+                    error = r.json()
+                except JSONDecodeError:
+                    error = str(r.content)
+                raise ValueError(
+                    f"Connection error on {method=} {url=} with {kwargs=}, "
+                    f"got {error} : got result {r.status_code}"
+                )
+            return r
 
     def get_result(
         self,
@@ -437,6 +441,8 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     "this request won't be handled by hubeau "
                     f"( {count_rows} > 20k results) - query was {params}"
                 )
+
+            logger.warning("> 20k results reached, splitting queries")
 
             timeranges = pd.date_range(
                 start=params[time_start], end=params[time_end], freq="D"
