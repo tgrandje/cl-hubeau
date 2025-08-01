@@ -2,7 +2,7 @@
 """
 low level class to collect data from the hydrobiology API from hub'eau
 """
-
+import pandas as pd
 from cl_hubeau.session import BaseHubeauSession
 from cl_hubeau.exceptions import UnexpectedArguments
 
@@ -138,6 +138,11 @@ class HydrobiologySession(BaseHubeauSession):
             time_end="date_fin_prelevement",
         )
 
+        try:
+            df["date_prelevement"] = pd.to_datetime(df["date_prelevement"])
+        except KeyError:
+            pass
+
         return df
 
     def get_stations(self, **kwargs):
@@ -242,6 +247,10 @@ class HydrobiologySession(BaseHubeauSession):
         method = "GET"
         url = self.BASE_URL + "/v1/hydrobio/stations_hydrobio"
         df = self.get_result(method, url, params=params)
+
+        for x in "date_premier_prelevement", "date_dernier_prelevement":
+            if x in df.columns:
+                df[x] = pd.to_datetime(df[x])
 
         return df
 
