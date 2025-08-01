@@ -101,6 +101,8 @@ please get in touch and submit an issue.
 
 ### configuring `cl-hubeau`
 
+#### general configuration
+
 `cl-hubeau` configuration can be accessed by the following code:
 
 ```
@@ -134,6 +136,26 @@ Also note that the query rate you will see on `tqdm`'s progress bar does not
 reflect the query rate of `Hub'Eau` : the cursor/page iterations of one subquery
 will **not** be displayed. Hence a 2 it/s displayed might very well be
 a 10 requests/s load on `Hub'Eau`'s server.
+
+#### proxies
+
+`cl-hubeau` executes two types of http(s) requests:
+
+* some made by `pynsee` to gather INSEE & IGN datasets;
+* some made by `cl-hubeau` itself to gather `Hub'Eau` datasets.
+
+To work behind corporate proxies, it should be enough to configure two environment
+variables :
+
+* http_proxy
+* https_proxy
+
+You can also set the proxies using a dictionnary as an argument when creating
+sessions (low-level classes from `cl-hubeau`).
+
+Note that `pynsee` store those proxies in a [configuration file](https://github.com/InseeFrLab/pynsee/blob/0ba3e2e5b753c5c032f2b53d7fc042e995bbef04/pynsee/utils/init_conn.py#L55).
+In case of troubles, don't hesitate to manually delete that file.
+
 
 ### Phyopharmaceuticals transactions
 
