@@ -7,85 +7,103 @@ Test mostly high level functions
 """
 
 import geopandas as gpd
+import pytest
+from requests_cache import CacheMixin
 
 from cl_hubeau import hydrobiology
+import cl_hubeau.utils.mesh
+from tests.utils import silence_api_version_warning
 
 
-# class MockResponse:
-#     def __init__(self, json_data):
-#         self.json_data = json_data
-#         self.ok = True
+class MockResponse:
+    def __init__(self, json_data):
+        self.json_data = json_data
+        self.ok = True
 
-#     def json(self):
-#         return self.json_data
+    def json(self):
+        return self.json_data
 
 
-# @pytest.fixture
-# def mock_get_data(monkeypatch):
+@pytest.fixture
+def mock_get_data(monkeypatch):
 
-#     def mock_request(*args, **kwargs):
-#         self, method, url, *args = args
+    def mock_get_mesh(*args, **kwargs):
+        return [[0, 0, 1, 1], [1, 1, 2, 2]]
 
-#         if "stations" in url or "observations" in url:
-#             data = {
-#                 "count": 1,
-#                 "first": "blah_page",
-#                 "features": [
-#                     {
-#                         "type": "Feature",
-#                         "properties": {
-#                             "code_station": "dummy_code",
-#                             "libelle_station": "dummy",
-#                         },
-#                         "geometry": {"type": "Point", "coordinates": [0, 0]},
-#                     }
-#                 ],
-#             }
-#         elif "observations" in url:
+    def mock_request(*args, **kwargs):
+        self, method, url, *args = args
 
-#             # Data with duplicates to check that duplicates are removed!
-#             data = {
-#                 "count": 1,
-#                 "first": "blah_page",
-#                 "features": [
-#                     {
-#                         "type": "Feature",
-#                         "properties": {
-#                             "code_station": "dummy_code",
-#                             "libelle_station": "dummy",
-#                             "date_observation": "2024-01-01",
-#                         },
-#                         "geometry": {"type": "Point", "coordinates": [0, 0]},
-#                     },
-#                     {
-#                         "type": "Feature",
-#                         "properties": {
-#                             "code_station": "dummy_code",
-#                             "libelle_station": "dummy",
-#                             "date_observation": "2024-01-01",
-#                         },
-#                         "geometry": {"type": "Point", "coordinates": [0, 0]},
-#                     },
-#                 ],
-#             }
+        if "stations" in url in url:
 
-#         elif "campagnes" in url:
-#             data = {
-#                 "count": 1,
-#                 "first": "blah_campagne",
-#                 "next": None,
-#                 "data": [
-#                     {
-#                         "code_campagne": "dummy",
-#                         "date_campagne": "2011-10-20",
-#                     }
-#                 ],
-#             }
+            bbox = kwargs["params"].get("bbox")
 
-#         return MockResponse(data)
+            data = {
+                "count": 1,
+                "first": "blah_page",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "code_station_hydrobio": f"dummy_code_{bbox}",
+                            "libelle_station_hydrobio": "dummy",
+                        },
+                        "geometry": {"type": "Point", "coordinates": [0, 0]},
+                    }
+                ],
+            }
+        elif "taxons" in url or "indices" in url:
 
-#     # init = CachedSession.request
-#     monkeypatch.setattr(CacheMixin, "request", mock_request)
+            data = {
+                "count": 1,
+                "first": "blah_page",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "code_station_hydrobio": "dummy_code",
+                            "libelle_station_hydrobio": "dummy",
+                            "date_prelevement": "2024-01-01",
+                        },
+                        "geometry": {"type": "Point", "coordinates": [0, 0]},
+                    },
+                ],
+            }
+
+        return MockResponse(data)
+
+    monkeypatch.setattr(CacheMixin, "request", mock_request)
+    monkeypatch.setattr(cl_hubeau.utils.mesh, "_get_mesh", mock_get_mesh)
+
+
+@silence_api_version_warning
+def test_get_stations_mocked(mock_get_data):
+    data = hydrobiology.get_all_stations(fill_values=False)
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) == 2
+
+
+@silence_api_version_warning
+def test_get_taxa_mocked(mock_get_data):
+    data = hydrobiology.get_all_taxa(
+        code_station_hydrobio="dummy_code",
+        date_debut_prelevement="2020-01-01",
+        date_fin_prelevement="2020-12-31",
+    )
+    data = data.drop_duplicates()
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) == 1
+
+
+@silence_api_version_warning
+def test_get_indexes_conditions_mocked(mock_get_data):
+    data = hydrobiology.get_all_indexes(
+        code_station_hydrobio="dummy_code",
+        date_debut_prelevement="2020-01-01",
+        date_fin_prelevement="2020-12-31",
+    )
+    data = data.drop_duplicates()
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) == 1
 
 
 def test_get_stations_live():
@@ -126,6 +144,3 @@ def test_get_taxa_live():
     )
     assert isinstance(df, gpd.GeoDataFrame)
     assert len(df) == 169
-
-
-# tests mockups à faire pour contrôler le bon nombre de résultats
