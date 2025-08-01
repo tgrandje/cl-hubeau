@@ -26,10 +26,10 @@ def prepare_kwargs_loops(
     ----------
     key_start : str
         Field representing the start of a timestep in the API (for instance,
-        date_start_label)
+        "date_debut_prelevement")
     key_end : str
         Field representing the end of a timestep in the API (for instance,
-        date_end_label)
+        "date_fin_prelevement")
     kwargs : dict
         kwargs passed to a higher level function.
     start_auto_determination : bool
