@@ -28,7 +28,12 @@ from requests_cache import CacheMixin
 from requests_ratelimiter import LimiterMixin
 from urllib3.util.retry import Retry
 
-from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, RATELIMITER_NAME
+from cl_hubeau.constants import (
+    DIR_CACHE,
+    CACHE_NAME,
+    RATELIMITER_NAME,
+    RATE_LIMIT,
+)
 from cl_hubeau import _config, __version__
 from cl_hubeau.exceptions import UnexpectedValueError
 
@@ -115,7 +120,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         expire_after: int = _config["DEFAULT_EXPIRE_AFTER"],
         proxies: dict = None,
         size: int = _config["SIZE"],
-        per_second: int = _config["RATE_LIMITER"],
+        per_second: int = RATE_LIMIT,
         version: str = None,
         **kwargs,
     ):
@@ -137,8 +142,8 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         size : int, optional
             Size set for each page. Default is SIZE from config file.
         per_second : int, optional
-            Max authorized rate of requests per second. Default is RATE_LIMITER
-            from config file.
+            Max authorized rate of requests per second. Default is RATE_LIMIT
+            from constant file.
         version : str, optional
             API's version. If set and not coherent with the current API's
             version returned by hubeau, will trigger a warning.
