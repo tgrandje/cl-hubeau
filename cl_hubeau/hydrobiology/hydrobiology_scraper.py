@@ -381,25 +381,15 @@ class HydrobiologySession(BaseHubeauSession):
             time_end="date_fin_prelevement",
         )
 
+        try:
+            df["date_prelevement"] = pd.to_datetime(
+                df["date_prelevement"] * 1e6
+            )
+        except TypeError:
+            # date_prelevement's format seems to change according to the args
+            # see https://github.com/BRGM/hubeau/issues/247
+            df["date_prelevement"] = pd.to_datetime(df["date_prelevement"])
+        except KeyError:
+            pass
+
         return df
-
-
-# if __name__ == "__main__":
-#     import logging
-
-#     logging.basicConfig(level=logging.WARNING)
-#     with HydrobiologySession() as session:
-#         # df = session.get_stations(code_departement="02", format="geojson")
-#         # df = session.get_taxa(
-#         #     code_departement="02", format="geojson", code_qualification="2"
-#         # )
-#         df = session.get_indexes(
-#             code_station_hydrobio=[
-#                 "H0227103",
-#                 "H0085603",
-#                 "03277600",
-#                 "03277588",
-#                 "03277563",
-#             ],
-#             format="geojson",
-#         )
