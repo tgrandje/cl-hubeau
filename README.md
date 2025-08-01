@@ -25,6 +25,7 @@ At this stage, the following APIs are covered by cl-hubeau:
 * [phytopharmaceuticals transactions/vente et achat de produits phytopharmaceutiques](https://hubeau.eaufrance.fr/page/api-vente-achat-phytos)
 * [watercourses flow/écoulement des cours d'eau](https://hubeau.eaufrance.fr/page/api-ecoulement)
 * [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable)
+* [hydrobiology/hydrobiologie](https://hubeau.eaufrance.fr/page/api-hydrobiologie)
 * [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
 * [superficial waterbodies quality/qualité des cours d'eau](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
 * [ground waterbodies quality/qualité des nappes](https://hubeau.eaufrance.fr/page/api-qualite-nappes)
@@ -32,13 +33,13 @@ At this stage, the following APIs are covered by cl-hubeau:
 
 
 For any help on available kwargs for each endpoint, please refer
-directly to the documentation on hubeau (this will not be covered
+directly to the documentation on `hub'eau` (this will not be covered
 by the current documentation).
 
-Assume that each function from cl-hubeau will be consistent with
-it's hub'eau counterpart, with the exception of the `size` and
+Assume that each function from `cl-hubeau` will be consistent with
+it's `hub'eau` counterpart, with the exception of the `size` and
 `page` or `cursor` arguments (those will be set automatically by
-cl-hubeau to crawl allong the results).
+`cl-hubeau` to crawl allong the results).
 
 ## Parallelization
 
@@ -85,6 +86,76 @@ This package is currently under active development.
 from cl_hubeau.utils import clean_all_cache
 clean_all_cache()
 ```
+
+### 20k results limit
+
+`Hub'Eau` has currently a limit set to 20k results for any query. To circumvente
+this, `cl-hubeau` defines upper-level functions which may slightly differ from
+the low-level classes (which try to mimick `hub'eau`'s standard beahviour).
+The upper-level functions are all using loops to avoid reaching the 20k results
+threshold. For any query that *could* accept time ranges parameters, time ranges
+will be automatically added to your desired query (if not already specified);
+in case of reaching the 20k result threshold, the timeranges will be splitted
+in two (thus bypassing that threshold). If you ever reach the 20k nonetheless,
+please get in touch and submit an issue.
+
+### configuring `cl-hubeau`
+
+#### general configuration
+
+`cl-hubeau` configuration can be accessed by the following code:
+
+```
+from cl_hubeau import _config
+print(_config)
+```
+
+This configuration (stored as a dictionnary) can be altered any time you want.
+For instance, if you want to alter the default cache expiration, you could do
+the following:
+
+```
+from cl_hubeau import _config
+from datetime import timedelta
+
+# set a one year cache for multi-purpose cache
+_config["DEFAULT_EXPIRE_AFTER"] = datetime.timedelta(day=365)
+
+# set a one hour cache of realtime datasets
+_config["DEFAULT_EXPIRE_AFTER_REALTIME"] = datetime.timedelta(day=365)
+```
+
+Note that you can also alter the number of threads used to query `Hub'eau`.
+Nonetheless, there is also a ratelimit of 10 queries/second imposed by
+`cl-hubeau` to avoid overloading the server.
+As a consequence, you should only *reduce* the `THREADS` configuration
+(if your machine has trouble with that) and never increase it (which shouldn't
+have any effect).
+
+Also note that the query rate you will see on `tqdm`'s progress bar does not
+reflect the query rate of `Hub'Eau` : the cursor/page iterations of one subquery
+will **not** be displayed. Hence a 2 it/s displayed might very well be
+a 10 requests/s load on `Hub'Eau`'s server.
+
+#### proxies
+
+`cl-hubeau` executes two types of http(s) requests:
+
+* some made by `pynsee` to gather INSEE & IGN datasets;
+* some made by `cl-hubeau` itself to gather `Hub'Eau` datasets.
+
+To work behind corporate proxies, it should be enough to configure two environment
+variables :
+
+* http_proxy
+* https_proxy
+
+You can also set the proxies using a dictionnary as an argument when creating
+sessions (low-level classes from `cl-hubeau`).
+
+Note that `pynsee` store those proxies in a [configuration file](https://github.com/InseeFrLab/pynsee/blob/0ba3e2e5b753c5c032f2b53d7fc042e995bbef04/pynsee/utils/init_conn.py#L55).
+In case of troubles, don't hesitate to manually delete that file.
+
 
 ### Phyopharmaceuticals transactions
 
@@ -285,7 +356,7 @@ df = df[df.nom_commune.isin(["PARIS", "MARSEILLE", "LYON"])]
 
 Note that this query is heavy, even if this was already restricted to nitrates.
 In theory, you could also query the API without specifying the substance you're tracking,
-but you may hit the 20k threshold and trigger an exception.
+but this has not been tested.
 
 You can also call the same function, using official city codes directly:
 ```python
@@ -309,6 +380,57 @@ with drinking_water_quality.DrinkingWaterQualitySession() as session:
     df = session.get_control_results(code_departement='02', code_parametre="1340")
 
 ```
+
+### Hydrobiology
+
+3 high level functions are available (and one class for low level operations).
+
+
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import hydrobiology
+df = hydrobiology.get_all_water_networks()
+```
+
+Get the taxa identified on stations in Paris (uses a 30 days caching):
+
+```python
+df = hydrobiology.get_all_taxa(code_commune=["75056"])
+```
+
+Note that this query is heavy if not restricted to areas and/or timeranges.
+In theory, you could query the API without arguments, but this has not been
+tested (this should not be possible on standard machines because of the
+RAM consumption).
+
+Get the indexes identified on stations in Paris (uses a 30 days caching):
+
+```python
+df = hydrobiology.get_all_indexes(code_commune=["75056"])
+```
+
+Note that this query is heavy if not restricted to areas and/or timeranges.
+In theory, you could query the API without arguments, but this has not been
+tested (this should not be possible on standard machines because of the
+RAM consumption).
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility
+
+```python
+with hydrobiology.HydrobiologySession() as session:
+    df = session.get_stations(code_commune="75056")
+    df = session.get_taxa(code_commune="75056")
+    df = session.get_indexes(code_commune="75056")
+
+```
+
 
 ### Hydrometry
 

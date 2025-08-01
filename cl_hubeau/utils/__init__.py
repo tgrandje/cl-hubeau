@@ -9,7 +9,7 @@ from .cities_deps_regions import (
     _get_pynsee_geodata_latest,
     _get_pynsee_geolist_cities,
 )
-from .prepare_loops import prepare_kwargs_loops
+from .prepare_loops import prepare_kwargs_loops, _prepare_kwargs
 from .hydro_perimeters_queries import cities_for_sage
 from .postcodes import _get_postcodes
 

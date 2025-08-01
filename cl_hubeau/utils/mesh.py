@@ -182,14 +182,15 @@ def _get_mesh(
         gdf = gdf.query(f"CodeNatZone.isin({d['code_sage']})").copy()
 
     try:
-        grid = grid.sjoin(
-            gpd.GeoSeries([gdf.union_all()], crs=4326).to_frame(),
-            how="inner",
-            predicate="intersects",
-        )
+        gdf
     except UnboundLocalError:
-        # keep full mesh for whole territory
-        pass
+        gdf = _get_pynsee_geodata_latest("commune", crs=4326)
+
+    grid = grid.sjoin(
+        gpd.GeoSeries([gdf.union_all()], crs=4326).to_frame(),
+        how="inner",
+        predicate="intersects",
+    )
 
     grid = grid.to_crs(crs)
 

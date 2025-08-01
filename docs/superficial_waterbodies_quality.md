@@ -37,7 +37,7 @@ au client python.
 > d'implémenter des boucles satisfaisantes en utilisant les critères définis par
 > l'API.
 >
-> A la place, les données stations sont requêtées en utilisant une grille
+> A la place, les données **stations** sont requêtées en utilisant une grille
 > spatiale basée sur l'enveloppe des territoires présents dans les jeux de
 > données AdminExpress de l'IGN. Cette grille est ensuite utilisée pour boucler
 > sur les "boîtes" (usage du paramètre `bbox`).
@@ -61,7 +61,7 @@ au client python.
 {: .critical }
 Par conséquent, les données des territoires non représentés dans le jeux de
 données AdminExpress (certains territoires d'outre-mer) ne peuvent pas être
-récupérée à ce jour.
+récupérées à ce jour.
 
 {: .critical }
 > Afin de limiter le temps de calcul lié à la consolidation des résultats, tous
