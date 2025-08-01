@@ -155,7 +155,6 @@ def _get_mesh(
     grid = _set_grid(crs, buffer, side)
 
     # 2. select squares from the fixed grid according to kwargs
-    gdf = None
     if code_region or code_departement or code_commune:
         gdf = _get_pynsee_geodata_latest("commune", crs=4326)
     elif code_bassin or code_sous_bassin:
