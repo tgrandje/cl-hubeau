@@ -280,11 +280,23 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
 
         """
         variable = kwargs.pop(arg)
-        if converter:
-            variable = converter(variable)
-        if variable not in allowed:
-            raise UnexpectedValueError(arg, variable, allowed)
-        return variable
+        to_iterable = False
+        if not isinstance(variable, (list, tuple, set)):
+            to_iterable = True
+            variable = [variable]
+        
+        result = []
+        for var in variable:
+            if converter:
+                var = converter(var)
+            if var not in allowed:
+                raise UnexpectedValueError(arg, var, allowed)
+            result.append(var)
+        
+        if to_iterable:
+            result = result[0]
+                
+        return result
 
     @staticmethod
     def ensure_date_format_is_ok(date_str: str) -> None:
