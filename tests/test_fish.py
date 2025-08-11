@@ -106,6 +106,7 @@ def test_get_observations(mock_get_data):
         date_operation_min="2020-01-01",
         date_operation_max="2020-05-31",
     )
+    print(f"{data=}")
     data = data.drop_duplicates()
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
@@ -117,6 +118,7 @@ def test_get_indicators(mock_get_data):
         date_operation_min="2020-01-01",
         date_operation_max="2020-12-31",
     )
+    print(f"{data=}")
     data = data.drop_duplicates()
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1

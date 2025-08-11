@@ -113,6 +113,9 @@ def get_all_observations(**kwargs) -> gpd.GeoDataFrame:
     if "date_operation_max" not in kwargs:
         kwargs["date_operation_max"] = date.today().strftime("%Y-%m-%d")
 
+    if "format" not in kwargs:
+        kwargs["format"] = "geojson"
+
     if "code_region" in kwargs:
         # let's downcast to departemental loops
         reg = kwargs.pop("code_region")
