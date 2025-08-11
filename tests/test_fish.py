@@ -110,6 +110,15 @@ def test_get_observations(mock_get_data):
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
+def test_get_operations(mock_get_data):
+    data = fish.get_all_operations(
+        code_station="dummy_code",
+        date_operation_min="2020-01-01",
+        date_operation_max="2020-05-31",
+    )
+    data = data.drop_duplicates()
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) == 1
 
 def test_get_indicators(mock_get_data):
     data = fish.get_all_indicators(

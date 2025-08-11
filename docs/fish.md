@@ -44,11 +44,11 @@ Par exemple :
 ```python
 from cl_hubeau import fish
 gdf = fish.get_all_stations(
-    code_masse_eau='AR01'
+    code_departement='02'
     )
 ```
 
-### Récupération des résultats des operationss
+### Récupération des résultats des operations, observations ou indicateurs
 
 Cette fonction permet de récupérer les opérations
 
@@ -74,6 +74,22 @@ df = fish.get_all_operations(
     )
 ```
 
+De même, il exite 2 autres fonctions :
+- pour les observations :
+```python
+from cl_hubeau import fish
+df = fish.get_all_observations(
+    code_qualification_operation="1"
+)
+```
+
+- Pour les indicateurs :
+```python
+from cl_hubeau import fish
+df = fish.get_all_indicators()
+```
+
+
 ## Fonctions de bas niveau
 
 Un objet session est défini pour consommer l'API à l'aide de méthodes de bas niveau.
@@ -86,7 +102,7 @@ disponibles.
 ```python
 from cl_hubeau import fish
 with fish.FishSession() as session:
-    df = session.get_stations(num_departement="59")
+    df = session.get_stations(code_departement="59")
 ```
 
 ### Lister les observations
