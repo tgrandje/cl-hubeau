@@ -111,7 +111,7 @@ def get_all_observations(**kwargs) -> gpd.GeoDataFrame:
     if "date_operation_max" not in kwargs:
         kwargs["date_operation_max"] = date.today().strftime("%Y-%m-%d")
     if "format" not in kwargs:
-        kwargs["format"] = "geojson" 
+        kwargs["format"] = "geojson"
     if "code_region" in kwargs:
         # let's downcast to departemental loops
         reg = kwargs.pop("code_region")
@@ -185,7 +185,7 @@ def get_all_operations(**kwargs) -> pd.DataFrame:
     if "date_operation_max" not in kwargs:
         kwargs["date_operation_max"] = date.today().strftime("%Y-%m-%d")
     if "format" not in kwargs:
-        kwargs["format"] = "geojson" 
+        kwargs["format"] = "geojson"
     if "code_region" in kwargs:
         # let's downcast to departemental loops
         reg = kwargs.pop("code_region")
@@ -267,6 +267,7 @@ def get_all_indicators(**kwargs) -> pd.DataFrame:
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
     results = pd.concat(results, ignore_index=True)
     return results
+
 
 if __name__ == "__main__":
     df = get_all_observations(code_departement="02")
