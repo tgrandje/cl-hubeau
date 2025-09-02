@@ -284,7 +284,6 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         if not isinstance(variable, (list, tuple, set)):
             to_iterable = True
             variable = [variable]
-        
         result = []
         for var in variable:
             if converter:
@@ -292,10 +291,8 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             if var not in allowed:
                 raise UnexpectedValueError(arg, var, allowed)
             result.append(var)
-        
         if to_iterable:
             result = result[0]
-                
         return result
 
     @staticmethod
