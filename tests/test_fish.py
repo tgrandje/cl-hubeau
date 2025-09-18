@@ -98,6 +98,12 @@ def test_get_stations(mock_get_data):
     assert len(data) == 103
 
 
+def test_get_stations_live():
+    data = fish.get_all_stations(code_departement="75")
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 3
+
+
 def test_get_observations(mock_get_data):
     data = fish.get_all_observations(
         code_station="dummy_code",
@@ -107,6 +113,11 @@ def test_get_observations(mock_get_data):
     data = data.drop_duplicates()
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
+
+
+def test_get_observations_live():
+    pass
+    # TODO
 
 
 def test_get_operations(mock_get_data):
@@ -120,6 +131,11 @@ def test_get_operations(mock_get_data):
     assert len(data) == 1
 
 
+def test_get_operations_live():
+    pass
+    # TODO
+
+
 def test_get_indicators(mock_get_data):
     data = fish.get_all_indicators(
         code_station="dummy_code",
@@ -129,3 +145,8 @@ def test_get_indicators(mock_get_data):
     data = data.drop_duplicates()
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
+
+
+def test_get_indicators_live():
+    pass
+    # TODO
