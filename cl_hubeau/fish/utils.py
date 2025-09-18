@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Convenience functions for watercoastal quality inspections
+Convenience functions for fish API
 """
+
+# TODO : update docstrings with code_sous_bassin
 
 from datetime import date
 from functools import partial
@@ -296,6 +298,8 @@ def get_all_operations(**kwargs) -> pd.DataFrame:
 
     """
 
+    # TODO
+
     start_auto_determination = False
     if "date_operation_min" not in kwargs:
         start_auto_determination = True
@@ -366,6 +370,8 @@ def get_all_indicators(**kwargs) -> pd.DataFrame:
         DataFrame of results
 
     """
+
+    # TODO
 
     deps = get_departements()
     with FishSession() as session:
