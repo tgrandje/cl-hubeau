@@ -93,13 +93,34 @@ class FishSession(BaseHubeauSession):
         for arg in ("objectifs_operation",):
             try:
                 variable = kwargs.pop(arg)
-                params[arg] = self.list_to_str_param(variable, 20)
+                params[arg] = self.list_to_str_param(
+                    variable,
+                    20,
+                    authorized_values=[
+                        "RCA - Réseau de contrôle additionnel",
+                        "RCS – Réseau de Contrôle de Surveillance",
+                        "RRP – Réseau de Référence Pérenne",
+                        "RCO – Réseau Contrôle opérationnel",
+                        "DCE – Référence",
+                        "RHP – Réseau Hydrobiologique Piscicole",
+                        "RNB – Réseau National de Bassin",
+                        "RNSORMCE – Réseau National de Suivi des Opérations de Restauration hydroMorphologiques des Cours d'Eau",
+                        "Étude",
+                        "Suivi des cours d'eau intermittents",
+                        "Suivi de restauration",
+                        "Suivi des populations d'anguilles",
+                        "Suivi des populations de saumons",
+                        "Suivi des populations de truites",
+                        "Sauvetage - Transfert",
+                    ],
+                )
             except KeyError:
                 continue
 
         for arg in (
             "distance",
-            "distance_source_max," "distance_source_min",
+            "distance_source_max",
+            "distance_source_min",
             "pente_max",
             "pente_min",
             "surface_bassin_versant_amont_max",
@@ -117,11 +138,6 @@ class FishSession(BaseHubeauSession):
                 params[arg] = kwargs.pop(arg)
             except KeyError:
                 continue
-
-        try:
-            params["donnees_cc"] = kwargs.pop("donnees_cc") in ("true", True)
-        except KeyError:
-            params["donnees_cc"] = "true"
 
         try:
             params["fields"] = self.list_to_str_param(kwargs.pop("fields"))
@@ -264,29 +280,23 @@ class FishSession(BaseHubeauSession):
                 continue
 
         try:
-
-            variable = self._ensure_val_among_authorized_values(
-                "etat_avancement_operation",
-                kwargs,
-                {
+            params["etat_avancement_operation"] = self.list_to_str_param(
+                kwargs.pop("etat_avancement_operation"),
+                3,
+                authorized_values=[
                     "En cours de saisie",
                     "Validé niveau 1",
                     "Validé niveau 2",
-                },
-                str,
+                ],
             )
         except KeyError:
             pass
-        else:
-            params["etat_avancement_operation"] = self.list_to_str_param(
-                variable, 3
-            )
 
         try:
-            variable = self._ensure_val_among_authorized_values(
-                "protocole_peche",
-                kwargs,
-                {
+            params["protocole_peche"] = self.list_to_str_param(
+                kwargs.pop("protocole_peche"),
+                10,
+                authorized_values=[
                     "Pêche complète à un ou plusieurs passages",
                     "Pêche partielle par points (grand milieu)",
                     "Pêche par ambiances",
@@ -294,43 +304,38 @@ class FishSession(BaseHubeauSession):
                     "Indice Abondance Saumon",
                     "Vigitruite",
                     "Indice Abondance Anguille",
-                },
-                str,
+                ],
             )
-        except KeyError:
-            pass
-        else:
-            params["protocole_peche"] = self.list_to_str_param(variable, 10)
 
-        try:
-            variable = self._ensure_val_among_authorized_values(
-                "objectifs_operation",
-                kwargs,
-                {
-                    "RCA - Réseau de contrôle additionnel",
-                    "RCS - Réseau de contrôle de Surveillance",
-                    "RRP - Réseau de référence Pérenne",
-                    "RCO - Réseau Contrôle opérationnel",
-                    "DCE - Référence",
-                    "RHP - Réseau Hydrobiologique Piscicole",
-                    "RNB - Réseau National de Bassin",
-                    "RNSORMCE - Réseau National de Suivi des Opéra...",
-                    "Étude",
-                    "Suivi des cours d'eau intermittents",
-                    "Suivi de restauration",
-                    "Suivi des populations d'anguilles",
-                    "Suivi des populations de saumons",
-                    "Suivi des populations de truites",
-                    "Sauvetage - Transfert",
-                },
-                str,
-            )
         except KeyError:
             pass
-        else:
-            params["objectifs_operation"] = self.list_to_str_param(
-                variable, 20
-            )
+
+        for arg in ("objectifs_operation",):
+            try:
+                variable = kwargs.pop(arg)
+                params[arg] = self.list_to_str_param(
+                    variable,
+                    20,
+                    authorized_values=[
+                        "RCA - Réseau de contrôle additionnel",
+                        "RCS – Réseau de Contrôle de Surveillance",
+                        "RRP – Réseau de Référence Pérenne",
+                        "RCO – Réseau Contrôle opérationnel",
+                        "DCE – Référence",
+                        "RHP – Réseau Hydrobiologique Piscicole",
+                        "RNB – Réseau National de Bassin",
+                        "RNSORMCE – Réseau National de Suivi des Opérations de Restauration hydroMorphologiques des Cours d'Eau",
+                        "Étude",
+                        "Suivi des cours d'eau intermittents",
+                        "Suivi de restauration",
+                        "Suivi des populations d'anguilles",
+                        "Suivi des populations de saumons",
+                        "Suivi des populations de truites",
+                        "Sauvetage - Transfert",
+                    ],
+                )
+            except KeyError:
+                continue
 
         try:
             params["fields"] = self.list_to_str_param(kwargs.pop("fields"))
@@ -342,7 +347,13 @@ class FishSession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/etat_piscicole/observations"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            params=params,
+            time_start="date_operation_min",
+            time_end="date_operation_max",
+        )
 
         try:
             df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
@@ -673,38 +684,37 @@ class FishSession(BaseHubeauSession):
             "temperature_instantannee_min",
             "conductivite_max",
             "conductivite_min",
-            "espece_ciblee",
-            "operation_sans_poisson",
+            #
         ):
             try:
                 params[arg] = kwargs.pop(arg)
             except KeyError:
                 continue
 
-        try:
+        for arg in ["espece_ciblee", "operation_sans_poisson"]:
+            try:
+                params[arg] = kwargs.pop(arg) in ("true", True)
+            except KeyError:
+                pass
 
-            variable = self._ensure_val_among_authorized_values(
-                "etat_avancement_operation",
-                kwargs,
-                {
+        try:
+            params["etat_avancement_operation"] = self.list_to_str_param(
+                kwargs.pop("etat_avancement_operation"),
+                3,
+                authorized_values=[
                     "En cours de saisie",
                     "Validé niveau 1",
                     "Validé niveau 2",
-                },
-                str,
+                ],
             )
         except KeyError:
             pass
-        else:
-            params["etat_avancement_operation"] = self.list_to_str_param(
-                variable, 3
-            )
 
         try:
-            variable = self._ensure_val_among_authorized_values(
-                "protocole_peche",
-                kwargs,
-                {
+            params["protocole_peche"] = self.list_to_str_param(
+                kwargs.pop("protocole_peche"),
+                10,
+                authorized_values=[
                     "Pêche complète à un ou plusieurs passages",
                     "Pêche partielle par points (grand milieu)",
                     "Pêche par ambiances",
@@ -712,27 +722,24 @@ class FishSession(BaseHubeauSession):
                     "Indice Abondance Saumon",
                     "Vigitruite",
                     "Indice Abondance Anguille",
-                },
-                str,
+                ],
             )
         except KeyError:
             pass
-        else:
-            params["protocole_peche"] = self.list_to_str_param(variable, 10)
 
         try:
-            variable = self._ensure_val_among_authorized_values(
-                "objectifs_operation",
-                kwargs,
-                {
+            params["objectifs_operation"] = self.list_to_str_param(
+                kwargs.pop("objectifs_operation"),
+                20,
+                authorized_values=[
                     "RCA - Réseau de contrôle additionnel",
-                    "RCS - Réseau de contrôle de Surveillance",
-                    "RRP - Réseau de référence Pérenne",
-                    "RCO - Réseau Contrôle opérationnel",
-                    "DCE - Référence",
-                    "RHP - Réseau Hydrobiologique Piscicole",
-                    "RNB - Réseau National de Bassin",
-                    "RNSORMCE - Réseau National de Suivi des Opéra...",
+                    "RCS – Réseau de Contrôle de Surveillance",
+                    "RRP – Réseau de Référence Pérenne",
+                    "RCO – Réseau Contrôle opérationnel",
+                    "DCE – Référence",
+                    "RHP – Réseau Hydrobiologique Piscicole",
+                    "RNB – Réseau National de Bassin",
+                    "RNSORMCE – Réseau National de Suivi des Opérations de Restauration hydroMorphologiques des Cours d'Eau",
                     "Étude",
                     "Suivi des cours d'eau intermittents",
                     "Suivi de restauration",
@@ -740,15 +747,10 @@ class FishSession(BaseHubeauSession):
                     "Suivi des populations de saumons",
                     "Suivi des populations de truites",
                     "Sauvetage - Transfert",
-                },
-                str,
+                ],
             )
         except KeyError:
             pass
-        else:
-            params["objectifs_operation"] = self.list_to_str_param(
-                variable, 20
-            )
 
         try:
             params["fields"] = self.list_to_str_param(kwargs.pop("fields"))
@@ -760,7 +762,13 @@ class FishSession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/etat_piscicole/operations"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            params=params,
+            time_start="date_operation_min",
+            time_end="date_operation_max",
+        )
 
         try:
             df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
@@ -768,11 +776,3 @@ class FishSession(BaseHubeauSession):
             pass
 
         return df
-
-
-# if __name__ == "__main__":
-#     session = FishSession()
-#     df = session.get_observations(
-#         code_station="06165000",
-#         format="geojson",
-#     )
