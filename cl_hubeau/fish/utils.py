@@ -5,9 +5,12 @@ Convenience functions for watercoastal quality inspections
 """
 
 from datetime import date
+from functools import partial
+from typing import Union
 import warnings
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -21,52 +24,192 @@ from cl_hubeau.utils import (
     get_departements_from_regions,
     prepare_kwargs_loops,
 )
+import cl_hubeau.utils.mesh
+from cl_hubeau.utils.fill_missing_fields import (
+    _fill_missing_cog,
+    _fill_missing_basin_subbasin,
+)
+from cl_hubeau.utils import _prepare_kwargs
+
+PROPAGATION_OK = {
+    "bbox",
+    "code_bassin",
+    "code_commune",
+    "code_departement",
+    "code_entite_hydrographique",
+    "code_point_prelevement",
+    "code_point_prelevement_aspe",
+    "code_region",
+    "code_station",
+    "latitude",
+    "libelle_bassin",
+    "libelle_commune",
+    "libelle_departement",
+    "libelle_entite_hydrographique",
+    "libelle_region",
+    "libelle_station",
+    "longitude",
+    "distance",
+}
+
+tqdm_partial = partial(
+    tqdm,
+    leave=_config["TQDM_LEAVE"],
+    position=tqdm._get_free_pos(),
+)
 
 
-def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
+def get_all_stations(
+    fill_values: bool = True, **kwargs
+) -> Union[gpd.GeoDataFrame, pd.DataFrame]:
     """
     Retrieve all stations for analyses on fish
 
+    Use a loop to avoid reaching 20k results threshold.
+
     Parameters
     ----------
+    fill_values :
+        if True, will try to consolidate data (french official geographic code,
+        basin and subbasins). Default is True
     **kwargs :
         kwargs passed to FishSession.get_stations
         (hence mostly intended for hub'eau API's arguments).
+        Note that you can also query the dataset specifying "code_sous_bassin"
+        as this is handled by cl-hubeau natively (even if this is not a hub'eau
+        argument).
 
     Returns
     -------
-    results : gpd.GeoDataFrame
-        DataFrame of networks (UDI)
+    results : Union[gpd.GeoDataFrame, pd.DataFrame]
+        (Geo)DataFrame of stations. The result will be of type DataFrame only
+        if `format="json"` has been specifically set.
 
     """
 
-    if "code_departement" in kwargs:
-        deps = [kwargs.pop("code_departement")]
-    elif "code_region" in kwargs:
-        deps = get_departements_from_regions(kwargs.pop("code_region"))
-    else:
-        deps = get_departements()
+    areas_from_fixed_mesh = {
+        "code_region",
+        "code_departement",
+        "code_commune",
+        "code_bassin",
+        "code_sous_bassin",
+    }
+    areas_without_mesh = {
+        "code_entite_hydrographique",
+        "code_masse_eau",
+        "code_point_prelevement",
+        "code_point_prelevement_aspe",
+        "code_station",
+    }
 
-        # Split by 50-something chunks
-        deps = [deps[i : i + 50] for i in range(0, len(deps), 50)]
+    if "bbox" in kwargs:
+        # bbox is set, use it directly and hope for the best
+        bbox = kwargs.pop("bbox", "")
+        if isinstance(bbox, str):
+            bbox = bbox.split(",")
+    elif not any(
+        kwargs.get(x) for x in areas_from_fixed_mesh | areas_without_mesh
+    ):
+        # no specific location -> let's set a default mesh to avoid reaching
+        # the 20k threshold
+        bbox = cl_hubeau.utils.mesh._get_mesh(side=5)
+    elif any(kwargs.get(x) for x in areas_from_fixed_mesh):
+        # a key has been given for which cl-hubeau fixes the queries, using a
+        # custom mesh/bbox
+        area_dict = {
+            k: v for k, v in kwargs.items() if k in areas_from_fixed_mesh
+        }
+        for k in areas_from_fixed_mesh:
+            kwargs.pop(k, None)
+        bbox = cl_hubeau.utils.mesh._get_mesh(**area_dict, side=5)
+    else:
+        # using keys from areas_without_mesh which are not covered by _get_mesh
+        # so let's use built-in hub'eau queries
+        bbox = [""]
+
+    if "format" in kwargs and kwargs["format"] != "geojson":
+        warnings.warn(
+            "get_all_stations forces `format='geojson'` in order to perform "
+            "data consolidation with some geodatasets"
+        )
+    kwargs["format"] = "geojson"
+
+    if "fields" in kwargs:
+        if isinstance(kwargs["fields"], str):
+            kwargs["fields"] = kwargs["fields"].split(",")
+
+        try:
+            for area, val in area_dict.items():
+                if val:
+                    kwargs["fields"].append(area)
+        except UnboundLocalError:
+            pass
 
     with FishSession() as session:
-        results = [
-            session.get_stations(
-                code_departement=dep, format="geojson", **kwargs
-            )
-            for dep in tqdm(
-                deps,
-                desc="querying dep/dep",
-                leave=_config["TQDM_LEAVE"],
-                position=tqdm._get_free_pos(),
-            )
-        ]
+        if bbox != [""]:
+            results = [
+                session.get_stations(bbox=this_bbox, **kwargs)
+                for this_bbox in tqdm_partial(
+                    bbox,
+                    desc="querying stations",
+                )
+            ]
+        else:
+            results = [session.get_stations(**kwargs)]
+
+    if not results:
+        return gpd.GeoDataFrame()
+
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    if not results:
+        return gpd.GeoDataFrame()
     results = gpd.pd.concat(results, ignore_index=True)
+
+    if fill_values:
+        results = _fill_missing_cog(
+            results,
+            code_commune="code_commune",
+            code_departement="code_departement",
+            code_region="code_region",
+            libelle_commune="libelle_commune",
+            libelle_departement="libelle_departement",
+            libelle_region="libelle_region",
+        )
+
+        # missing sub-basins on API's return, we can fill those.
+        results = results.assign(
+            code_sous_bassin=np.nan, libelle_sous_bassin=np.nan
+        )
+
+        results = _fill_missing_basin_subbasin(
+            results,
+            code_sous_bassin="code_sous_bassin",
+            libelle_sous_bassin="libelle_sous_bassin",
+            code_bassin="code_bassin",
+            libelle_bassin="libelle_bassin",
+        )
+
+    # filter from mesh
+    try:
+        query = " & ".join(
+            f"({k}=='{v}')" if isinstance(v, str) else f"{k}.isin({v})"
+            for k, v in area_dict.items()
+            if v
+        )
+        results = results.query(query)
+    except UnboundLocalError:
+        pass
+
     try:
         results["code_station"]
-        results = results.drop_duplicates("code_station")
+        results = results.drop_duplicates(
+            [
+                "code_station",
+                "code_point_prelevement_aspe",
+                "code_point_prelevement",
+                "code_point_prelevement_wama",
+            ]
+        )
     except KeyError:
         pass
 
@@ -102,61 +245,36 @@ def get_all_observations(**kwargs) -> gpd.GeoDataFrame:
             "`get_all_observations(code_departement='02')`"
         )
 
-    # Set a loop for 6 months querying as dataset are big
-
-    start_auto_determination = False
-    if "date_operation_min" not in kwargs:
-        start_auto_determination = True
-        kwargs["date_operation_min"] = "1973-01-01"
-    if "date_operation_max" not in kwargs:
-        kwargs["date_operation_max"] = date.today().strftime("%Y-%m-%d")
-    if "format" not in kwargs:
-        kwargs["format"] = "geojson"
-    if "code_region" in kwargs:
-        # let's downcast to departemental loops
-        reg = kwargs.pop("code_region")
-        if isinstance(reg, (list, tuple, set)):
-            deps = [
-                dep for r in reg for dep in get_departements_from_regions(r)
-            ]
-        else:
-            deps = get_departements_from_regions(reg)
-        kwargs["code_departement"] = deps
-
-    if "code_departement" in kwargs:
-        deps = [kwargs.pop("code_departement")]
-    elif "code_region" in kwargs:
-        deps = get_departements_from_regions(kwargs.pop("code_region"))
-    else:
-        deps = get_departements()
-
-    desc = "querying 6m/6m" + (
-        " & dep/dep" if "code_departement" in kwargs else ""
-    )
-
-    kwargs_loop = prepare_kwargs_loops(
-        "date_operation_min",
-        "date_operation_max",
+    chunks = 200
+    kwargs, kwargs_loop = _prepare_kwargs(
         kwargs,
-        start_auto_determination,
-        split_months=6,
+        chunks=chunks,
+        months=12,
+        date_start_label="date_operation_min",
+        date_end_label="date_operation_max",
+        start_date="1965-01-01",
+        propagation_safe=PROPAGATION_OK,
+        code_entity_primary_key="code_point_prelevement_aspe",
+        get_entities_func=get_all_stations,
     )
 
+    desc = f"querying year/year & {chunks} stations/ {chunks} stations"
     with FishSession() as session:
-
         results = [
             session.get_observations(**kwargs, **kw_loop)
-            for kw_loop in tqdm(
+            for kw_loop in tqdm_partial(
                 kwargs_loop,
                 desc=desc,
-                leave=_config["TQDM_LEAVE"],
-                position=tqdm._get_free_pos(),
             )
         ]
-        results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
-        results = pd.concat(results, ignore_index=True)
 
-        return results
+    results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+    try:
+        results = gpd.pd.concat(results, ignore_index=True)
+    except ValueError:
+        # results is empty
+        return gpd.GeoDataFrame()
+    return results
 
 
 def get_all_operations(**kwargs) -> pd.DataFrame:
@@ -181,7 +299,7 @@ def get_all_operations(**kwargs) -> pd.DataFrame:
     start_auto_determination = False
     if "date_operation_min" not in kwargs:
         start_auto_determination = True
-        kwargs["date_operation_min"] = "1973-01-01"
+        kwargs["date_operation_min"] = "1965-01-01"
     if "date_operation_max" not in kwargs:
         kwargs["date_operation_max"] = date.today().strftime("%Y-%m-%d")
     if "format" not in kwargs:
@@ -213,18 +331,16 @@ def get_all_operations(**kwargs) -> pd.DataFrame:
         "date_operation_max",
         kwargs,
         start_auto_determination,
-        split_months=6,
+        months=6,
     )
 
     with FishSession() as session:
 
         results = [
             session.get_operations(**kwargs, **kw_loop)
-            for kw_loop in tqdm(
+            for kw_loop in tqdm_partial(
                 kwargs_loop,
                 desc=desc,
-                leave=_config["TQDM_LEAVE"],
-                position=tqdm._get_free_pos(),
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
@@ -257,11 +373,9 @@ def get_all_indicators(**kwargs) -> pd.DataFrame:
             session.get_indicators(
                 code_departement=dep, format="geojson", **kwargs
             )
-            for dep in tqdm(
+            for dep in tqdm_partial(
                 deps,
                 desc="querying entite/entite",
-                leave=_config["TQDM_LEAVE"],
-                position=tqdm._get_free_pos(),
             )
         ]
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
@@ -270,4 +384,7 @@ def get_all_indicators(**kwargs) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    df = get_all_observations(code_departement="02")
+    # gdf = get_all_stations()
+    df = get_all_operations(
+        code_departement="75",
+    )
