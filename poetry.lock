@@ -5884,14 +5884,14 @@ test = ["pytest"]
 
 [[package]]
 name = "spyder"
-version = "6.0.7"
+version = "6.0.8"
 description = "The Scientific Python Development Environment"
 optional = false
 python-versions = ">=3.8"
 groups = ["dev"]
 files = [
-    {file = "spyder-6.0.7-py3-none-any.whl", hash = "sha256:b725569bb8ddc7b0aab73d747d85312dc0456978370cc0f9b1a101c0fe4f076b"},
-    {file = "spyder-6.0.7.tar.gz", hash = "sha256:431a0c46a34a6490664763d47b1e48f3be03e75e7e43c37adb239022e8b062cf"},
+    {file = "spyder-6.0.8-py3-none-any.whl", hash = "sha256:bf7778e5d8271eabee1bd2764735b22d233afe01a50aee95f0afdf4d789dba05"},
+    {file = "spyder-6.0.8.tar.gz", hash = "sha256:be62114d10c4339b1c0b22e702ea90597fbb19f269a8d6c700b4693a9eb12b63"},
 ]
 
 [package.dependencies]
@@ -6885,4 +6885,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "98629c71abe30e2a1cdfbb98550962d43ff41ae9f66e24da6a2db84d63039d62"
+content-hash = "7d521915615f2f0133d9e709d6dfa1e6ccee23eec7233df6d26031d58c265155"

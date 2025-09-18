@@ -41,7 +41,7 @@ deprecated = "^1.2.18"
 
 
 [tool.poetry.group.dev.dependencies]
-spyder = "^6.0.7"
+spyder = "^6.0.8"
 pytest = "^8.2.2"
 black = "^24.4.2"
 pyqt5-qt5 = "5.15.2"
