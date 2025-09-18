@@ -288,7 +288,13 @@ class GroundWaterQualitySession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/qualite_nappes/analyses"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_prelevement",
+            time_end="date_fin_prelevement",
+            params=params,
+        )
 
         for f in ["date_debut_prelevement"]:
             try:

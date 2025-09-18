@@ -159,7 +159,13 @@ class DrinkingWaterQualitySession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/qualite_eau_potable/resultats_dis"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_min_prelevement",
+            time_end="date_max_prelevement",
+            params=params,
+        )
 
         try:
             df["date_prelevement"] = pd.to_datetime(df["date_prelevement"])

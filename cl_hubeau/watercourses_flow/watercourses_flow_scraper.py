@@ -17,7 +17,7 @@ class WatercoursesFlowSession(BaseHubeauSession):
 
     def __init__(self, *args, **kwargs):
 
-        super().__init__(version="1.0.0", *args, **kwargs)
+        super().__init__(version="1.1.0", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 1000
@@ -199,7 +199,13 @@ class WatercoursesFlowSession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/ecoulement/observations"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_observation_min",
+            time_end="date_observation_max",
+            params=params,
+        )
 
         return df
 
@@ -240,8 +246,10 @@ class WatercoursesFlowSession(BaseHubeauSession):
                 continue
 
         try:
-            params["code_campagne"] = self._ensure_val_among_authorized_values(
-                "code_campagne", kwargs, {"1", "2"}, str
+            params["code_type_campagne"] = (
+                self._ensure_val_among_authorized_values(
+                    "code_type_campagne", kwargs, {"1", "2"}, str
+                )
             )
         except KeyError:
             pass
@@ -276,7 +284,13 @@ class WatercoursesFlowSession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/ecoulement/campagnes"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_campagne_min",
+            time_end="date_campagne_max",
+            params=params,
+        )
 
         return df
 

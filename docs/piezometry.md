@@ -58,7 +58,7 @@ identifier un piézomètre sur ce point de sortie API).
 ```python
 from cl_hubeau import piezometry
 df = piezometry.get_chronicles(
-    codes_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1']
+    code_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1']
     )
 ```
 
@@ -69,7 +69,7 @@ Par exemple :
 ```python
 from cl_hubeau import piezometry
 df = piezometry.get_chronicles(
-    codes_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1'],
+    code_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1'],
     date_debut_mesure="2020-01-01",
     )
 ```
@@ -85,7 +85,7 @@ Cette fonction utilise un cache avec une expiration fixée à 15 minutes.
 ```python
 from cl_hubeau import piezometry
 df = piezometry.get_realtime_chronicles(
-    codes_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1']
+    code_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1']
     )
 ```
 
@@ -94,7 +94,7 @@ ou
 ```python
 from cl_hubeau import piezometry
 df = piezometry.get_realtime_chronicles(
-    bss_ids=['BSS001TULG', 'BSS001TTQY', 'BSS001TTQQ', 'BSS001TTRA', 'BSS001SCTM']
+    bss_id=['BSS001TULG', 'BSS001TTQY', 'BSS001TTQQ', 'BSS001TTRA', 'BSS001SCTM']
     )
 ```
 
@@ -104,7 +104,7 @@ par le point de sortie "chroniques" de l'API, à l'exception de `code_bss` ou `b
 ```python
 from cl_hubeau import piezometry
 df = piezometry.get_realtime_chronicles(
-    codes_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1'],
+    code_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1'],
     fields=["date_mesure", "niveau_eau_ngf", "code_bss"]
     )
 ```

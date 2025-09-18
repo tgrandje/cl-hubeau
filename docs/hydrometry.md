@@ -109,7 +109,7 @@ du point de sortie "observations élaborées" de l'API).
 ```python
 from cl_hubeau import hydrometry
 df = hydrometry.get_observations(
-    codes_entites=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012']
+    code_entite=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012']
     )
 ```
 
@@ -120,7 +120,7 @@ Par exemple :
 ```python
 from cl_hubeau import hydrometry
 df = hydrometry.get_observations(
-    codes_entites=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
+    code_entite=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
     fields=["resultat_obs_elab", "code_site", "date_obs_elab"],
     )
 ```
@@ -137,7 +137,7 @@ Seules les données du dernier mois glissant sont rendues accessibles sur hubeau
 ```python
 from cl_hubeau import hydrometry
 df = hydrometry.get_realtime_observations(
-    codes_entites=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
+    code_entite=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
     )
 ```
 
@@ -147,7 +147,7 @@ par le point de sortie "observations temps réel" de l'API, à l'exception de `c
 ```python
 from cl_hubeau import hydrometry
 df = hydrometry.get_realtime_observations(
-    codes_entites=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
+    code_entite=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
     grandeur_hydro="H",
     )
 ```

@@ -87,6 +87,11 @@ class PiezometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        try:
+            params["fields"] = self.list_to_str_param(kwargs.pop("fields"))
+        except KeyError:
+            pass
+
         if kwargs:
             raise UnexpectedArguments(kwargs, self.DOC_URL)
 
@@ -148,7 +153,13 @@ class PiezometrySession(BaseHubeauSession):
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques"
 
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_mesure",
+            time_end="date_fin_mesure",
+            params=params,
+        )
 
         try:
             df["timestamp_mesure"] = pd.to_datetime(
@@ -240,6 +251,8 @@ class PiezometrySession(BaseHubeauSession):
         df = self.get_result(
             method,
             url,
+            time_start="date_debut_mesure",
+            time_end="date_fin_mesure",
             params=params,
         )
 

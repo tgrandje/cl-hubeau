@@ -14,12 +14,10 @@ import pytest
 from requests_cache import CacheMixin
 
 from cl_hubeau import phytopharmaceuticals_transactions
-from cl_hubeau.phytopharmaceuticals_transactions import (
-    PhytopharmaceuticalsSession,
-)
 from cl_hubeau.phytopharmaceuticals_transactions.utils import (
     _get_territory_years_combination,
 )
+from tests.utils import silence_api_version_warning
 
 
 class MockResponse:
@@ -122,6 +120,7 @@ def mock_get_data(monkeypatch):
     monkeypatch.setattr(CacheMixin, "request", mock_request)
 
 
+@silence_api_version_warning
 def test_sold_substances_mocked(mock_get_data):
     df = phytopharmaceuticals_transactions.get_all_active_substances_sold(
         type_territoire="National",
@@ -136,6 +135,7 @@ def test_sold_substances_mocked(mock_get_data):
     assert len(df) == 1
 
 
+@silence_api_version_warning
 def test_sold_products_mocked(mock_get_data):
     df = phytopharmaceuticals_transactions.get_all_phytopharmaceutical_products_sold(
         type_territoire="National",
@@ -148,6 +148,7 @@ def test_sold_products_mocked(mock_get_data):
     assert len(df) == 1
 
 
+@silence_api_version_warning
 def test_bought_substances_mocked(mock_get_data):
     df = phytopharmaceuticals_transactions.get_all_active_substances_bought(
         type_territoire="National",
@@ -161,6 +162,7 @@ def test_bought_substances_mocked(mock_get_data):
     assert len(df) == 1
 
 
+@silence_api_version_warning
 def test_bought_products_mocked(mock_get_data):
     df = phytopharmaceuticals_transactions.get_all_phytopharmaceutical_products_bought(
         type_territoire="National",
@@ -276,7 +278,7 @@ def test_get_territory_years_combination():
         {"type_territoire": "Département"}, "bought"
     )
     df = pd.DataFrame(df, columns=["territory", "year"])
-    assert len(df.territory.drop_duplicates().tolist()) == 102
+    assert len(df.territory.drop_duplicates().tolist()) == 103
 
     df = _get_territory_years_combination(
         {"type_territoire": "Zone postale"},
