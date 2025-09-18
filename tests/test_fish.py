@@ -116,8 +116,10 @@ def test_get_observations(mock_get_data):
 
 
 def test_get_observations_live():
-    pass
-    # TODO
+    df = fish.get_all_observations(
+        code_departement="75", date_operation_max="2005-01-01"
+    )
+    assert len(df) == 2702
 
 
 def test_get_operations(mock_get_data):
@@ -132,8 +134,10 @@ def test_get_operations(mock_get_data):
 
 
 def test_get_operations_live():
-    pass
-    # TODO
+    df = fish.get_all_operations(
+        code_departement="75", date_operation_max="2005-01-01"
+    )
+    assert len(df) == 29
 
 
 def test_get_indicators(mock_get_data):
@@ -148,5 +152,7 @@ def test_get_indicators(mock_get_data):
 
 
 def test_get_indicators_live():
-    pass
-    # TODO
+    df = fish.get_all_indicators(
+        code_departement="75", date_operation_max="2005-01-01"
+    )
+    assert len(df) == 1
