@@ -151,6 +151,15 @@ class FishSession(BaseHubeauSession):
         url = self.BASE_URL + "/v1/etat_piscicole/stations"
         df = self.get_result(method, url, params=params)
 
+        for x in [
+            "date_modification_station",
+            "date_modification_point_prelevement_aspe",
+        ]:
+            try:
+                df[x] = pd.to_datetime(df[x])
+            except KeyError:
+                pass
+
         return df
 
     def get_observations(self, **kwargs):
@@ -555,10 +564,15 @@ class FishSession(BaseHubeauSession):
             time_end="date_operation_max",
         )
 
-        try:
-            df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
-        except KeyError:
-            pass
+        for x in [
+            "date_operation",
+            "ipr_date_execution",
+            "iprplus_date_execution",
+        ]:
+            try:
+                df[x] = pd.to_datetime(df[x])
+            except KeyError:
+                pass
 
         return df
 
@@ -784,9 +798,19 @@ class FishSession(BaseHubeauSession):
             time_end="date_operation_max",
         )
 
-        try:
-            df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
-        except KeyError:
-            pass
+        for x in [
+            "date_creation_operation",
+            "date_operation",
+            "date_modification_operation",
+        ]:
+            try:
+                df[x] = pd.to_datetime(df[x])
+            except KeyError:
+                pass
 
         return df
+
+
+if __name__ == "__main__":
+    with FishSession() as session:
+        df = session.get_observations(code_taxon="2220")
