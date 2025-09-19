@@ -30,17 +30,20 @@ def mock_get_data(monkeypatch):
         self, method, url, *args = args
 
         if re.search("stations$", url):
-            deps = kwargs["params"]["code_departement"].split(",")
+
             data = {
-                "count": len(deps),
+                "type": "FeatureCollection",
+                "crs": {
+                    "type": "name",
+                    "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"},
+                },
+                "count": 1,
                 "first": "blah_page",
                 "features": [
                     {
                         "type": "Feature",
                         "properties": {
-                            "code_station": f"dummy_code_{dep}",
-                            "libelle_station": "dummy_label",
-                            "code_departement": dep,
+                            "code_point_prelevement_aspe": "dummy_code",
                         },
                         "geometry": {
                             "type": "Point",
@@ -53,7 +56,6 @@ def mock_get_data(monkeypatch):
                             "coordinates": [0, 0],
                         },
                     }
-                    for dep in deps
                 ],
             }
 
@@ -62,7 +64,7 @@ def mock_get_data(monkeypatch):
             or re.search("observations$", url)
             or re.search("indicateurs$", url)
         ):
-            code = kwargs["params"]["code_station"]
+            code = kwargs["params"]["code_point_prelevement_aspe"]
             data = {
                 "count": 1,
                 "first": "blah_page",
@@ -71,7 +73,7 @@ def mock_get_data(monkeypatch):
                         "type": "Feature",
                         "properties": {
                             "date": "2020-06-01",
-                            "code_station": code,
+                            "code_point_prelevement_aspe": code,
                         },
                         "geometry": {
                             "type": "Point",
@@ -93,9 +95,9 @@ def mock_get_data(monkeypatch):
 
 
 def test_get_stations(mock_get_data):
-    data = fish.get_all_stations()
+    data = fish.get_all_stations(fill_values=False)
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) == 103
+    assert len(data) == 1
 
 
 def test_get_stations_live():
@@ -106,7 +108,7 @@ def test_get_stations_live():
 
 def test_get_observations(mock_get_data):
     data = fish.get_all_observations(
-        code_station="dummy_code",
+        code_point_prelevement_aspe="dummy_code",
         date_operation_min="2020-01-01",
         date_operation_max="2020-05-31",
     )
@@ -124,7 +126,7 @@ def test_get_observations_live():
 
 def test_get_operations(mock_get_data):
     data = fish.get_all_operations(
-        code_station="dummy_code",
+        code_point_prelevement_aspe="dummy_code",
         date_operation_min="2020-01-01",
         date_operation_max="2020-05-31",
     )
@@ -142,7 +144,7 @@ def test_get_operations_live():
 
 def test_get_indicators(mock_get_data):
     data = fish.get_all_indicators(
-        code_station="dummy_code",
+        code_point_prelevement_aspe="dummy_code",
         date_operation_min="2020-01-01",
         date_operation_max="2020-12-31",
     )

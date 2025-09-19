@@ -4,9 +4,6 @@
 Convenience functions for fish API
 """
 
-# TODO : update docstrings with code_sous_bassin
-
-from datetime import date
 from functools import partial
 from typing import Union
 import warnings
@@ -21,11 +18,6 @@ from cl_hubeau.fish import (
     FishSession,
 )
 from cl_hubeau import _config
-from cl_hubeau.utils import (
-    get_departements,
-    get_departements_from_regions,
-    prepare_kwargs_loops,
-)
 import cl_hubeau.utils.mesh
 from cl_hubeau.utils.fill_missing_fields import (
     _fill_missing_cog,
@@ -203,15 +195,7 @@ def get_all_stations(
         pass
 
     try:
-        results["code_station"]
-        results = results.drop_duplicates(
-            [
-                "code_station",
-                "code_point_prelevement_aspe",
-                "code_point_prelevement",
-                "code_point_prelevement_wama",
-            ]
-        )
+        results = results.drop_duplicates("code_point_prelevement_aspe")
     except KeyError:
         pass
 
@@ -232,6 +216,9 @@ def get_all_observations(**kwargs) -> gpd.GeoDataFrame:
     **kwargs :
         kwargs passed to FishSession.get_observations
         (hence mostly intended for hub'eau API's arguments).
+        Note that you can also query the dataset specifying "code_sous_bassin"
+        as this is handled by cl-hubeau natively (even if this is not a hub'eau
+        argument).
 
     Returns
     -------
@@ -290,6 +277,9 @@ def get_all_operations(**kwargs) -> pd.DataFrame:
     **kwargs :
         kwargs passed to FishSession.get_stations
         (hence mostly intended for hub'eau API's arguments).
+        Note that you can also query the dataset specifying "code_sous_bassin"
+        as this is handled by cl-hubeau natively (even if this is not a hub'eau
+        argument).
 
     Returns
     -------
@@ -298,48 +288,21 @@ def get_all_operations(**kwargs) -> pd.DataFrame:
 
     """
 
-    # TODO
-
-    start_auto_determination = False
-    if "date_operation_min" not in kwargs:
-        start_auto_determination = True
-        kwargs["date_operation_min"] = "1965-01-01"
-    if "date_operation_max" not in kwargs:
-        kwargs["date_operation_max"] = date.today().strftime("%Y-%m-%d")
-    if "format" not in kwargs:
-        kwargs["format"] = "geojson"
-    if "code_region" in kwargs:
-        # let's downcast to departemental loops
-        reg = kwargs.pop("code_region")
-        if isinstance(reg, (list, tuple, set)):
-            deps = [
-                dep for r in reg for dep in get_departements_from_regions(r)
-            ]
-        else:
-            deps = get_departements_from_regions(reg)
-        kwargs["code_departement"] = deps
-
-    if "code_departement" in kwargs:
-        deps = [kwargs.pop("code_departement")]
-    elif "code_region" in kwargs:
-        deps = get_departements_from_regions(kwargs.pop("code_region"))
-    else:
-        deps = get_departements()
-
-    desc = "querying 6m/6m" + (
-        " & dep/dep" if "code_departement" in kwargs else ""
-    )
-
-    kwargs_loop = prepare_kwargs_loops(
-        "date_operation_min",
-        "date_operation_max",
+    chunks = 200
+    kwargs, kwargs_loop = _prepare_kwargs(
         kwargs,
-        start_auto_determination,
-        months=6,
+        chunks=chunks,
+        months=120,
+        date_start_label="date_operation_min",
+        date_end_label="date_operation_max",
+        start_date="1960-01-01",
+        propagation_safe=PROPAGATION_OK,
+        code_entity_primary_key="code_point_prelevement_aspe",
+        get_entities_func=get_all_stations,
     )
 
+    desc = f"querying 10 year / 10 year & {chunks} stations/ {chunks} stations"
     with FishSession() as session:
-
         results = [
             session.get_operations(**kwargs, **kw_loop)
             for kw_loop in tqdm_partial(
@@ -347,8 +310,13 @@ def get_all_operations(**kwargs) -> pd.DataFrame:
                 desc=desc,
             )
         ]
+
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
-    results = pd.concat(results, ignore_index=True)
+    try:
+        results = gpd.pd.concat(results, ignore_index=True)
+    except ValueError:
+        # results is empty
+        return gpd.GeoDataFrame()
     return results
 
 
@@ -363,6 +331,9 @@ def get_all_indicators(**kwargs) -> pd.DataFrame:
     **kwargs :
         kwargs passed to FishSession.get_stations
         (hence mostly intended for hub'eau API's arguments).
+        Note that you can also query the dataset specifying "code_sous_bassin"
+        as this is handled by cl-hubeau natively (even if this is not a hub'eau
+        argument).
 
     Returns
     -------
@@ -371,26 +342,33 @@ def get_all_indicators(**kwargs) -> pd.DataFrame:
 
     """
 
-    # TODO
+    chunks = 200
+    kwargs, kwargs_loop = _prepare_kwargs(
+        kwargs,
+        chunks=chunks,
+        months=120,
+        date_start_label="date_operation_min",
+        date_end_label="date_operation_max",
+        start_date="1960-01-01",
+        propagation_safe=PROPAGATION_OK,
+        code_entity_primary_key="code_point_prelevement_aspe",
+        get_entities_func=get_all_stations,
+    )
 
-    deps = get_departements()
+    desc = f"querying 10 year / 10 year & {chunks} stations/ {chunks} stations"
     with FishSession() as session:
         results = [
-            session.get_indicators(
-                code_departement=dep, format="geojson", **kwargs
-            )
-            for dep in tqdm_partial(
-                deps,
-                desc="querying entite/entite",
+            session.get_indicators(**kwargs, **kw_loop)
+            for kw_loop in tqdm_partial(
+                kwargs_loop,
+                desc=desc,
             )
         ]
+
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
-    results = pd.concat(results, ignore_index=True)
+    try:
+        results = gpd.pd.concat(results, ignore_index=True)
+    except ValueError:
+        # results is empty
+        return gpd.GeoDataFrame()
     return results
-
-
-if __name__ == "__main__":
-    # gdf = get_all_stations()
-    df = get_all_operations(
-        code_departement="75",
-    )

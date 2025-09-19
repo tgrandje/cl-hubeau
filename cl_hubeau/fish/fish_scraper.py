@@ -415,6 +415,7 @@ class FishSession(BaseHubeauSession):
             "code_commune",
             "code_departement",
             "code_entite_hydrographique",
+            "code_operation",
             "code_point_prelevement",
             "code_point_prelevement_aspe",
             "code_region",
@@ -426,7 +427,6 @@ class FishSession(BaseHubeauSession):
             "libelle_region",
             "libelle_station",
             "libelles_dispositifs_collecte",
-            "objectifs_operation",
             "libelle_bassin",
         ):
             try:
@@ -445,12 +445,43 @@ class FishSession(BaseHubeauSession):
             except KeyError:
                 continue
 
-        for arg in "etat_avancement_operation":
-            try:
-                variable = kwargs.pop(arg)
-                params[arg] = self.list_to_str_param(variable, 5)
-            except KeyError:
-                continue
+        try:
+            params["objectifs_operation"] = self.list_to_str_param(
+                kwargs.pop("objectifs_operation"),
+                20,
+                authorized_values=[
+                    "RCA - Réseau de contrôle additionnel",
+                    "RCS – Réseau de Contrôle de Surveillance",
+                    "RRP – Réseau de Référence Pérenne",
+                    "RCO – Réseau Contrôle opérationnel",
+                    "DCE – Référence",
+                    "RHP – Réseau Hydrobiologique Piscicole",
+                    "RNB – Réseau National de Bassin",
+                    "RNSORMCE – Réseau National de Suivi des Opérations de Restauration hydroMorphologiques des Cours d'Eau",
+                    "Étude",
+                    "Suivi des cours d'eau intermittents",
+                    "Suivi de restauration",
+                    "Suivi des populations d'anguilles",
+                    "Suivi des populations de saumons",
+                    "Suivi des populations de truites",
+                    "Sauvetage - Transfert",
+                ],
+            )
+        except KeyError:
+            pass
+
+        try:
+            params["etat_avancement_operation"] = self.list_to_str_param(
+                kwargs.pop("etat_avancement_operation"),
+                3,
+                authorized_values=[
+                    "En cours de saisie",
+                    "Validé niveau 1",
+                    "Validé niveau 2",
+                ],
+            )
+        except KeyError:
+            pass
 
         for arg in (
             "distance",
@@ -467,66 +498,41 @@ class FishSession(BaseHubeauSession):
                 continue
 
         try:
-            params["ipr_code_classe"] = (
-                self._ensure_val_among_authorized_values(
-                    "ipr_code_classe", kwargs, {"1", "2", "3", "4", "5"}, str
+            for arg in "ipr_code_classe", "iprplus_code_classe":
+                params[arg] = self.list_to_str_param(
+                    kwargs.pop(arg),
+                    authorized_values=["1", "2", "3", "4", "5"],
                 )
-            )
         except KeyError:
             pass
 
         try:
-            params["iprplus_code_classe"] = (
-                self._ensure_val_among_authorized_values(
-                    "iprplus_code_classe",
-                    kwargs,
-                    {"1", "2", "3", "4", "5"},
-                    str,
+            for arg in "ipr_libelle_classe", "iprplus_libelle_classe":
+                params[arg] = self.list_to_str_param(
+                    kwargs.pop(arg),
+                    authorized_values=[
+                        "Très bon",
+                        "Bon",
+                        "Moyen",
+                        "Médiocre",
+                        "Mauvais",
+                    ],
                 )
-            )
         except KeyError:
             pass
 
         try:
-            params["iprplus_libelle_classe"] = (
-                self._ensure_val_among_authorized_values(
-                    "iprplus_libelle_classe",
-                    kwargs,
-                    {"1", "2", "3", "4", "5"},
-                    str,
-                )
-            )
-        except KeyError:
-            pass
-
-        try:
-            params["ipr_libelle_classe"] = (
-                self._ensure_val_among_authorized_values(
-                    "ipr_libelle_classe",
-                    kwargs,
-                    {"Très bon", "Bon", "Moyen", "Médiocre", "Mauvais"},
-                    str,
-                )
-            )
-        except KeyError:
-            pass
-
-        try:
-            params["protocole_peche"] = (
-                self._ensure_val_among_authorized_values(
-                    "protocole_peche",
-                    kwargs,
-                    {
-                        "Pêche complète à un ou plusieurs passages",
-                        "Pêche partielle par points (grand milieu)",
-                        "Pêche par ambiances",
-                        "Pêche partielle sur berge",
-                        "Indice Abondance Saumon",
-                        "Vigitruite",
-                        "Indice Abondance Anguille",
-                    },
-                    str,
-                )
+            params["protocole_peche"] = self.list_to_str_param(
+                kwargs.pop(arg),
+                authorized_values=[
+                    "Pêche complète à un ou plusieurs passages",
+                    "Pêche partielle par points (grand milieu)",
+                    "Pêche par ambiances",
+                    "Pêche partielle sur berge",
+                    "Indice Abondance Saumon",
+                    "Vigitruite",
+                    "Indice Abondance Anguille",
+                ],
             )
         except KeyError:
             pass
@@ -541,7 +547,13 @@ class FishSession(BaseHubeauSession):
 
         method = "GET"
         url = self.BASE_URL + "/v1/etat_piscicole/indicateurs"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            params=params,
+            time_start="date_operation_min",
+            time_end="date_operation_max",
+        )
 
         try:
             df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
