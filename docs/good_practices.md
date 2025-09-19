@@ -11,7 +11,7 @@ nav_order: 6
 Certaines requêtes sont lourdes : des gains peuvent être (souvent) obtenus en sélectionnant les champs recherchés (critère `fields`)
 et en évitant le format `"geojson"` qui induit nécessairement la récupération des géométries.
 
-Il est en tout état de cause particulièrement pertinent de tirer parti des liaisons relationnelles
+En tout état de cause, il est particulièrement pertinent de tirer parti des liaisons relationnelles
 entre les différents endpoint d'une même API. Par exemple, les géométries peuvent souvent
 être récupérées via les stations et une jointure faite avec les observations.
 De cette manière, on fait l'économie de la démultiplication des géométries au travers
