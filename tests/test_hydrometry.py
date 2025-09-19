@@ -132,7 +132,7 @@ def mock_get_data(monkeypatch):
 
 @silence_api_version_warning
 def test_get_all_stations_mocked(mock_get_data):
-    data = hydrometry.get_all_stations(fill_values=False)
+    data = hydrometry.get_all_stations()
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 1
 
