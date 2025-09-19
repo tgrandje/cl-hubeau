@@ -2,8 +2,8 @@
 layout: default
 title: ❌ API Température des cours d'eau
 language: fr
-handle: /hydrobiology
-nav_order: 13
+handle: /temperature
+nav_order: 14
 
 ---
 # API Température des cours d'eau

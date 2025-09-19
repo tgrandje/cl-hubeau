@@ -2,8 +2,8 @@
 layout: default
 title: ❌ API Prélèvements en eau
 language: fr
-handle: /water_abstraction
-nav_order: 11
+handle: /water-abstraction
+nav_order: 12
 
 ---
 # API Prélèvements en eau

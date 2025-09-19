@@ -30,6 +30,8 @@ At this stage, the following APIs are covered by cl-hubeau:
 * [superficial waterbodies quality/qualité des cours d'eau](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
 * [ground waterbodies quality/qualité des nappes](https://hubeau.eaufrance.fr/page/api-qualite-nappes)
 * [piezometry/piézométrie](https://hubeau.eaufrance.fr/page/api-piezometrie)
+* [fish/poisson](https://hubeau.eaufrance.fr/page/api-poisson)
+
 
 
 For any help on available kwargs for each endpoint, please refer
@@ -651,8 +653,61 @@ with piezometry.PiezometrySession() as session:
     df = session.get_chronicles_real_time(code_bss="07548X0009/F")
 ```
 
+### Fish
 
+4 high level functions are available (and one class for low level operations).
 
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import fish
+gdf = fish.get_all_stations()
+```
+
+Get operations for the first 100 stations (uses a 30 days caching):
+
+```python
+df = fish.get_all_operations(
+    code_point_prelevement_aspe=gdf["code_point_prelevement_aspe"].head(100).tolist()
+    )
+```
+
+Get observations for the first 100 stations (uses a 30 days caching):
+
+```python
+df = fish.get_all_observations(
+    code_point_prelevement_aspe=gdf["code_point_prelevement_aspe"].head(100).tolist()
+    )
+```
+
+Note that this query is heavy, even if this is handled by cl-hubeau. Using this
+without arguments may exceed your machine's available ram.
+
+In practice, you should always call this function with a territorial restriction
+or with specific `code_point_prelevement_aspe`s.
+
+Get indicators for the first 100 stations (uses a 30 days caching):
+
+```python
+df = fish.get_all_indicators(
+    code_point_prelevement_aspe=gdf["code_point_prelevement_aspe"].head(100).tolist()
+    )
+```
+
+Low level class to perform the same tasks:
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility, noticely for realtime data
+
+```python
+with fish.FishSession() as session:
+    df = session.get_stations(code_point_prelevement_aspe="40910")
+    df = session.get_operations(code_departement=['75', '92', '93', '94'], format="geojson")
+    df = session.get_observations(code_taxon="2220", date_operation_min="2020-01-01")
+    df = session.get_indicators(code_region="32")
+```
 
 
 ### Convenience functions
