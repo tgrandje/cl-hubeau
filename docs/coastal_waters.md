@@ -2,8 +2,8 @@
 layout: default
 title: ❌ API Surveillance des eaux littorales
 language: fr
-handle: /coastal_water_surveillance
-nav_order: 9
+handle: /coastal-water-surveillance
+nav_order: 10
 
 ---
 # API Surveillance des eaux littorales

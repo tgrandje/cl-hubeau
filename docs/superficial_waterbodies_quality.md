@@ -2,8 +2,8 @@
 layout: default
 title: API Qualité des cours d'eau
 language: fr
-handle: /drinking-water-quality
-nav_order: 14
+handle: /superficial-water-quality
+nav_order: 15
 
 ---
 # API Qualité des cours d'eau
