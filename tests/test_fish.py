@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+Test high level functions
+"""
+
+import geopandas as gpd
+import pandas as pd
+import pytest
+import re
+from requests_cache import CacheMixin
+
+from cl_hubeau import fish
+
+
+class MockResponse:
+    def __init__(self, json_data):
+        self.json_data = json_data
+        self.ok = True
+
+    def json(self):
+        return self.json_data
+
+
+@pytest.fixture
+def mock_get_data(monkeypatch):
+
+    def mock_request(*args, **kwargs):
+        self, method, url, *args = args
+
+        if re.search("stations$", url):
+
+            data = {
+                "type": "FeatureCollection",
+                "crs": {
+                    "type": "name",
+                    "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"},
+                },
+                "count": 1,
+                "first": "blah_page",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "code_point_prelevement_aspe": "dummy_code",
+                        },
+                        "geometry": {
+                            "type": "Point",
+                            "crs": {
+                                "type": "name",
+                                "properties": {
+                                    "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+                                },
+                            },
+                            "coordinates": [0, 0],
+                        },
+                    }
+                ],
+            }
+
+        elif (
+            re.search("operations$", url)
+            or re.search("observations$", url)
+            or re.search("indicateurs$", url)
+        ):
+            code = kwargs["params"]["code_point_prelevement_aspe"]
+            data = {
+                "count": 1,
+                "first": "blah_page",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "date": "2020-06-01",
+                            "code_point_prelevement_aspe": code,
+                        },
+                        "geometry": {
+                            "type": "Point",
+                            "crs": {
+                                "type": "name",
+                                "properties": {
+                                    "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+                                },
+                            },
+                            "coordinates": [0, 0],
+                        },
+                    }
+                ],
+            }
+
+        return MockResponse(data)
+
+    monkeypatch.setattr(CacheMixin, "request", mock_request)
+
+
+def test_get_stations(mock_get_data):
+    data = fish.get_all_stations(fill_values=False)
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) == 1
+
+
+def test_get_stations_live():
+    data = fish.get_all_stations(code_departement="75")
+    assert isinstance(data, gpd.GeoDataFrame)
+    assert len(data) >= 3
+
+
+def test_get_observations(mock_get_data):
+    data = fish.get_all_observations(
+        code_point_prelevement_aspe="dummy_code",
+        date_operation_min="2020-01-01",
+        date_operation_max="2020-05-31",
+    )
+    data = data.drop_duplicates()
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) == 1
+
+
+def test_get_observations_live():
+    df = fish.get_all_observations(
+        code_departement="75", date_operation_max="2005-01-01"
+    )
+    assert len(df) == 2702
+
+
+def test_get_operations(mock_get_data):
+    data = fish.get_all_operations(
+        code_point_prelevement_aspe="dummy_code",
+        date_operation_min="2020-01-01",
+        date_operation_max="2020-05-31",
+    )
+    data = data.drop_duplicates()
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) == 1
+
+
+def test_get_operations_live():
+    df = fish.get_all_operations(
+        code_departement="75", date_operation_max="2005-01-01"
+    )
+    assert len(df) == 29
+
+
+def test_get_indicators(mock_get_data):
+    data = fish.get_all_indicators(
+        code_point_prelevement_aspe="dummy_code",
+        date_operation_min="2020-01-01",
+        date_operation_max="2020-12-31",
+    )
+    data = data.drop_duplicates()
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) == 1
+
+
+def test_get_indicators_live():
+    df = fish.get_all_indicators(
+        code_departement="75", date_operation_max="2005-01-01"
+    )
+    assert len(df) == 1

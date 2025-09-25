@@ -2,8 +2,8 @@
 layout: default
 title: API Ecoulement des cours d'eau
 language: fr
-handle: /watercourses_flow
-nav_order: 7
+handle: /watercourses-flow
+nav_order: 8
 
 ---
 # API Ecoulement des cours d'eau

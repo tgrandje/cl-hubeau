@@ -2,8 +2,8 @@
 layout: default
 title: Utilitaires annexes
 language: fr
-handle: /
-nav_order: 20
+handle: /convenience-tools
+nav_order: 21
 
 ---
 

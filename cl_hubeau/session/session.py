@@ -5,7 +5,7 @@ all APIs.
 """
 
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, date
 from functools import lru_cache
 import hashlib
 import logging
@@ -303,11 +303,20 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
 
         """
         variable = kwargs.pop(arg)
-        if converter:
-            variable = converter(variable)
-        if variable not in allowed:
-            raise UnexpectedValueError(arg, variable, allowed)
-        return variable
+        to_iterable = False
+        if not isinstance(variable, (list, tuple, set)):
+            to_iterable = True
+            variable = [variable]
+        result = []
+        for var in variable:
+            if converter:
+                var = converter(var)
+            if var not in allowed:
+                raise UnexpectedValueError(arg, var, allowed)
+            result.append(var)
+        if to_iterable:
+            result = result[0]
+        return result
 
     @staticmethod
     def ensure_date_format_is_ok(date_str: str) -> None:
@@ -450,7 +459,9 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             logger.info("> 20k results reached, splitting queries")
 
             timeranges = pd.date_range(
-                start=params[time_start], end=params[time_end], freq="D"
+                start=params.get(time_start, "1850-01-01"),
+                end=params.get(time_end, date.today().strftime("%Y-%m-%d")),
+                freq="D",
             )
             timeranges = np.array_split(timeranges, 2)
             results = []
@@ -471,11 +482,11 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                         **kwargs,
                     )
                 )
-                results = [
-                    x.dropna(axis=1, how="all") for x in results if not x.empty
-                ]
-                if not results:
-                    return pd.DataFrame()
+            results = [
+                x.dropna(axis=1, how="all") for x in results if not x.empty
+            ]
+            if not results:
+                return pd.DataFrame()
             return pd.concat(results)
 
         msg = f"{count_rows} expected results"
