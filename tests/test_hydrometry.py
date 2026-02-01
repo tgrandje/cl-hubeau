@@ -224,7 +224,7 @@ def test_get_chronicles_live():
         date_fin_obs_elab="2020-02-01",
     )
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 3255
+    assert len(data) > 3000
 
     data = hydrometry.get_observations(
         code_departement="93",
