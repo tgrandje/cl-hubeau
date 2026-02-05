@@ -5,6 +5,7 @@ Created on Mon Jul 29 15:49:09 2024
 
 Test mostly high level functions
 """
+
 from datetime import date, timedelta
 
 import geopandas as gpd
@@ -199,7 +200,7 @@ def test_get_chronicles_real_time_live():
     assert len(data) > 1000
 
     today = date.today().strftime("%Y-%m-%d")
-    past = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+    past = (date.today() - timedelta(days=2)).strftime("%Y-%m-%d")
     data = piezometry.get_realtime_chronicles(
         code_region="06",
         fields=["date_mesure", "timestamp_mesure"],

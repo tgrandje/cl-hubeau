@@ -99,8 +99,10 @@ def test_get_one_station_live():
 
 def test_get_analyses_live():
     data = ground_water_quality.get_all_analyses(
-        bss_id=["BSS000BMMA"],
+        bss_id=["00147X3307/PZ1"],
         code_insee_actuel="59350",
+        date_debut_prelevement="2001-01-01",
+        date_fin_prelevement="2001-12-31",
         code_param="1461",
         fields=[
             "code_param",
