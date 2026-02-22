@@ -27,6 +27,7 @@ At this stage, the following APIs are covered by cl-hubeau:
 * [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable)
 * [hydrobiology/hydrobiologie](https://hubeau.eaufrance.fr/page/api-hydrobiologie)
 * [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
+* [rivers' temperatures/température des cours d'eau](https://hubeau.eaufrance.fr/page/api-temperature-continu)
 * [superficial waterbodies quality/qualité des cours d'eau](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
 * [ground waterbodies quality/qualité des nappes](https://hubeau.eaufrance.fr/page/api-qualite-nappes)
 * [piezometry/piézométrie](https://hubeau.eaufrance.fr/page/api-piezometrie)
@@ -483,6 +484,43 @@ with hydrometry.HydrometrySession() as session:
     df = session.get_sites(code_departement=['02', '59', '60', '62', '80'], format="geojson")
     df = session.get_realtime_observations(code_entite="K437311001")
     df = session.get_observations(code_entite="K437311001")
+
+```
+
+### Rivers' temperatures
+
+2 high level functions are available (and one class for low level operations).
+
+
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import temperature
+gdf = temperature.get_all_stations()
+```
+
+Get chronicles for the first station (uses a 30 days caching) during the first quarter of 2020:
+
+```python
+df = temperature.get_all_chronicles(
+  code_station=gdf.at[0, "code_station"],
+  date_debut_mesure="2020-01-01",
+  date_fin_mesure="2020-03-31"
+  )
+```
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility, noticely for realtime data
+
+```python
+with temperature.TemperatureSession() as session:
+    df = session.get_stations(format="geojson")
+    df = session.get_chronicles(code_station="04190000", date_debut_mesure="2020-01-01", date_fin_mesure="2020-03-01")
 
 ```
 
