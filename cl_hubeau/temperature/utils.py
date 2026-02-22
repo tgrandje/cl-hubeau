@@ -213,7 +213,7 @@ def get_all_chronicles(**kwargs) -> gpd.GeoDataFrame:
     kwargs, kwargs_loop = _prepare_kwargs(
         kwargs,
         chunks=200,
-        months=12,
+        months=2,
         date_start_label="date_debut_mesure",
         date_end_label="date_fin_mesure",
         start_date="2005-01-01",
@@ -222,7 +222,7 @@ def get_all_chronicles(**kwargs) -> gpd.GeoDataFrame:
         get_entities_func=get_all_stations,
     )
 
-    desc = "querying year/year & 200 stations/ 200 stations"
+    desc = "querying 2m/2m & 200 stations/ 200 stations"
     with TemperatureSession() as session:
 
         results = [
