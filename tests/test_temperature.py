@@ -102,8 +102,8 @@ def test_get_stations_mocked(mock_get_data):
 def test_get_chronicles_mocked(mock_get_data):
     data = temperature.get_all_chronicles(
         code_station="dummy_code",
-        date_debut_prelevement="2020-01-01",
-        date_fin_prelevement="2020-12-31",
+        date_debut_mesure="2020-01-01",
+        date_fin_mesure="2020-12-31",
     )
     data = data.drop_duplicates()
     assert isinstance(data, pd.DataFrame)
