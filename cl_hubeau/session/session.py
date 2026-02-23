@@ -439,7 +439,8 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     warnings.warn(
                         "This API's version is not consistent with the "
                         "expected one from cl_hubeau package: "
-                        "unexpected behaviour may occur."
+                        "unexpected behaviour may occur. "
+                        f"found {js['api_version']}, expected {self.version}"
                     )
             except KeyError:
                 log_only_once(url)
