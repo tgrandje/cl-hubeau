@@ -149,6 +149,6 @@ from cl_hubeau import temperature
 with temperature.TemperatureSession() as session:
     df = session.get_chronicles(
         code_departement='02',
-        date_debut_mesure="2023-01-01",
+        date_debut_mesure="2020-01-01",
         )
 ```
