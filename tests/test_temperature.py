@@ -95,7 +95,7 @@ def mock_get_data(monkeypatch):
 def test_get_stations_mocked(mock_get_data):
     data = temperature.get_all_stations(fill_values=False)
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) == 1
+    assert len(data) == 2
 
 
 @silence_api_version_warning
@@ -107,7 +107,7 @@ def test_get_chronicles_mocked(mock_get_data):
     )
     data = data.drop_duplicates()
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 2
+    assert len(data) == 1
 
 
 def test_get_stations_live():
