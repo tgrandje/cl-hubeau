@@ -4,15 +4,37 @@
 Convenience functions for hydrometry consumption
 """
 
-import geopandas as gpd
-import pandas as pd
+from datetime import date, timedelta
 import warnings
 
+import geopandas as gpd
+import pandas as pd
 from tqdm import tqdm
 
 from cl_hubeau.hydrometry.hydrometry_scraper import HydrometrySession
 from cl_hubeau import _config
-from cl_hubeau.utils import get_departements, get_departements_from_regions
+from cl_hubeau.utils import (
+    get_departements,
+    get_departements_from_regions,
+    _prepare_kwargs,
+)
+
+PROPAGATION_OK = {
+    "bbox",
+    "code_commune_site",
+    "code_cours_eau",
+    "code_departement",
+    "code_region",
+    "code_site",
+    "code_troncon_hydro_site",
+    "code_zone_hydro_site",
+    "distance",
+    "latitude",
+    "longitude",
+    "libelle_cours_eau",
+    "libelle_site",
+    "code_entite",
+}
 
 
 def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
@@ -127,17 +149,56 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
     return results
 
 
+def _get_entities(**kwargs) -> pd.DataFrame:
+    """
+    Inner function allowing retrieval of both sites and stations. This is used
+    to prepare observations retrieval, which are allowing any one of those as
+    'code_entite'.
+
+    Parameters
+    ----------
+    **kwargs : any arguments allowed by both sites and stations endpoints
+
+    Returns
+    -------
+    pd.DataFrame
+        This DataFrame contains only one column of "primary keys"
+    """
+
+    # hack : remove fields(code_entite) & fill_values set by _prepare_kwargs
+    del kwargs["fields"]
+    del kwargs["fill_values"]
+
+    if "code_commune" in kwargs:
+        kwargs["code_commune_station"] = kwargs.pop("code_commune")
+
+    stations = get_all_stations(fields=["code_station"], **kwargs)
+
+    if "code_commune_station" in kwargs:
+        kwargs["code_commune_site"] = kwargs.pop("code_commune_station")
+    sites = get_all_sites(fields=["code_site"], **kwargs)
+
+    pk = "code_entite"
+    entities = (
+        pd.concat(
+            [
+                stations.rename(columns={"code_station": pk})[[pk]],
+                sites.rename(columns={"code_site": pk})[[pk]],
+            ],
+            ignore_index=True,
+        )
+        .drop_duplicates()
+        .reset_index(drop=True)
+    )
+    return entities
+
+
 def get_observations(**kwargs) -> pd.DataFrame:
     """
     Retrieve observations from multiple sites/stations.
 
     Use an inner loop for multiple piezometers to avoid reaching 20k results
     threshold from hub'eau API.
-
-    Note the following differences from raw Hub'Eau endpoint :
-    * you can use either a `code_region`, `code_departement` or `code_commune`
-      argument to query the results on a given region/departement/commune.
-      Those arguments are mutually exclusive with `code_entite`.
 
     Parameters
     ----------
@@ -160,64 +221,41 @@ def get_observations(**kwargs) -> pd.DataFrame:
         warnings.warn(msg, category=FutureWarning, stacklevel=2)
         kwargs["code_entite"] = kwargs.pop("codes_entites")
 
-    if "code_entite" in kwargs:
-        codes_entites = kwargs.pop("code_entite")
-        if isinstance(codes_entites, str):
-            codes_entites = codes_entites.split(",")
+    # forcer le json par défaut
+    kwargs["format"] = kwargs.get("format", "json")
 
-        conflicts = ["code_region", "code_departement", "code_commune"]
-        if any(x for x in conflicts if x in kwargs):
-            raise ValueError(
-                "only one argument allowed among either 'code_commune', "
-                "'code_departement', 'code_region' in the one hand AND "
-                "'code_entite' in the other hand."
-            )
+    kwargs, kwargs_loop = _prepare_kwargs(
+        kwargs,
+        chunks=100,
+        months=6,
+        date_start_label="date_debut_obs_elab",
+        date_end_label="date_fin_obs_elab",
+        start_date="1900-01-01",
+        propagation_safe=PROPAGATION_OK,
+        code_entity_primary_key="code_entite",
+        get_entities_func=_get_entities,
+    )
 
-    else:
-
-        kwargs_entites = {"format": "json"}
-        if "code_region" in kwargs:
-            code_region = kwargs.pop("code_region")
-            deps = get_departements_from_regions(code_region)
-            kwargs_entites["code_departement"] = deps
-        elif "code_departement" in kwargs:
-            deps = kwargs.pop("code_departement")
-            kwargs_entites["code_departement"] = deps
-        elif "code_commune" in kwargs:
-            kwargs_entites["code_commune"] = kwargs.pop("code_commune")
-
-        # retrieve code_entites
-        if "code_commune" in kwargs_entites:
-            kwargs_entites["code_commune_station"] = kwargs_entites.pop(
-                "code_commune"
-            )
-        stations = get_all_stations(fields=["code_station"], **kwargs_entites)
-
-        if "code_commune_station" in kwargs_entites:
-            kwargs_entites["code_commune_site"] = kwargs_entites.pop(
-                "code_commune_station"
-            )
-        sites = get_all_sites(fields=["code_site"], **kwargs_entites)
-
-        codes_entites = list(
-            set(
-                stations["code_station"].tolist() + sites["code_site"].tolist()
-            )
-        )
-
+    desc = "querying 6m/6m & 100 entities / 100 entities"
     with HydrometrySession() as session:
         results = [
-            session.get_observations(code_entite=code, **kwargs)
-            for code in tqdm(
-                codes_entites,
-                desc="querying entite/entite",
+            session.get_observations(
+                **kwargs,
+                **kw_loop,
+            )
+            for kw_loop in tqdm(
+                kwargs_loop,
+                desc=desc,
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
         ]
+
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+
     if not results:
         return pd.DataFrame()
+
     results = pd.concat(results, ignore_index=True)
     return results
 
@@ -227,11 +265,6 @@ def get_realtime_observations(**kwargs) -> pd.DataFrame:
     Retrieve realtimes observations from multiple sites/stations.
     Uses a reduced timeout for cache expiration.
 
-    Note the following differences from raw Hub'Eau endpoint :
-    * you can use either a `code_region`, `code_departement` or `code_commune`
-      argument to query the results on a given region/departement/commune.
-      Those arguments are mutually exclusive with `code_entite`.
-
     Parameters
     ----------
     **kwargs :
@@ -253,65 +286,40 @@ def get_realtime_observations(**kwargs) -> pd.DataFrame:
         warnings.warn(msg, category=FutureWarning, stacklevel=2)
         kwargs["code_entite"] = kwargs.pop("codes_entites")
 
-    if "code_entite" in kwargs:
-        codes_entites = kwargs.pop("code_entite")
-        if isinstance(codes_entites, str):
-            codes_entites = codes_entites.split(",")
+    # forcer le json par défaut
+    kwargs["format"] = kwargs.get("format", "json")
 
-        conflicts = ["code_region", "code_departement", "code_commune"]
-        if any(x for x in conflicts if x in kwargs):
-            raise ValueError(
-                "only one argument allowed among either 'code_commune', "
-                "'code_departement', 'code_region' in the one hand AND "
-                "'code_entite' in the other hand."
-            )
+    kwargs, kwargs_loop = _prepare_kwargs(
+        kwargs,
+        chunks=100,
+        months=1,
+        date_start_label="date_debut_obs",
+        date_end_label="date_fin_obs",
+        start_date=(date.today() - timedelta(days=32)).strftime("%Y-%m-%d"),
+        propagation_safe=PROPAGATION_OK,
+        code_entity_primary_key="code_entite",
+        get_entities_func=_get_entities,
+    )
 
-    else:
-
-        kwargs_entites = {"format": "json"}
-        if "code_region" in kwargs:
-            code_region = kwargs.pop("code_region")
-            deps = get_departements_from_regions(code_region)
-            kwargs_entites["code_departement"] = deps
-        elif "code_departement" in kwargs:
-            deps = kwargs.pop("code_departement")
-            kwargs_entites["code_departement"] = deps
-        elif "code_commune" in kwargs:
-            kwargs_entites["code_commune"] = kwargs.pop("code_commune")
-
-        # retrieve code_entites
-        if "code_commune" in kwargs_entites:
-            kwargs_entites["code_commune_station"] = kwargs_entites.pop(
-                "code_commune"
-            )
-        stations = get_all_stations(fields=["code_station"], **kwargs_entites)
-
-        if "code_commune_station" in kwargs_entites:
-            kwargs_entites["code_commune_site"] = kwargs_entites.pop(
-                "code_commune_station"
-            )
-        sites = get_all_sites(fields=["code_site"], **kwargs_entites)
-
-        codes_entites = list(
-            set(
-                stations["code_station"].tolist() + sites["code_site"].tolist()
-            )
-        )
-
-    with HydrometrySession(
-        expire_after=_config["DEFAULT_EXPIRE_AFTER_REALTIME"]
-    ) as session:
+    desc = "querying 1m/1m & 100 entities / 100 entities"
+    with HydrometrySession() as session:
         results = [
-            session.get_realtime_observations(code_entite=code, **kwargs)
-            for code in tqdm(
-                codes_entites,
-                desc="querying entite/entite",
+            session.get_realtime_observations(
+                **kwargs,
+                **kw_loop,
+            )
+            for kw_loop in tqdm(
+                kwargs_loop,
+                desc=desc,
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
         ]
+
     results = [x.dropna(axis=1, how="all") for x in results if not x.empty]
+
     if not results:
         return pd.DataFrame()
+
     results = pd.concat(results, ignore_index=True)
     return results
