@@ -76,7 +76,7 @@ def get_all_stations(**kwargs) -> gpd.GeoDataFrame:
             session.get_stations(code_departement=dep, **kwargs)
             for dep in tqdm(
                 deps,
-                desc="querying dep/dep",
+                desc="querying dep/dep for stations",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
@@ -131,7 +131,7 @@ def get_all_sites(**kwargs) -> gpd.GeoDataFrame:
             session.get_sites(code_departement=dep, **kwargs)
             for dep in tqdm(
                 deps,
-                desc="querying dep/dep",
+                desc="querying dep/dep for sites",
                 leave=_config["TQDM_LEAVE"],
                 position=tqdm._get_free_pos(),
             )
