@@ -38,6 +38,7 @@ requests-ratelimiter = "^0"
 pynsee = "^0"
 french-cities = "^1"
 deprecated = "^1"
+python-dateutil = "^2"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -4,9 +4,10 @@
 Convenience functions for hydrometry consumption
 """
 
-from datetime import date, timedelta
+from datetime import date
 import warnings
 
+from dateutil.relativedelta import relativedelta
 import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
@@ -34,6 +35,7 @@ PROPAGATION_OK = {
     "libelle_cours_eau",
     "libelle_site",
     "code_entite",
+    "code_commune",
 }
 
 
@@ -165,9 +167,12 @@ def _get_entities(**kwargs) -> pd.DataFrame:
         This DataFrame contains only one column of "primary keys"
     """
 
-    # hack : remove fields(code_entite) & fill_values set by _prepare_kwargs
+    # hack : remove fields(code_entite) & fill_values (set by _prepare_kwargs)
     del kwargs["fields"]
     del kwargs["fill_values"]
+
+    if "code_entite" in kwargs:
+        kwargs["code_station"] = kwargs.pop("code_entite")
 
     if "code_commune" in kwargs:
         kwargs["code_commune_station"] = kwargs.pop("code_commune")
@@ -176,17 +181,22 @@ def _get_entities(**kwargs) -> pd.DataFrame:
 
     if "code_commune_station" in kwargs:
         kwargs["code_commune_site"] = kwargs.pop("code_commune_station")
+
+    if "code_station" in kwargs:
+        kwargs["code_site"] = kwargs.pop("code_station")
+
     sites = get_all_sites(fields=["code_site"], **kwargs)
 
     pk = "code_entite"
+
+    entities = []
+    if not stations.empty:
+        entities.append(stations.rename(columns={"code_station": pk})[[pk]])
+    if not sites.empty:
+        entities.append(sites.rename(columns={"code_site": pk})[[pk]])
+
     entities = (
-        pd.concat(
-            [
-                stations.rename(columns={"code_station": pk})[[pk]],
-                sites.rename(columns={"code_site": pk})[[pk]],
-            ],
-            ignore_index=True,
-        )
+        pd.concat(entities, ignore_index=True)
         .drop_duplicates()
         .reset_index(drop=True)
     )
@@ -199,6 +209,11 @@ def get_observations(**kwargs) -> pd.DataFrame:
 
     Use an inner loop for multiple piezometers to avoid reaching 20k results
     threshold from hub'eau API.
+
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use either a `code_region`, `code_departement` or `code_commune`
+      argument to query the results on a given region/departement/commune.
+      Those arguments are mutually exclusive with `code_entite`.
 
     Parameters
     ----------
@@ -220,6 +235,20 @@ def get_observations(**kwargs) -> pd.DataFrame:
         )
         warnings.warn(msg, category=FutureWarning, stacklevel=2)
         kwargs["code_entite"] = kwargs.pop("codes_entites")
+
+    if "code_entite" in kwargs:
+        codes_entites = kwargs.pop("code_entite")
+        if isinstance(codes_entites, str):
+            codes_entites = codes_entites.split(",")
+        kwargs["code_entite"] = codes_entites
+
+        conflicts = ["code_region", "code_departement", "code_commune"]
+        if any(x for x in conflicts if x in kwargs):
+            raise ValueError(
+                "only one argument allowed among either 'code_commune', "
+                "'code_departement', 'code_region' in the one hand AND "
+                "'code_entite' in the other hand."
+            )
 
     # forcer le json par défaut
     kwargs["format"] = kwargs.get("format", "json")
@@ -256,7 +285,7 @@ def get_observations(**kwargs) -> pd.DataFrame:
     if not results:
         return pd.DataFrame()
 
-    results = pd.concat(results, ignore_index=True)
+    results = pd.concat(results, ignore_index=True).drop_duplicates()
     return results
 
 
@@ -264,6 +293,11 @@ def get_realtime_observations(**kwargs) -> pd.DataFrame:
     """
     Retrieve realtimes observations from multiple sites/stations.
     Uses a reduced timeout for cache expiration.
+
+    Note the following differences from raw Hub'Eau endpoint :
+    * you can use either a `code_region`, `code_departement` or `code_commune`
+      argument to query the results on a given region/departement/commune.
+      Those arguments are mutually exclusive with `code_entite`.
 
     Parameters
     ----------
@@ -286,8 +320,28 @@ def get_realtime_observations(**kwargs) -> pd.DataFrame:
         warnings.warn(msg, category=FutureWarning, stacklevel=2)
         kwargs["code_entite"] = kwargs.pop("codes_entites")
 
-    # forcer le json par défaut
+    if "code_entite" in kwargs:
+        codes_entites = kwargs.pop("code_entite")
+        if isinstance(codes_entites, str):
+            codes_entites = codes_entites.split(",")
+        kwargs["code_entite"] = codes_entites
+
+        conflicts = ["code_region", "code_departement", "code_commune"]
+        if any(x for x in conflicts if x in kwargs):
+            raise ValueError(
+                "only one argument allowed among either 'code_commune', "
+                "'code_departement', 'code_region' in the one hand AND "
+                "'code_entite' in the other hand."
+            )
+
+    # force json as default
     kwargs["format"] = kwargs.get("format", "json")
+
+    # force default to prevent _prepare_kwargs from initializing to 1900-01-01
+    kwargs["date_debut_obs"] = kwargs.get(
+        "date_debut_obs",
+        (date.today() - relativedelta(months=1)).strftime("%Y-%m-%d"),
+    )
 
     kwargs, kwargs_loop = _prepare_kwargs(
         kwargs,
@@ -295,7 +349,7 @@ def get_realtime_observations(**kwargs) -> pd.DataFrame:
         months=1,
         date_start_label="date_debut_obs",
         date_end_label="date_fin_obs",
-        start_date=(date.today() - timedelta(days=32)).strftime("%Y-%m-%d"),
+        start_date=kwargs["date_debut_obs"],
         propagation_safe=PROPAGATION_OK,
         code_entity_primary_key="code_entite",
         get_entities_func=_get_entities,
@@ -321,5 +375,5 @@ def get_realtime_observations(**kwargs) -> pd.DataFrame:
     if not results:
         return pd.DataFrame()
 
-    results = pd.concat(results, ignore_index=True)
+    results = pd.concat(results, ignore_index=True).drop_duplicates()
     return results

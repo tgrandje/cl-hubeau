@@ -21,7 +21,6 @@ from pynsee.utils.init_connection import init_conn
 from cl_hubeau.constants import DIR_CACHE, DISKCACHE
 from cl_hubeau.config import _config
 
-
 cache = diskcache.Cache(os.path.join(DIR_CACHE, DISKCACHE))
 
 
@@ -49,6 +48,7 @@ def silence_sirene_logs(func):
                     "http_proxy" in record.args or "https_proxy" in record.args
                 )
             )
+            and not record.msg.startswith("You are using INSEE's DDL")
         )
 
     def wrapper(*args, **kwargs):
