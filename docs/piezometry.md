@@ -3,7 +3,7 @@ layout: default
 title: API Piézométrie
 language: fr
 handle: /piezometry
-nav_order: 7
+nav_order: 17
 
 ---
 # API Piézométrie
@@ -19,7 +19,7 @@ nav_order: 7
 Lors de l'utilisation des fonctions de bas niveau, l'utilisateur est responsable
 de la consommation de l'API. En particulier, il s'agit d'être vigilant quant au seuil
 de 20 000 résultats récupérables d'une seule requête.
-Par ailleurs, la gestion du cache par les fonctions de bas niveau est de la responsabilité 
+Par ailleurs, la gestion du cache par les fonctions de bas niveau est de la responsabilité
 de l'utilisateur, notamment pour l'accès aux données de temps réel (expiration par défaut
 fixée à 30 jours).
 
@@ -58,7 +58,7 @@ identifier un piézomètre sur ce point de sortie API).
 ```python
 from cl_hubeau import piezometry
 df = piezometry.get_chronicles(
-    codes_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1']
+    code_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1']
     )
 ```
 
@@ -69,7 +69,7 @@ Par exemple :
 ```python
 from cl_hubeau import piezometry
 df = piezometry.get_chronicles(
-    codes_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1'],
+    code_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1'],
     date_debut_mesure="2020-01-01",
     )
 ```
@@ -77,7 +77,7 @@ df = piezometry.get_chronicles(
 ### Récupération des chroniques de données "temps réel"
 
 Cette fonction permet de récupérer les chroniques de données temps réel pour une liste de piézomètres.
-Ceux-ci doivent être spécifiés sous la forme d'une liste de codes bss ou d'identifiants BSS 
+Ceux-ci doivent être spécifiés sous la forme d'une liste de codes bss ou d'identifiants BSS
 (les deux options étant mutuellement exclusives).
 
 Cette fonction utilise un cache avec une expiration fixée à 15 minutes.
@@ -85,7 +85,7 @@ Cette fonction utilise un cache avec une expiration fixée à 15 minutes.
 ```python
 from cl_hubeau import piezometry
 df = piezometry.get_realtime_chronicles(
-    codes_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1']
+    code_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1']
     )
 ```
 
@@ -94,7 +94,7 @@ ou
 ```python
 from cl_hubeau import piezometry
 df = piezometry.get_realtime_chronicles(
-    bss_ids=['BSS001TULG', 'BSS001TTQY', 'BSS001TTQQ', 'BSS001TTRA', 'BSS001SCTM']
+    bss_id=['BSS001TULG', 'BSS001TTQY', 'BSS001TTQQ', 'BSS001TTRA', 'BSS001SCTM']
     )
 ```
 
@@ -104,7 +104,7 @@ par le point de sortie "chroniques" de l'API, à l'exception de `code_bss` ou `b
 ```python
 from cl_hubeau import piezometry
 df = piezometry.get_realtime_chronicles(
-    codes_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1'],
+    code_bss=['07011X0117/RN00', '07004X0055/RN10', '07004X0046/D6-20', '07004X0057/D1_20', '06754X0077/F1'],
     fields=["date_mesure", "niveau_eau_ngf", "code_bss"]
     )
 ```

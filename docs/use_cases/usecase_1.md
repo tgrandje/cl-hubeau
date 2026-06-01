@@ -11,4 +11,3 @@ nav_order: 1
 # Cas d'usage
 
 TODO
-

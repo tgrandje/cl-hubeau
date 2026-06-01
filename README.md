@@ -1,5 +1,20 @@
 # cl-hubeau
 
+![PyPI - Version](https://img.shields.io/pypi/v/cl-hubeau)
+[![Supported Python Versions](https://img.shields.io/pypi/pyversions/cl-hubeau)](https://pypi.python.org/pypi/cl-hubeau/)
+![PyPI - Status](https://img.shields.io/pypi/status/cl-hubeau)
+
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+![flake8 checks](https://raw.githubusercontent.com/tgrandje/cl-hubeau/refs/heads/main/badges/flake8-badge.svg)
+![Test Coverage](https://raw.githubusercontent.com/tgrandje/cl-hubeau/refs/heads/main/badges/coverage-badge.svg)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/tgrandje/cl-hubeau)
+![GitHub commits since latest release](https://img.shields.io/github/commits-since/tgrandje/cl-hubeau/latest)
+
+![Monthly Downloads](https://img.shields.io/pypi/dm/cl-hubeau)
+![Total Downloads](https://img.shields.io/pepy/dt/cl-hubeau)
+
+![Hub'eau Coverage](https://raw.githubusercontent.com/tgrandje/cl-hubeau/refs/heads/main/badges/hubeau-coverage.svg)
+
 Simple hub'eau client for python
 
 This package is currently under active development.
@@ -7,40 +22,64 @@ Every API on [Hub'eau](hubeau.eaufrance.fr/) will be covered by this package in
 due time.
 
 At this stage, the following APIs are covered by cl-hubeau:
-* [piezometry/piézométrie](https://hubeau.eaufrance.fr/page/api-piezometrie)
-* [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
+* [phytopharmaceuticals transactions/vente et achat de produits phytopharmaceutiques](https://hubeau.eaufrance.fr/page/api-vente-achat-phytos)
+* [watercourses flow/écoulement des cours d'eau](https://hubeau.eaufrance.fr/page/api-ecoulement)
 * [drinking water quality/qualité de l'eau potable](https://hubeau.eaufrance.fr/page/api-qualite-eau-potable)
-* [superficial waterbodies quality/qualité physico-chimique des cours d'eau'](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
+* [hydrobiology/hydrobiologie](https://hubeau.eaufrance.fr/page/api-hydrobiologie)
+* [hydrometry/hydrométrie](https://hubeau.eaufrance.fr/page/api-hydrometrie)
+* [rivers' temperatures/température des cours d'eau](https://hubeau.eaufrance.fr/page/api-temperature-continu)
+* [superficial waterbodies quality/qualité des cours d'eau](https://hubeau.eaufrance.fr/page/api-qualite-cours-deau)
+* [ground waterbodies quality/qualité des nappes](https://hubeau.eaufrance.fr/page/api-qualite-nappes)
+* [piezometry/piézométrie](https://hubeau.eaufrance.fr/page/api-piezometrie)
+* [fish/poisson](https://hubeau.eaufrance.fr/page/api-poisson)
 
-For any help on available kwargs for each endpoint, please refer 
-directly to the documentation on hubeau (this will not be covered
+
+
+For any help on available kwargs for each endpoint, please refer
+directly to the documentation on `hub'eau` (this will not be covered
 by the current documentation).
 
-Assume that each function from cl-hubeau will be consistent with
-it's hub'eau counterpart, with the exception of the `size` and 
+Assume that each function from `cl-hubeau` will be consistent with
+it's `hub'eau` counterpart, with the exception of the `size` and
 `page` or `cursor` arguments (those will be set automatically by
-cl-hubeau to crawl allong the results).
+`cl-hubeau` to crawl allong the results).
 
 ## Parallelization
 
 `cl-hubeau` already uses simple multithreading pools to perform requests.
-In order not to endanger the webservers and share ressources amont users, a 
-rate limiter is set to 10 queries per second. This limiter should work fine on 
-any given machine, whatever the context (even with a new parallelization 
+In order not to endanger the webservers and share ressources among users, a
+rate limiter is set to 10 queries per second. This limiter should work fine on
+any given machine, whatever the context (even with a new parallelization
 overlay).
 
-However `cl-hubeau` should **NOT** be used in containers or pods with
-parallelization. There is currently no way of tracking the rate of querying
-amont multiple machines and greedy queries may end  up blacklisted by the
+However `cl-hubeau` should **NOT** be used in containers (or pods) with
+parallelization. There is currently no way of tracking the queries' rate
+among multiple machines: greedy queries may end up blacklisted by the
 team managing Hub'eau.
 
 
 ## Configuration
 
-First of all, you will need API keys from INSEE to use some high level operations, 
-which may loop over cities'official codes. Please refer to pynsee's
-[API subscription Tutorial ](https://pynsee.readthedocs.io/en/latest/api_subscription.html)
-for help.
+Starting with `pynsee 0.2.0`, no API keys are needed anymore.
+
+## Support
+
+In case of bugs, please open an issue [on the repo](https://github.com/tgrandje/cl-hubeau/issues).
+
+You will find in the present README a basic documentation in english.
+For further information, please refer to :
+* the docstrings (which are mostly up-to-date);
+* the complete documentation (in french) available [here](https://tgrandje.github.io/cl-hubeau/).
+
+## Contribution
+Any help is welcome. Please refer to the [CONTRIBUTING file](https://github.com/tgrandje/cl-hubeau/CONTRIBUTING.md).
+
+## Licence
+GPL-3.0-or-later
+
+## Project Status
+
+This package is currently under active development.
 
 ## Basic examples
 
@@ -48,33 +87,162 @@ for help.
 
 ```python
 from cl_hubeau.utils import clean_all_cache
-clean_all_cache
+clean_all_cache()
 ```
 
-### Piezometry
+### 20k results limit
 
-3 high level functions are available (and one class for low level operations).
+`Hub'Eau` has currently a limit set to 20k results for any query. To circumvente
+this, `cl-hubeau` defines upper-level functions which may slightly differ from
+the low-level classes (which try to mimick `hub'eau`'s standard beahviour).
+The upper-level functions are all using loops to avoid reaching the 20k results
+threshold. For any query that *could* accept time ranges parameters, time ranges
+will be automatically added to your desired query (if not already specified);
+in case of reaching the 20k result threshold, the timeranges will be splitted
+in two (thus bypassing that threshold). If you ever reach the 20k nonetheless,
+please get in touch and submit an issue.
 
-Get all piezometers (uses a 30 days caching):
+### configuring `cl-hubeau`
 
-```python
-from cl_hubeau import piezometry
-gdf = piezometry.get_all_stations()
+#### general configuration
+
+`cl-hubeau` configuration can be accessed by the following code:
+
+```
+from cl_hubeau import _config
+print(_config)
 ```
 
-Get chronicles for the first 100 piezometers (uses a 30 days caching):
+This configuration (stored as a dictionnary) can be altered any time you want.
+For instance, if you want to alter the default cache expiration, you could do
+the following:
 
-```python
-df = piezometry.get_chronicles(gdf["code_bss"].head(100).tolist())
+```
+from cl_hubeau import _config
+from datetime import timedelta
+
+# set a one year cache for multi-purpose cache
+_config["DEFAULT_EXPIRE_AFTER"] = datetime.timedelta(day=365)
+
+# set a one hour cache of realtime datasets
+_config["DEFAULT_EXPIRE_AFTER_REALTIME"] = datetime.timedelta(day=365)
 ```
 
-Get realtime data for the first 100 piezometers:
+Note that you can also alter the number of threads used to query `Hub'eau`.
+Nonetheless, there is also a ratelimit of 10 queries/second imposed by
+`cl-hubeau` to avoid overloading the server.
+As a consequence, you should only *reduce* the `THREADS` configuration
+(if your machine has trouble with that) and never increase it (which shouldn't
+have any effect).
 
-A small cache is stored to allow for realtime consumption (cache expires after
-only 15 minutes). Please, adopt a responsible usage with this functionnality ! 
+Also note that the query rate you will see on `tqdm`'s progress bar does not
+reflect the query rate of `Hub'Eau` : the cursor/page iterations of one subquery
+will **not** be displayed. Hence a 2 it/s displayed might very well be
+a 10 requests/s load on `Hub'Eau`'s server.
+
+#### proxies
+
+`cl-hubeau` executes two types of http(s) requests:
+
+* some made by `pynsee` to gather INSEE & IGN datasets;
+* some made by `cl-hubeau` itself to gather `Hub'Eau` datasets.
+
+To work behind corporate proxies, it should be enough to configure two environment
+variables :
+
+* http_proxy
+* https_proxy
+
+You can also set the proxies using a dictionnary as an argument when creating
+sessions (low-level classes from `cl-hubeau`).
+
+Note that `pynsee` store those proxies in a [configuration file](https://github.com/InseeFrLab/pynsee/blob/0ba3e2e5b753c5c032f2b53d7fc042e995bbef04/pynsee/utils/init_conn.py#L55).
+In case of troubles, don't hesitate to manually delete that file.
+
+
+### Phyopharmaceuticals transactions
+
+4 high level functions are available (and one class for low level operations).
+
+Note that high level functions introduce new arguments (`filter_regions` and `filter_departements`
+to better target territorial data.
+
+Get all active substances bought (uses a 30 days caching):
 
 ```python
-df = get_realtime_chronicles(gdf["code_bss"].head(100).tolist())
+from cl_hubeau import phytopharmaceuticals_transactions as pt
+df = pt.get_all_active_substances_bought()
+
+# or to get regional data:
+df = pt.get_all_active_substances_bought(
+        type_territoire="Région", code_territoire="32"
+    )
+
+# or to get departemantal data:
+df = pt.get_all_active_substances_bought(
+        type_territoire="Département", filter_regions="32"
+    )
+
+# or to get postcode-zoned data:
+df = pt.get_all_active_substances_bought(
+        type_territoire="Zone postale", filter_departements=["59", "62"]
+    )
+```
+
+Get all phytopharmaceutical products bought (uses a 30 days caching):
+
+```python
+from cl_hubeau import phytopharmaceuticals_transactions as pt
+df = pt.get_all_phytopharmaceutical_products_bought()
+
+# or to get regional data:
+df = pt.get_all_phytopharmaceutical_products_bought(
+        type_territoire="Région", code_territoire="32"
+    )
+
+# or to get departemantal data:
+df = pt.get_all_phytopharmaceutical_products_bought(
+        type_territoire="Département", filter_regions="32"
+    )
+
+# or to get postcode-zoned data:
+df = pt.get_all_phytopharmaceutical_products_bought(
+        type_territoire="Zone postale", filter_departements=["59", "62"]
+    )
+```
+
+Get all active substances sold (uses a 30 days caching):
+
+```python
+from cl_hubeau import phytopharmaceuticals_transactions as pt
+df = pt.get_all_active_substances_sold()
+
+# or to get regional data:
+df = pt.get_all_active_substances_sold(
+        type_territoire="Région", code_territoire="32"
+    )
+
+# or to get departemantal data:
+df = pt.get_all_active_substances_sold(
+        type_territoire="Département", filter_regions="32"
+    )
+```
+
+Get all phytopharmaceutical products sold (uses a 30 days caching):
+
+```python
+from cl_hubeau import phytopharmaceuticals_transactions as pt
+df = pt.get_all_phytopharmaceutical_products_sold()
+
+# or to get regional data:
+df = pt.get_all_phytopharmaceutical_products_sold(
+        type_territoire="Région", code_territoire="32"
+    )
+
+# or to get departemantal data:
+df = pt.get_all_phytopharmaceutical_products_sold(
+        type_territoire="Département", filter_regions="32"
+    )
 ```
 
 Low level class to perform the same tasks:
@@ -82,14 +250,190 @@ Low level class to perform the same tasks:
 Note that :
 
 * the API is forbidding results > 20k rows and you may need inner loops
-* the cache handling will be your responsibility, noticely for realtime data
+* the cache handling will be your responsibility
 
 ```python
-with piezometry.PiezometrySession() as session:
-    df = session.get_chronicles(code_bss="07548X0009/F")
-    df = session.get_stations(code_departement=['02', '59', '60', '62', '80'], format="geojson")
-    df = session.get_chronicles_real_time(code_bss="07548X0009/F")
+with pt.PhytopharmaceuticalsSession() as session:
+    df = session.active_substances_sold(
+        annee_min=2010,
+        annee_max=2015,
+        code_territoire=["32"],
+        type_territoire="Région",
+        )
+    df = session.phytopharmaceutical_products_sold(
+        annee_min=2010,
+        annee_max=2015,
+        code_territoire=["32"],
+        type_territoire="Région",
+        eaj="Oui",
+        unite="l",
+    )
+    df = session.active_substances_bought(
+        annee_min=2010,
+        annee_max=2015,
+        code_territoire=["32"],
+        type_territoire="Région",
+    )
+    df = session.phytopharmaceutical_products_bought(
+        code_territoire=["32"],
+        type_territoire="Région",
+        eaj="Oui",
+        unite="l",
+    )
+
 ```
+
+### Watercourses flow
+
+3 high level functions are available (and one class for low level operations).
+
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import watercourses_flow
+df = watercourses_flow.get_all_stations()
+```
+
+Get all observations (uses a 30 days caching):
+
+```python
+from cl_hubeau import watercourses_flow
+df = watercourses_flow.get_all_observations()
+```
+
+Note that this query is heavy, users should restrict it to a given territory when possible.
+For instance, you could use :
+```python
+df = watercourses_flow.get_all_observations(code_region="11")
+```
+
+Get all campaigns:
+
+```python
+from cl_hubeau import watercourses_flow
+df = watercourses_flow.get_all_campaigns()
+```
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility
+
+```python
+with watercourses_flow.WatercoursesFlowSession() as session:
+    df = session.get_stations(code_departement="59")
+    df = session.get_campaigns(code_campagne=[12])
+    df = session.get_observations(code_station="F6640008")
+
+```
+
+### Drinking water quality
+
+2 high level functions are available (and one class for low level operations).
+
+
+Get all water networks (UDI) (uses a 30 days caching):
+
+```python
+from cl_hubeau import drinking_water_quality
+df = drinking_water_quality.get_all_water_networks()
+```
+
+Get the sanitary controls's results for nitrates on all networks of Paris, Lyon & Marseille
+(uses a 30 days caching) for nitrates
+
+```python
+networks = drinking_water_quality.get_all_water_networks(code_region=["11", "84", "93"])
+networks = networks[
+    networks.nom_commune.isin(["PARIS", "MARSEILLE", "LYON"])
+    ]["code_reseau"].unique().tolist()
+
+df = drinking_water_quality.get_control_results(
+    code_reseau=networks, code_parametre="1340"
+)
+df = df[df.nom_commune.isin(["PARIS", "MARSEILLE", "LYON"])]
+```
+
+Note that this query is heavy, even if this was already restricted to nitrates.
+In theory, you could also query the API without specifying the substance you're tracking,
+but this has not been tested.
+
+You can also call the same function, using official city codes directly:
+```python
+df = drinking_water_quality.get_control_results(
+    code_commune=['59350'],
+    code_parametre="1340"
+)
+```
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility
+
+```python
+with drinking_water_quality.DrinkingWaterQualitySession() as session:
+    df = session.get_cities_networks(nom_commune="LILLE")
+    df = session.get_control_results(code_departement='02', code_parametre="1340")
+
+```
+
+### Hydrobiology
+
+3 high level functions are available (and one class for low level operations).
+
+
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import hydrobiology
+df = hydrobiology.get_all_water_networks()
+```
+
+Get the taxa identified on stations in Paris (uses a 30 days caching):
+
+```python
+df = hydrobiology.get_all_taxa(code_commune=["75056"])
+```
+
+Note that this query is heavy if not restricted to areas and/or timeranges.
+In theory, you could query the API without arguments, but this has not been
+tested (this should not be possible on standard machines because of the
+RAM consumption).
+
+Get the indexes identified on stations in Paris (uses a 30 days caching):
+
+```python
+df = hydrobiology.get_all_indexes(code_commune=["75056"])
+```
+
+Note that this query is heavy if not restricted to areas and/or timeranges.
+In theory, you could query the API without arguments, but this has not been
+tested (this should not be possible on standard machines because of the
+RAM consumption).
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility
+
+```python
+with hydrobiology.HydrobiologySession() as session:
+    df = session.get_stations(code_commune="75056")
+    df = session.get_taxa(code_commune="75056")
+    df = session.get_indexes(code_commune="75056")
+
+```
+
 
 ### Hydrometry
 
@@ -99,7 +443,7 @@ with piezometry.PiezometrySession() as session:
 Get all stations (uses a 30 days caching):
 
 ```python
-from cl_hubeau import hydrometry 
+from cl_hubeau import hydrometry
 gdf = hydrometry.get_all_stations()
 ```
 
@@ -119,7 +463,7 @@ df = hydrometry.get_observations(gdf["code_site"].head(5).tolist())
 Get realtime data for the first 5 sites (no cache stored):
 
 A small cache is stored to allow for realtime consumption (cache expires after
-only 15 minutes). Please, adopt a responsible usage with this functionnality ! 
+only 15 minutes). Please, adopt a responsible usage with this functionnality !
 
 
 ```python
@@ -143,43 +487,26 @@ with hydrometry.HydrometrySession() as session:
 
 ```
 
-### Drinking water quality
+### Rivers' temperatures
 
 2 high level functions are available (and one class for low level operations).
 
 
-Get all water networks (UDI) (uses a 30 days caching):
+Get all stations (uses a 30 days caching):
 
 ```python
-from cl_hubeau import drinking_water_quality 
-df = drinking_water_quality.get_all_water_networks()
+from cl_hubeau import temperature
+gdf = temperature.get_all_stations()
 ```
 
-Get the sanitary controls's results for nitrates on all networks of Paris, Lyon & Marseille 
-(uses a 30 days caching) for nitrates
+Get chronicles for the first station (uses a 30 days caching) during the first quarter of 2020:
 
 ```python
-networks = drinking_water_quality.get_all_water_networks()
-networks = networks[
-    networks.nom_commune.isin(["PARIS", "MARSEILLE", "LYON"])
-    ]["code_reseau"].unique().tolist()
-
-df = drinking_water_quality.get_control_results(
-    codes_reseaux=networks,
-    code_parametre="1340"
-)
-```
-
-Note that this query is heavy, even if this was already restricted to nitrates.
-In theory, you could also query the API without specifying the substance you're tracking,
-but you may hit the 20k threshold and trigger an exception.
-
-You can also call the same function, using official city codes directly:
-```python
-df = drinking_water_quality.get_control_results(
-    codes_communes=['59350'],
-    code_parametre="1340"
-)
+df = temperature.get_all_chronicles(
+  code_station=gdf.at[0, "code_station"],
+  date_debut_mesure="2020-01-01",
+  date_fin_mesure="2020-03-31"
+  )
 ```
 
 Low level class to perform the same tasks:
@@ -188,12 +515,12 @@ Low level class to perform the same tasks:
 Note that :
 
 * the API is forbidding results > 20k rows and you may need inner loops
-* the cache handling will be your responsibility
+* the cache handling will be your responsibility, noticely for realtime data
 
 ```python
-with drinking_water_quality.DrinkingWaterQualitySession() as session:
-    df = session.get_cities_networks(nom_commune="LILLE")
-    df = session.get_control_results(code_departement='02', code_parametre="1340")
+with temperature.TemperatureSession() as session:
+    df = session.get_stations(format="geojson")
+    df = session.get_chronicles(code_station="04190000", date_debut_mesure="2020-01-01", date_fin_mesure="2020-03-01")
 
 ```
 
@@ -205,7 +532,7 @@ with drinking_water_quality.DrinkingWaterQualitySession() as session:
 Get all stations (uses a 30 days caching):
 
 ```python
-from cl_hubeau import superficial_waterbodies_quality 
+from cl_hubeau import superficial_waterbodies_quality
 df = superficial_waterbodies_quality.get_all_stations()
 ```
 
@@ -235,17 +562,17 @@ For instance, you could use :
 df = superficial_waterbodies_quality.get_all_environmental_conditions(code_region="11")
 ```
 
-Get all physicochemical analysis:
+Get all physicochemical analyses:
 ```python
 from cl_hubeau import superficial_waterbodies_quality
-df = superficial_waterbodies_quality.get_all_analysis()
+df = superficial_waterbodies_quality.get_all_analyses()
 ```
 
 Note that this query is heavy, users should restrict it to a given territory
 and given parameters. For instance, you could use :
 ```python
-df = superficial_waterbodies_quality.get_all_analysis(
-    code_departement="59", 
+df = superficial_waterbodies_quality.get_all_analyses(
+    code_departement="59",
     code_parametre="1313"
     )
 ```
@@ -264,6 +591,183 @@ with superficial_waterbodies_quality.SuperficialWaterbodiesQualitySession() as s
     df = session.get_stations(code_commune="59183")
     df = session.get_operations(code_commune="59183")
     df = session.get_environmental_conditions(code_commune="59183")
-    df = session.get_analysis(code_commune='59183', code_parametre="1340")
+    df = session.get_analyses(code_commune='59183', code_parametre="1340")
 
 ```
+
+### Ground waterbodies quality
+
+2 high level functions are available (and one class for low level operations).
+
+
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import ground_water_quality
+df = ground_water_quality.get_all_stations()
+```
+
+Get the tests results for nitrates :
+
+```python
+df = ground_water_quality.df = get_all_analyses(code_param="1340")
+```
+
+Note that this query is heavy, even if this was already restricted to nitrates, and that it
+may fail. In theory, you could even query the API without specifying the substance
+you're tracking, but you will hit the 20k threshold and trigger an exception.
+
+In practice, you should call the same function with a territorial restriction or with
+specific `bss_id`s.
+For instance, you could use official city codes directly:
+
+```python
+df = ground_water_quality.get_all_analyses(
+    num_departement=["59"]
+    code_param="1340"
+)
+```
+
+Note: a bit of caution is needed here, as the arguments are **NOT** the same
+in the two endpoints. Please have a look at the documentation on
+[hubeau](https://hubeau.eaufrance.fr/page/api-qualite-nappes#/qualite-nappes/analyses).
+For instance, the city's number is called `"code_insee_actuel"` on analyses' endpoint
+and `"code_commune"` on station's.
+
+Low level class to perform the same tasks:
+
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility
+
+```python
+with ground_water_quality.GroundWaterQualitySession() as session:
+    df = session.get_stations(bss_id="01832B0600")
+    df = session.get_analyses(
+        bss_id=["BSS000BMMA"],
+        code_param="1461",
+        )
+```
+
+### Piezometry
+
+3 high level functions are available (and one class for low level operations).
+
+Get all piezometers (uses a 30 days caching):
+
+```python
+from cl_hubeau import piezometry
+gdf = piezometry.get_all_stations()
+```
+
+Get chronicles for the first 100 piezometers (uses a 30 days caching):
+
+```python
+df = piezometry.get_chronicles(gdf["code_bss"].head(100).tolist())
+```
+
+Get realtime data for the first 100 piezometers:
+
+A small cache is stored to allow for realtime consumption (cache expires after
+only 15 minutes). Please, adopt a responsible usage with this functionnality !
+
+```python
+df = get_realtime_chronicles(gdf["code_bss"].head(100).tolist())
+```
+
+Low level class to perform the same tasks:
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility, noticely for realtime data
+
+```python
+with piezometry.PiezometrySession() as session:
+    df = session.get_chronicles(code_bss="07548X0009/F")
+    df = session.get_stations(code_departement=['02', '59', '60', '62', '80'], format="geojson")
+    df = session.get_chronicles_real_time(code_bss="07548X0009/F")
+```
+
+### Fish
+
+4 high level functions are available (and one class for low level operations).
+
+Get all stations (uses a 30 days caching):
+
+```python
+from cl_hubeau import fish
+gdf = fish.get_all_stations()
+```
+
+Get operations for the first 100 stations (uses a 30 days caching):
+
+```python
+df = fish.get_all_operations(
+    code_point_prelevement_aspe=gdf["code_point_prelevement_aspe"].head(100).tolist()
+    )
+```
+
+Get observations for the first 100 stations (uses a 30 days caching):
+
+```python
+df = fish.get_all_observations(
+    code_point_prelevement_aspe=gdf["code_point_prelevement_aspe"].head(100).tolist()
+    )
+```
+
+Note that this query is heavy, even if this is handled by cl-hubeau. Using this
+without arguments may exceed your machine's available ram.
+
+In practice, you should always call this function with a territorial restriction
+or with specific `code_point_prelevement_aspe`s.
+
+Get indicators for the first 100 stations (uses a 30 days caching):
+
+```python
+df = fish.get_all_indicators(
+    code_point_prelevement_aspe=gdf["code_point_prelevement_aspe"].head(100).tolist()
+    )
+```
+
+Low level class to perform the same tasks:
+
+Note that :
+
+* the API is forbidding results > 20k rows and you may need inner loops
+* the cache handling will be your responsibility, noticely for realtime data
+
+```python
+with fish.FishSession() as session:
+    df = session.get_stations(code_point_prelevement_aspe="40910")
+    df = session.get_operations(code_departement=['75', '92', '93', '94'], format="geojson")
+    df = session.get_observations(code_taxon="2220", date_operation_min="2020-01-01")
+    df = session.get_indicators(code_region="32")
+```
+
+
+### Convenience functions
+
+In order to ease queries on hydrographic territories, some convenience functions
+have been added to this module.
+
+In these process, we are harvesting official geodatasets which are not available on hub'eau;
+afterwards, simple geospatial joins are performed with the latest geodataset of french cities.
+
+These are **convenience** tools and there **will** be approximations (geographical precision
+of both datasets might not match).
+
+#### SAGE (Schéma d'Aménagement et de Gestion des Eaux)
+
+You can retrieve a SAGE's communal components using the following snippet:
+
+```python
+
+from cl_hubeau.utils import cities_for_sage
+
+d = cities_for_sage()
+```
+
+The official geodataset is eaufrance's SAGE.

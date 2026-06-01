@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jul 28 14:03:41 2024
-
 low level class to collect data from the piezometry API from hub'eau
 """
-
-import logging
 
 import pandas as pd
 
 from cl_hubeau.session import BaseHubeauSession
+from cl_hubeau.exceptions import UnexpectedArguments
 
 
 class PiezometrySession(BaseHubeauSession):
     """
     Base session class to handle the piezometry API
     """
+
+    DOC_URL = "https://hubeau.eaufrance.fr/page/api-piezometrie"
 
     def __init__(self, *args, **kwargs):
         super().__init__(version="1.4.1", *args, **kwargs)
@@ -50,13 +49,9 @@ class PiezometrySession(BaseHubeauSession):
             except KeyError:
                 continue
         try:
-            variable = kwargs.pop("format")
-            if variable not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found {format=} instead"
-                )
-            params["format"] = variable
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
             pass
 
@@ -92,12 +87,13 @@ class PiezometrySession(BaseHubeauSession):
         except KeyError:
             pass
 
+        try:
+            params["fields"] = self.list_to_str_param(kwargs.pop("fields"))
+        except KeyError:
+            pass
+
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-piezometrie"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/stations"
@@ -140,13 +136,9 @@ class PiezometrySession(BaseHubeauSession):
                 continue
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "sort must be among ('asc', 'desc'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             pass
 
@@ -156,16 +148,18 @@ class PiezometrySession(BaseHubeauSession):
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-piezometrie"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques"
 
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_debut_mesure",
+            time_end="date_fin_mesure",
+            params=params,
+        )
 
         try:
             df["timestamp_mesure"] = pd.to_datetime(
@@ -237,13 +231,9 @@ class PiezometrySession(BaseHubeauSession):
                 continue
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "sort must be among ('asc', 'desc'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             pass
 
@@ -253,11 +243,7 @@ class PiezometrySession(BaseHubeauSession):
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-piezometrie"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/niveaux_nappes/chroniques_tr"
@@ -265,6 +251,8 @@ class PiezometrySession(BaseHubeauSession):
         df = self.get_result(
             method,
             url,
+            time_start="date_debut_mesure",
+            time_end="date_fin_mesure",
             params=params,
         )
 

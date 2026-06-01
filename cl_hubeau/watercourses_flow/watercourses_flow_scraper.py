@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Sep 13 10:57:00 2024
-
 low level class to collect data from the watercourses-flow API from hub'eau
 """
 
 from cl_hubeau.session import BaseHubeauSession
+from cl_hubeau.exceptions import UnexpectedArguments
 
 
 class WatercoursesFlowSession(BaseHubeauSession):
@@ -14,9 +13,11 @@ class WatercoursesFlowSession(BaseHubeauSession):
     Base session class to handle the watercourses-flow API
     """
 
+    DOC_URL = "https://hubeau.eaufrance.fr/page/api-ecoulement"
+
     def __init__(self, *args, **kwargs):
 
-        super().__init__(version="1.0.0", *args, **kwargs)
+        super().__init__(version="1.1.0", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 1000
@@ -32,13 +33,9 @@ class WatercoursesFlowSession(BaseHubeauSession):
         params = {}
 
         try:
-            variable = kwargs.pop("format")
-            if variable not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found format='{variable}' instead"
-                )
-            params["format"] = variable
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
             pass
 
@@ -90,22 +87,14 @@ class WatercoursesFlowSession(BaseHubeauSession):
                 continue
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "format must be among ('asc', 'sort'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-ecoulement"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/ecoulement/stations"
@@ -124,13 +113,9 @@ class WatercoursesFlowSession(BaseHubeauSession):
         params = {}
 
         try:
-            variable = kwargs.pop("format")
-            if variable not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found format='{variable}' instead"
-                )
-            params["format"] = variable
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
             pass
 
@@ -203,30 +188,28 @@ class WatercoursesFlowSession(BaseHubeauSession):
                 continue
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "format must be among ('asc', 'sort'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-ecoulement"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/ecoulement/observations"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_observation_min",
+            time_end="date_observation_max",
+            params=params,
+        )
 
         return df
 
-    def get_campagnes(self, **kwargs):
+    def get_campaigns(self, **kwargs):
         """
         Lister les campagnes
         Endpoint /v1/ecoulement/campagnes
@@ -263,27 +246,23 @@ class WatercoursesFlowSession(BaseHubeauSession):
                 continue
 
         try:
-            variable = kwargs.pop("code_campagne")
-            if str(code_campagne) in ["1", "2"]:
-                params["code_campagne"] = variable
-            else:
-                raise ValueError(
-                    "code_campagne must be among ('1', '2'), "
-                    f"found sort='{variable}' instead"
+            params["code_type_campagne"] = (
+                self._ensure_val_among_authorized_values(
+                    "code_type_campagne", kwargs, {"1", "2"}, str
                 )
+            )
         except KeyError:
             pass
 
         try:
-            variable = kwargs.pop("libelle_type_campagne")
-            if variable.capitalize() in ["Usuelle", "Complémentaire"]:
-                params["libelle_type_campagne"] = variable.capitalize()
-            else:
-                raise ValueError(
-                    "libelle_type_campagne must be among "
-                    "('Usuelle', 'Complémentaire'), "
-                    f"found sort='{variable}' instead"
+            params["libelle_type_campagne"] = (
+                self._ensure_val_among_authorized_values(
+                    "libelle_type_campagne",
+                    kwargs,
+                    {"Usuelle", "Complémentaire"},
+                    lambda x: x.capitalize(),
                 )
+            )
         except KeyError:
             pass
 
@@ -294,26 +273,24 @@ class WatercoursesFlowSession(BaseHubeauSession):
             pass
 
         try:
-            variable = kwargs.pop("sort")
-            if variable not in ("asc", "desc"):
-                raise ValueError(
-                    "format must be among ('asc', 'sort'), "
-                    f"found sort='{variable}' instead"
-                )
-            params["sort"] = variable
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
         except KeyError:
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-ecoulement"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/ecoulement/campagnes"
-        df = self.get_result(method, url, params=params)
+        df = self.get_result(
+            method,
+            url,
+            time_start="date_campagne_min",
+            time_end="date_campagne_max",
+            params=params,
+        )
 
         return df
 
@@ -321,7 +298,7 @@ class WatercoursesFlowSession(BaseHubeauSession):
 # if __name__ == "__main__":
 #     with WatercoursesFlowSession() as session:
 #         # df = session.get_stations(code_departement="59", format="geojson")
-#         # df = session.get_campagnes(code_campagne=[12])
+#         # df = session.get_campaigns(code_campagne=[12])
 #         df = session.get_observations(code_station="F6640008")
 
 #         print(df)

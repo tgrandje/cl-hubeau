@@ -5,26 +5,44 @@ all APIs.
 """
 
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, date
+from functools import lru_cache
+import hashlib
 import logging
 import os
-from typing import Callable
+import socket
+from sqlite3 import InterfaceError
+from typing import Callable, Any, Union
 from urllib.parse import urlparse, parse_qs
 import warnings
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pebble
 from pyrate_limiter import SQLiteBucket
 from requests import Session
+from requests.adapters import HTTPAdapter
 from requests.exceptions import JSONDecodeError
 from requests_cache import CacheMixin
 from requests_ratelimiter import LimiterMixin
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util.retry import Retry
 
-from cl_hubeau.constants import DIR_CACHE, CACHE_NAME, RATELIMITER_NAME
-from cl_hubeau import _config
+from cl_hubeau.constants import (
+    DIR_CACHE,
+    CACHE_NAME,
+    RATELIMITER_NAME,
+    RATE_LIMIT,
+)
+from cl_hubeau import _config, __version__
+from cl_hubeau.exceptions import UnexpectedValueError
+
+logger = logging.getLogger(__name__)
+
+
+@lru_cache(maxsize=None)
+def log_only_once(url):
+    logger.warning("api_version not found among API response")
 
 
 def map_func(
@@ -69,7 +87,10 @@ def map_func(
                 ".*Connection pool is full, discarding connection.*",
             )
             with pebble.ThreadPool(threads) as pool:
-                future = pool.map(func, iterables)
+                # Set a timeout as there is a potentiallly infinite loop
+                # added to patch SQLite InterfaceError (due to requests-cache
+                # and requests-ratelimiter both using sqlite backends)
+                future = pool.map(func, iterables, timeout=60)
                 iterator = future.result()
                 while True:
                     try:
@@ -99,7 +120,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         expire_after: int = _config["DEFAULT_EXPIRE_AFTER"],
         proxies: dict = None,
         size: int = _config["SIZE"],
-        per_second: int = _config["RATE_LIMITER"],
+        per_second: int = RATE_LIMIT,
         version: str = None,
         **kwargs,
     ):
@@ -121,8 +142,8 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         size : int, optional
             Size set for each page. Default is SIZE from config file.
         per_second : int, optional
-            Max authorized rate of requests per second. Default is RATE_LIMITER
-            from config file.
+            Max authorized rate of requests per second. Default is RATE_LIMIT
+            from constant file.
         version : str, optional
             API's version. If set and not coherent with the current API's
             version returned by hubeau, will trigger a warning.
@@ -176,11 +197,34 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         self.mount("http://", adapter)
         self.mount("https://", adapter)
 
+        self.headers.update({"User-Agent": self.get_machine_user_agent()})
+
+    @staticmethod
+    def get_machine_user_agent() -> str:
+        """
+        Get a fixed User Agent for a given machine.
+
+        Returns
+        -------
+        str
+            User-Agent string
+        """
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+
+        m = hashlib.sha256()
+        m.update(bytes(ip, encoding="utf8"))
+        digest = m.hexdigest()
+
+        return f"cl_hubeau-{__version__}-{digest}"
+
     @staticmethod
     def list_to_str_param(
         x: list,
         max_authorized_values: int = None,
         exact_authorized_values: int = None,
+        authorized_values: Union[list, set, tuple] = None,
     ) -> str:
         """
         Join array of arguments to an accepted string format
@@ -193,6 +237,9 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             Maximum authorized values in the list
         exact_authorized_values : int, optional
             Exact authorized values in the list
+        authorized_values : Union[list, set, tuple], optional
+            If set, each individual value from x should be among
+            authorized_values. Default is None.
 
         Returns
         -------
@@ -200,7 +247,9 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             Concatenated arguments
 
         """
-        if any(isinstance(x, y) for y in (list, tuple, set)):
+        if isinstance(x, str):
+            x = [y.strip() for y in x.split(",")]
+        if isinstance(x, (list, tuple, set)):
             if max_authorized_values and len(x) > max_authorized_values:
                 msg = (
                     f"Should not have more than {max_authorized_values}, "
@@ -213,11 +262,61 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     f"found {len(x)} instead"
                 )
                 raise ValueError(msg)
+            if authorized_values:
+                authorized_values = {str(y) for y in authorized_values}
+                violation = [str(y) for y in x if y not in authorized_values]
+                if violation:
+                    raise ValueError(
+                        f"unauthorized values found for {x} : {violation}"
+                    )
 
             return ",".join([str(y) for y in x])
-        if isinstance(x, str):
-            return x
-        raise ValueError(f"unexpected format for {x}")
+        raise ValueError(f"unexpected format found on {x}")
+
+    @staticmethod
+    def _ensure_val_among_authorized_values(
+        arg: str, kwargs: dict, allowed: Any, converter: Callable = None
+    ) -> Any:
+        """
+        Pops an argument from kwargs and check that it matches
+
+        Parameters
+        ----------
+        arg : str
+            key of argument to pop from kwargs
+        kwargs : dict
+            kwargs to pop argument from
+        allowed : Any
+            Allowed values
+        converter : Callable
+            Function to be run on kwargs[arg] if found (for instance, `int`)
+
+        Raises
+        ------
+        UnexpectedValueError
+            If the value is not allowed.
+
+        Returns
+        -------
+        variable : Any
+            Poped value from kwargs
+
+        """
+        variable = kwargs.pop(arg)
+        to_iterable = False
+        if not isinstance(variable, (list, tuple, set)):
+            to_iterable = True
+            variable = [variable]
+        result = []
+        for var in variable:
+            if converter:
+                var = converter(var)
+            if var not in allowed:
+                raise UnexpectedValueError(arg, var, allowed)
+            result.append(var)
+        if to_iterable:
+            result = result[0]
+        return result
 
     @staticmethod
     def ensure_date_format_is_ok(date_str: str) -> None:
@@ -243,7 +342,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError as exc:
             raise ValueError(
-                "hubeau date should respect yyyy-MM-dd format"
+                "cl-hubeau date should respect yyyy-MM-dd format"
             ) from exc
 
     def request(
@@ -253,26 +352,34 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         *args,
         **kwargs,
     ):
-        logging.info(f"{method=} {url=} {args=} {kwargs=}")
-        r = super().request(
-            method,
-            url,
-            *args,
-            **kwargs,
+        logger.info(
+            "method=%s url=%s args=%s kwargs=%s", method, url, args, kwargs
         )
-        if not r.ok:
-            try:
-                error = r.json()
-            except JSONDecodeError:
-                error = str(r.content)
-            raise ValueError(
-                f"Connection error on {method=} {url=} with {kwargs=}, "
-                f"got {error} : got result {r.status_code}"
-            )
-        return r
+        try:
+            r = super().request(method, url, *args, **kwargs)
+        except InterfaceError:
+            # SQLite Error due to requests-cache -> retry it !
+            return self.request(method, url, *args, **kwargs)
+        else:
+            if not r.ok:
+                try:
+                    error = r.json()
+                except JSONDecodeError:
+                    error = str(r.content)
+                raise ValueError(
+                    f"Connection error on {method=} {url=} with {kwargs=}, "
+                    f"got {error} : got result {r.status_code}"
+                )
+            return r
 
     def get_result(
-        self, method: str, url: str, params: dict, **kwargs
+        self,
+        method: str,
+        url: str,
+        params: dict,
+        time_start: str = None,
+        time_end: str = None,
+        **kwargs,
     ) -> pd.DataFrame:
         """
         Loop over API's results until last page is reached and aggregate
@@ -286,6 +393,18 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
             url to query
         params : dict
             params to add to request
+        time_start : str, optional
+            Can be set in order to auto-adjust the temporal loop when > 20k
+            results have been found. In that case, time_start must take the
+            value of Hub'Eau's argument on the start of the timeserie
+            (for instance, "date_debut_prelevement"). The default is None which
+            will deactivate this option.
+        time_end : str, optional
+            Can be set in order to auto-adjust the temporal loop when > 20k
+            results have been found. In that case, time_end must take the
+            value of Hub'Eau's argument on the end of the timeserie
+            (for instance, "date_fin_prelevement"). The default is None which
+            will deactivate this option.
         **kwargs :
             other arguments are passed to CachedSession.request
 
@@ -302,7 +421,12 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
 
         """
 
+        remove = [key for key, val in params.items() if val == ""]
+        for key in remove:
+            del params[key]
+
         copy_params = deepcopy(params)
+
         copy_params["size"] = 1
         # copy_params["page"] = 1
         js = self.request(
@@ -315,23 +439,59 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     warnings.warn(
                         "This API's version is not consistent with the "
                         "expected one from cl_hubeau package: "
-                        "unexpected behaviour may occur."
+                        "unexpected behaviour may occur. "
+                        f"found {js['api_version']}, expected {self.version}"
                     )
             except KeyError:
-                logging.warning("api_version not found among API response")
+                log_only_once(url)
 
-        logging.debug(js)
+        logger.debug(js)
 
         page = "page" if "page" in js["first"] else "cursor"
 
         count_rows = js["count"]
         if count_rows > 20_000:
-            raise ValueError(
-                "this request won't be handled by hubeau "
-                f"( {count_rows} > 20k results)"
+            if not (time_start and time_end):
+                raise ValueError(
+                    "this request won't be handled by hubeau "
+                    f"( {count_rows} > 20k results) - query was {params}"
+                )
+
+            logger.info("> 20k results reached, splitting queries")
+
+            timeranges = pd.date_range(
+                start=params.get(time_start, "1850-01-01"),
+                end=params.get(time_end, date.today().strftime("%Y-%m-%d")),
+                freq="D",
             )
+            timeranges = np.array_split(timeranges, 2)
+            results = []
+            for window in timeranges:
+                params.update(
+                    {
+                        time_start: window.min().strftime("%Y-%m-%d"),
+                        time_end: window.max().strftime("%Y-%m-%d"),
+                    }
+                )
+                results.append(
+                    self.get_result(
+                        method,
+                        url,
+                        params,
+                        time_start=time_start,
+                        time_end=time_end,
+                        **kwargs,
+                    )
+                )
+            results = [
+                x.dropna(axis=1, how="all") for x in results if not x.empty
+            ]
+            if not results:
+                return pd.DataFrame()
+            return pd.concat(results)
+
         msg = f"{count_rows} expected results"
-        logging.info(msg)
+        logger.info(msg)
         count_pages = count_rows // self.size + (
             0 if count_rows % self.size == 0 else 1
         )

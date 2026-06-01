@@ -3,7 +3,7 @@ layout: default
 title: API Hydrométrie
 language: fr
 handle: /hydrometry
-nav_order: 6
+nav_order: 13
 
 ---
 # API Hydrométrie
@@ -19,7 +19,7 @@ nav_order: 6
 Lors de l'utilisation des fonctions de bas niveau, l'utilisateur est responsable
 de la consommation de l'API. En particulier, il s'agit d'être vigilant quant au seuil
 de 20 000 résultats récupérables d'une seule requête.
-Par ailleurs, la gestion du cache par les fonctions de bas niveau est de la responsabilité 
+Par ailleurs, la gestion du cache par les fonctions de bas niveau est de la responsabilité
 de l'utilisateur, notamment pour l'accès aux données de temps réel (expiration par défaut
 fixée à 30 jours).
 
@@ -70,6 +70,35 @@ from cl_hubeau import hydrometry
 gdf = hydrometry.get_all_sites(libelle_cours_eau="seine")
 ```
 
+{: .warning }
+> Certains champs retournés par l'API constituent des itérables (un site peut être situé à une
+> frontière communale, départementale, etc.).
+>
+> Pour "éclater" ces champs (et incidemment dupliquer les sites sur plusieurs lignes), il est possible
+> d'utiliser des fonctions inspirées de la suivante :
+> ```
+> from cl_hubeau import hydrometry
+> gdf = hydrometry.get_all_sites(libelle_cours_eau="seine")
+>
+> # Isoler les sites situés sur des frontières communales :
+> subset = gdf[gdf.code_commune_site.map(set).str.len() > 1].copy()
+>
+> # "Eclater" les codes commune :
+> print(subset.explode("code_commune_site"))
+> ```
+> Il est *possible* de chaîner ces éclatements :
+> ```
+> print(subset.explode("code_commune_site").explode("type_loi_site"))
+> ```
+> Pour des raisons évidentes, **il est déconseillé** de chaîner ces fonctions sur des éléments
+> liés (comme les différents niveaux d'emboîtement du code officiel géographique ou des couples
+> codes et libellés) ; l'exemple suivant montre comment on peut arriver à des liaisons
+> département / commune totalement erronées :
+> ```
+> aberration = subset.explode("code_commune_site").explode("code_departement")
+> print(aberration[["code_commune_site", "code_departement"]])
+> ```
+
 ### Récupération des observations élaborées "temps différé"
 
 Cette fonction permet de récupérer les observations élaborées (débits moyens journaliers ou mensuels) en temps différé
@@ -80,7 +109,7 @@ du point de sortie "observations élaborées" de l'API).
 ```python
 from cl_hubeau import hydrometry
 df = hydrometry.get_observations(
-    codes_entites=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012']
+    code_entite=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012']
     )
 ```
 
@@ -91,7 +120,7 @@ Par exemple :
 ```python
 from cl_hubeau import hydrometry
 df = hydrometry.get_observations(
-    codes_entites=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
+    code_entite=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
     fields=["resultat_obs_elab", "code_site", "date_obs_elab"],
     )
 ```
@@ -108,7 +137,7 @@ Seules les données du dernier mois glissant sont rendues accessibles sur hubeau
 ```python
 from cl_hubeau import hydrometry
 df = hydrometry.get_realtime_observations(
-    codes_entites=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
+    code_entite=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
     )
 ```
 
@@ -118,7 +147,7 @@ par le point de sortie "observations temps réel" de l'API, à l'exception de `c
 ```python
 from cl_hubeau import hydrometry
 df = hydrometry.get_realtime_observations(
-    codes_entites=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
+    code_entite=['H0100020', 'H0210010', 'H0400010', 'H0400020', 'H0800012'],
     grandeur_hydro="H",
     )
 ```

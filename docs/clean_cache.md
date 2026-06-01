@@ -10,7 +10,7 @@ nav_order: 5
 
 `cl-hubeau` utilise des sessions web héritées du package requests-cache. Celui-ci
 exécute des requêtes classiques, mais dont le résultat est conservé en cache jusqu'au
-terme d'une période d'expiration ; cela permet d'obtenir de meilleurs performances 
+terme d'une période d'expiration ; cela permet d'obtenir de meilleurs performances
 dans le cas de tâches répétées, mais aussi de gagner en frugalité (évite la
 sur-sollicitation des serveurs).
 
