@@ -5,15 +5,16 @@ Created on 2024-11-06
 low level class to collect data from the water abstraction API from hub'eau
 """
 
-import pandas as pd
-
 from cl_hubeau.session import BaseHubeauSession
+from cl_hubeau.exceptions import UnexpectedArguments
 
 
 class AbstractionSession(BaseHubeauSession):
     """
     Base session class to handle the water abstraction API
     """
+
+    DOC_URL = "https://hubeau.eaufrance.fr/page/api-prelevements-eau"
 
     def __init__(self, *args, **kwargs):
 
@@ -49,17 +50,19 @@ class AbstractionSession(BaseHubeauSession):
                 params[arg] = variable
             except KeyError:
                 continue
+        try:
+            params["sort"] = self._ensure_val_among_authorized_values(
+                "sort", kwargs, {"asc", "desc"}
+            )
+        except KeyError:
+            params["sort"] = "asc"
 
         try:
-            variable = kwargs.pop("format")
-            if variable not in ("json", "geojson"):
-                raise ValueError(
-                    "format must be among ('json', 'geojson'), "
-                    f"found format='{variable}' instead"
-                )
-            params["format"] = variable
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
         except KeyError:
-            pass
+            params["format"] = "json"
 
         try:
             params["bbox"] = self.list_to_str_param(
@@ -107,11 +110,7 @@ class AbstractionSession(BaseHubeauSession):
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-prelevements-eau"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/prelevements/referentiel/ouvrages"
@@ -139,7 +138,7 @@ class AbstractionSession(BaseHubeauSession):
         """
 
         params = {}
-        for arg in ("date_exploitation", ):
+        for arg in ("date_exploitation",):
             try:
                 variable = kwargs.pop(arg)
                 self.ensure_date_format_is_ok(variable)
@@ -196,7 +195,7 @@ class AbstractionSession(BaseHubeauSession):
 
         return df
 
-    def get_chroniques(self, **kwargs):
+    def get_chronicles(self, **kwargs):
         """
         Lister les chroniques de volumes annuels
         Endpoint /v1/prelevements/chroniques
@@ -208,19 +207,21 @@ class AbstractionSession(BaseHubeauSession):
 
         params = {}
 
-        for arg in ("annee",
-                    "code_commune_insee",
-                    "code_departement",
-                    "code_mode_obtention_volume",
-                    "code_ouvrage",
-                    "code_qualification_volume",
-                    "code_statut_instruction",
-                    "code_statut_volume",
-                    "code_usage",
-                    "fields",
-                    "libelle_departement",
-                    "producteur_donnee",
-                    ):
+        for arg in (
+            "annee",
+            "code_commune_insee",
+            "code_departement",
+            "code_mode_obtention_volume",
+            "code_ouvrage",
+            "code_qualification_volume",
+            "code_statut_instruction",
+            "code_statut_volume",
+            "code_usage",
+            "fields",
+            "libelle_departement",
+            "nom_commune",
+            "producteur_donnee",
+        ):
             try:
                 variable = kwargs.pop(arg)
                 params[arg] = self.list_to_str_param(variable)
@@ -270,11 +271,7 @@ class AbstractionSession(BaseHubeauSession):
             pass
 
         if kwargs:
-            raise ValueError(
-                f"found unexpected arguments {kwargs}, "
-                "please have a look at the documentation on "
-                "https://hubeau.eaufrance.fr/page/api-prelevements-eau"
-            )
+            raise UnexpectedArguments(kwargs, self.DOC_URL)
 
         method = "GET"
         url = self.BASE_URL + "/v1/prelevements/chroniques"
@@ -283,23 +280,27 @@ class AbstractionSession(BaseHubeauSession):
 
         return df
 
-# if __name__ == "__main__":
-#     import logging
 
-#     logging.basicConfig(level=logging.WARNING)
-#     with AbstractionSession() as session:
-#         gdf = session.get_ouvrages(code_departement="31", format="geojson")
-#         df = session.get_points_prelevement(nom_commune="Custines")
-#         pass
+if __name__ == "__main__":
+    import logging
 
-#         df = session.get_chroniques(
-#             code_ouvrage="OPR0000000076",
-#             code_qualification_volume="1",
-#             fields='code_ouvrage,annee,volume'
-#         )
-#         df = df.pivot_table(
-#             index="annee", columns="code_ouvrage", values="volume"
-#         ).plot()
-#     import matplotlib.pyplot as plt
-#     plt.show()
-#     pass
+    logging.basicConfig(level=logging.WARNING)
+    with AbstractionSession() as session:
+        # gdf = session.get_ouvrages(code_departement="31", format="geojson")
+        # df = session.get_points_prelevement(nom_commune="Custines")
+        df = session.get_ouvrages(nom_commune="Custines", format="geojson")
+        print(df)
+        pass
+
+        df = session.get_chronicles(
+            code_ouvrage="OPR0000000076",
+            code_qualification_volume="1",
+            fields="code_ouvrage,annee,volume",
+        )
+        df = df.pivot_table(
+            index="annee", columns="code_ouvrage", values="volume"
+        ).plot()
+    import matplotlib.pyplot as plt
+
+    plt.show()
+    pass

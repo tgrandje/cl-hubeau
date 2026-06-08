@@ -31,61 +31,19 @@ def mock_get_data(monkeypatch):
     def mock_request(*args, **kwargs):
         self, method, url, *args = args
 
-        if "stations" in url or "observations" in url:
-            data = {
-                "count": 1,
-                "first": "blah_page",
-                "features": [
-                    {
-                        "type": "Feature",
-                        "properties": {
-                            "code_station": "dummy_code",
-                            "libelle_station": "dummy",
-                        },
-                        "geometry": {"type": "Point", "coordinates": [0, 0]},
-                    }
-                ],
-            }
-        elif "observations" in url:
-
-            # Data with duplicates to check that duplicates are removed!
-            data = {
-                "count": 1,
-                "first": "blah_page",
-                "features": [
-                    {
-                        "type": "Feature",
-                        "properties": {
-                            "code_station": "dummy_code",
-                            "libelle_station": "dummy",
-                            "date_observation": "2024-01-01",
-                        },
-                        "geometry": {"type": "Point", "coordinates": [0, 0]},
+        data = {
+            "count": 1,
+            "first": "blah_page",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "code_ouvrage": "dummy_code",
                     },
-                    {
-                        "type": "Feature",
-                        "properties": {
-                            "code_station": "dummy_code",
-                            "libelle_station": "dummy",
-                            "date_observation": "2024-01-01",
-                        },
-                        "geometry": {"type": "Point", "coordinates": [0, 0]},
-                    },
-                ],
-            }
-
-        elif "campagnes" in url:
-            data = {
-                "count": 1,
-                "first": "blah_campagne",
-                "next": None,
-                "data": [
-                    {
-                        "code_campagne": "dummy",
-                        "date_campagne": "2011-10-20",
-                    }
-                ],
-            }
+                    "geometry": {"type": "Point", "coordinates": [0, 0]},
+                }
+            ],
+        }
 
         return MockResponse(data)
 
@@ -93,29 +51,18 @@ def mock_get_data(monkeypatch):
     monkeypatch.setattr(CacheMixin, "request", mock_request)
 
 
-def test_get_one_station_live():
+def test_get_one_ouvrage_live():
     with AbstractionSession() as session:
-        data = session.get_ouvrages(
-            code_commune_insee=["59970"], format="geojson"
-        )
+        data = session.get_ouvrages(nom_commune="Custines", format="geojson")
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) == 1
+    assert len(data) >= 3
 
 
-# def test_get_one_campagne_live():
-#     with WatercoursesFlowSession() as session:
-#         data = session.get_campagnes(code_campagne=[12])
-#     assert isinstance(data, pd.DataFrame)
-#     assert len(data) == 1
+def test_get_chronicles_live():
+    df = water_abstraction.get_all_chronicles(code_departement="75")
+    assert len(df) >= 60
 
 
-# def test_get_all_stations_mocked(mock_get_data):
-#     data = watercourses_flow.get_all_stations()
-#     assert isinstance(data, gpd.GeoDataFrame)
-#     assert len(data) == 1
-
-
-# def test_get_all_observations_mocked(mock_get_data):
-#     data = watercourses_flow.get_all_observations()
-#     assert isinstance(data, gpd.GeoDataFrame)
-#     assert len(data) == 1
+def test_get_plvt_live():
+    df = water_abstraction.get_all_points_prelevement(code_departement="59")
+    assert len(df) >= 1000
