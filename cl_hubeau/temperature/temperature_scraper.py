@@ -3,8 +3,6 @@
 low level class to collect data from the rivers' temperature API from hub'eau
 """
 
-import pandas as pd
-
 from cl_hubeau.session import BaseHubeauSession
 from cl_hubeau.exceptions import UnexpectedArguments
 
@@ -269,10 +267,5 @@ class TemperatureSession(BaseHubeauSession):
             time_end="date_fin_mesure",
             params=params,
         )
-
-        try:
-            df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
-        except KeyError:
-            pass
 
         return df

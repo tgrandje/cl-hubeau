@@ -191,6 +191,11 @@ def get_all_chronicles(**kwargs) -> gpd.GeoDataFrame:
     on 6 months subsets, even if date_debut_mesure/date_fin_mesure are
     not set.)
 
+    Note that if both "date_mesure_temp" and "heure_mesure_temp" are present
+    in the output result, those will be merged into a "datetime_mesure_temp"
+    of datetime64[ns] dtype. In that case "date_mesure_temp" and
+    "heure_mesure_temp" will both be dropped.
+
     Parameters
     ----------
     **kwargs :
@@ -243,8 +248,16 @@ def get_all_chronicles(**kwargs) -> gpd.GeoDataFrame:
         return pd.DataFrame()
 
     results = pd.concat(results, ignore_index=True)
+
+    try:
+        results["datetime_mesure_temp"] = pd.to_datetime(
+            results["date_mesure_temp"] + " " + results["heure_mesure_temp"],
+            format="%Y-%m-%d %H:%M:%S",
+        )
+        results = results.drop(
+            ["date_mesure_temp", "heure_mesure_temp"], axis=1
+        )
+    except KeyError:
+        pass
+
     return results
-
-
-if __name__ == "__main__":
-    df = get_all_chronicles(code_departement="974", format="geojson")
