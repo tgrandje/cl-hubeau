@@ -139,13 +139,10 @@ def test_get_chronicles_live():
         date_fin_mesure="2020-06-01",
         fields=[
             "code_station",
-            "code_support",
-            "date_prelevement",
-            "code_prelevement",
+            "resultat",
+            "date_mesure_temp",
+            "heure_mesure_temp",
         ],
     )
-    assert isinstance(data, gpd.GeoDataFrame)
+    assert isinstance(data, pd.DataFrame)
     assert len(data) >= 165_000
-
-
-()
