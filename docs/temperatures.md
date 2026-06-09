@@ -112,18 +112,24 @@ S'il est en théorie possible de requêter l'API sans paramétrage via cette
 fonction, il est fortement conseillé d'utiliser des arguments supplémentaires
 pour restreindre les résultats.
 
+{: .warning }
+Contrairement à l'endpoint de l'API Hub'Eau si dates et heures de mesures
+figurent toutes les deux dans le dataframe de résultat (donc s'ils n'ont pas été
+expressément retirés via l'attribut `fields`), ces deux colonnes seront remplacées
+par une colonne au format datetime nommée `datetime_mesure_temp`.
+
 Il est ainsi possible de spécifier des arguments à la fonction, parmi ceux supportés
-par le point de sortie "operation_pc" de l'API.
+par le point de sortie "chronique" de l'API.
 
 Par exemple :
 
 ```python
 from cl_hubeau import temperature
-gdf = temperature.get_all_chronicles(
+df = temperature.get_all_chronicles(
   code_region=['32'],
   date_debut_mesure="2020-01-01",
   date_fin_mesure="2020-03-31",
-  fields=["code_station", "date_mesure_temp", "resultat"],
+  fields=["code_station", "date_mesure_temp", "heure_mesure_temp", "resultat"],
   )
 ```
 
