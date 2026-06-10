@@ -4,10 +4,9 @@
 Convenience functions for hydrometry consumption
 """
 
-from datetime import date
+from datetime import date, timedelta
 import warnings
 
-from dateutil.relativedelta import relativedelta
 import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
@@ -340,7 +339,7 @@ def get_realtime_observations(**kwargs) -> pd.DataFrame:
     # force default to prevent _prepare_kwargs from initializing to 1900-01-01
     kwargs["date_debut_obs"] = kwargs.get(
         "date_debut_obs",
-        (date.today() - relativedelta(months=1)).strftime("%Y-%m-%d"),
+        (date.today() - timedelta(days=30)).strftime("%Y-%m-%d"),
     )
 
     kwargs, kwargs_loop = _prepare_kwargs(
