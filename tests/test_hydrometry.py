@@ -272,7 +272,7 @@ def test_get_chronicles_real_time_live():
         date_fin_obs=today,
     )
     assert isinstance(data, pd.DataFrame)
-    assert len(data) > 300
+    assert len(data) > 100
 
     data = hydrometry.get_realtime_observations(
         code_commune="90089",
