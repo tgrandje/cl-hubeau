@@ -11,7 +11,7 @@ import pytest
 import re
 from requests_cache import CacheMixin
 
-from cl_hubeau import superficial_waterbodies_quality
+from cl_hubeau import temperature
 import cl_hubeau.utils.mesh
 from tests.utils import silence_api_version_warning
 
@@ -34,7 +34,7 @@ def mock_get_data(monkeypatch):
     def mock_request(*args, **kwargs):
         self, method, url, *args = args
 
-        if re.search("station_pc$", url):
+        if re.search("station$", url):
             data = {
                 "count": 1,
                 "first": "blah_page",
@@ -59,11 +59,7 @@ def mock_get_data(monkeypatch):
                 ],
             }
 
-        elif (
-            re.search("operation_pc$", url)
-            or re.search("condition_environnementale_pc$", url)
-            or re.search("analyse_pc$", url)
-        ):
+        elif re.search("chronique$", url):
             code = kwargs["params"]["code_station"]
             data = {
                 "count": 1,
@@ -97,41 +93,17 @@ def mock_get_data(monkeypatch):
 
 @silence_api_version_warning
 def test_get_stations_mocked(mock_get_data):
-    data = superficial_waterbodies_quality.get_all_stations(fill_values=False)
+    data = temperature.get_all_stations(fill_values=False)
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 2
 
 
 @silence_api_version_warning
-def test_get_operations_mocked(mock_get_data):
-    data = superficial_waterbodies_quality.get_all_operations(
+def test_get_chronicles_mocked(mock_get_data):
+    data = temperature.get_all_chronicles(
         code_station="dummy_code",
-        date_debut_prelevement="2020-01-01",
-        date_fin_prelevement="2020-12-31",
-    )
-    data = data.drop_duplicates()
-    assert isinstance(data, pd.DataFrame)
-    assert len(data) == 1
-
-
-@silence_api_version_warning
-def test_get_environmental_conditions_mocked(mock_get_data):
-    data = superficial_waterbodies_quality.get_all_environmental_conditions(
-        code_station="dummy_code",
-        date_debut_prelevement="2020-01-01",
-        date_fin_prelevement="2020-12-31",
-    )
-    data = data.drop_duplicates()
-    assert isinstance(data, pd.DataFrame)
-    assert len(data) == 1
-
-
-@silence_api_version_warning
-def test_get_analyses_mocked(mock_get_data):
-    data = superficial_waterbodies_quality.get_all_analyses(
-        code_station="dummy_code",
-        date_debut_prelevement="2020-01-01",
-        date_fin_prelevement="2020-12-31",
+        date_debut_mesure="2020-01-01",
+        date_fin_mesure="2020-12-31",
     )
     data = data.drop_duplicates()
     assert isinstance(data, pd.DataFrame)
@@ -139,71 +111,38 @@ def test_get_analyses_mocked(mock_get_data):
 
 
 def test_get_stations_live():
-    data = superficial_waterbodies_quality.get_all_stations(code_region="06")
+    data = temperature.get_all_stations(code_region="04")
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 30
+    assert len(data) >= 20
 
-    data = superficial_waterbodies_quality.get_all_stations(
-        code_departement="75"
-    )
+    data = temperature.get_all_stations(code_departement="90")
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 5
+    assert len(data) >= 1
 
-    data = superficial_waterbodies_quality.get_all_stations(
-        code_commune="75056"
-    )
+    data = temperature.get_all_stations(code_commune="90048")
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 5
+    assert len(data) >= 1
 
-    data = superficial_waterbodies_quality.get_all_stations(
-        code_bassin_dce="M"
-    )
+    data = temperature.get_all_stations(code_bassin="A")
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 30
+    assert len(data) >= 15
 
-    data = superficial_waterbodies_quality.get_all_stations(
-        code_sous_bassin="FRB2_SAMB"
-    )
+    data = temperature.get_all_stations(code_sous_bassin="FRA_ESCA")
     assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 29
+    assert len(data) >= 15
 
 
-def test_get_operations_live():
-    data = superficial_waterbodies_quality.get_all_operations(
-        code_region="06",  # Mayotte
-        date_debut_prelevement="2020-01-01",
-        date_fin_prelevement="2020-06-01",
+def test_get_chronicles_live():
+    data = temperature.get_all_chronicles(
+        code_region="04",
+        date_debut_mesure="2020-01-01",
+        date_fin_mesure="2020-06-01",
         fields=[
             "code_station",
-            "code_support",
-            "date_prelevement",
-            "code_prelevement",
+            "resultat",
+            "date_mesure_temp",
+            "heure_mesure_temp",
         ],
     )
-    assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) == 40
-
-
-def test_get_environmental_conditions_live():
-    data = superficial_waterbodies_quality.get_all_environmental_conditions(
-        code_departement="59",
-        date_debut_prelevement="1990-01-01",
-        date_fin_prelevement="1990-07-01",
-    )
-    assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 709
-
-
-def test_get_analyses_live():
-    data = superficial_waterbodies_quality.get_all_analyses(
-        code_departement="974",
-        date_debut_prelevement="2020-01-01",
-        date_fin_prelevement="2020-06-01",
-        libelle_parametre="Benzo(a)pyrène",
-    )
-    assert isinstance(data, gpd.GeoDataFrame)
-    assert len(data) >= 800
-
-
-if __name__ == "__main__":
-    test_get_operations_live()
+    assert isinstance(data, pd.DataFrame)
+    assert len(data) >= 165_000

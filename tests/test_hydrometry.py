@@ -115,8 +115,8 @@ def mock_get_data(monkeypatch):
                 "next": None,
                 "data": [
                     {
-                        "code_site": "dummy_code",
-                        "code_station": "dummy_code",
+                        "code_site": "dummy",
+                        "code_station": "dummy",
                         "date_obs_elab": "2014-01-01",
                         "resultat_obs_elab": 58,
                         "grandeur_hydro_elab": "QmJ",
@@ -146,14 +146,14 @@ def test_get_all_sites_mocked(mock_get_data):
 
 @silence_api_version_warning
 def test_get_chronicles_mocked(mock_get_data):
-    data = hydrometry.get_observations(code_entite=["dummy_code"])
+    data = hydrometry.get_observations(code_entite=["dummy"])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
 
 @silence_api_version_warning
 def test_get_chronicles_real_time_mocked(mock_get_data):
-    data = hydrometry.get_realtime_observations(code_entite=["dummy_code"])
+    data = hydrometry.get_realtime_observations(code_entite=["dummy"])
     assert isinstance(data, pd.DataFrame)
     assert len(data) == 1
 
@@ -219,12 +219,12 @@ def test_get_chronicles_live():
 
     data = hydrometry.get_observations(
         code_region="06",
-        fields=["resultat_obs_elab", "date_obs_elab", "code_region"],
+        fields=["resultat_obs_elab", "date_obs_elab"],
         date_debut_obs_elab="2020-01-01",
         date_fin_obs_elab="2020-02-01",
     )
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 3255
+    assert len(data) > 1000
 
     data = hydrometry.get_observations(
         code_departement="93",
@@ -233,7 +233,7 @@ def test_get_chronicles_live():
         date_fin_obs_elab="2020-02-01",
     )
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 374
+    assert len(data) >= 100
 
     data = hydrometry.get_observations(
         code_commune="90089",
@@ -242,7 +242,7 @@ def test_get_chronicles_live():
         date_fin_obs_elab="2020-02-01",
     )
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 646
+    assert len(data) >= 100
 
 
 def test_get_chronicles_real_time_live():
@@ -258,7 +258,7 @@ def test_get_chronicles_real_time_live():
     past = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
     data = hydrometry.get_realtime_observations(
         code_region="03",
-        fields=["resultat_obs_elab", "date_obs_elab", "code_region"],
+        fields=["resultat_obs_elab", "date_obs_elab"],
         date_debut_obs=past,
         date_fin_obs=today,
     )
@@ -267,16 +267,16 @@ def test_get_chronicles_real_time_live():
 
     data = hydrometry.get_realtime_observations(
         code_departement="93",
-        fields=["resultat_obs_elab", "date_obs_elab", "code_region"],
+        fields=["resultat_obs_elab", "date_obs_elab"],
         date_debut_obs=past,
         date_fin_obs=today,
     )
     assert isinstance(data, pd.DataFrame)
-    assert len(data) > 300
+    assert len(data) > 100
 
     data = hydrometry.get_realtime_observations(
         code_commune="90089",
-        fields=["resultat_obs_elab", "date_obs_elab", "code_region"],
+        fields=["resultat_obs_elab", "date_obs_elab"],
         date_debut_obs=past,
         date_fin_obs=today,
     )

@@ -17,7 +17,7 @@ class GroundWaterQualitySession(BaseHubeauSession):
     DOC_URL = "http://hubeau.eaufrance.fr/page/api-qualite-nappes"
 
     def __init__(self, *args, **kwargs):
-        super().__init__(version="1.2.1", *args, **kwargs)
+        super().__init__(version="1.3.0", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 5000
