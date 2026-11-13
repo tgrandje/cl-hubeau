@@ -3,6 +3,7 @@
 low level class to collect data from the drinking water quality API from
 hub'eau
 """
+
 from deprecated import deprecated
 import pandas as pd
 
@@ -19,7 +20,7 @@ class SuperficialWaterbodiesQualitySession(BaseHubeauSession):
 
     def __init__(self, *args, **kwargs):
 
-        super().__init__(version="2.0.0", *args, **kwargs)
+        super().__init__(version="2.0.6", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 5000

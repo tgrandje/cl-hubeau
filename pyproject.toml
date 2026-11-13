@@ -25,11 +25,11 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.10"
-requests-cache = "^1.2.1"
+python = ">=3.11,<3.16"
+requests-cache = "^1"
 platformdirs = "^4"
 diskcache = "^5"
-importlib-metadata = ">=6.8.0,<7.0.0"
+importlib-metadata = "^9"
 pebble = "^5"
 pandas = "^2"
 tqdm = "^4"
