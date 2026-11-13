@@ -26,7 +26,7 @@ def _fill_missing_cog(
 ) -> gpd.GeoDataFrame:
     """
     Fill missing region, departement & cities elements (codes & labels) using
-    the closest geometry in an buffer of 10km.
+    the closest geometry in a buffer of 10km.
 
     Note: this is approximative, particularly on international borders but will
     avoid missing stations when looping over (for instance) code_regions.

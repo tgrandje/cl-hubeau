@@ -108,7 +108,7 @@ df = superficial_waterbodies_quality.get_all_operations()
 {: .warning }
 Ce type de requêtage induit rapidement des résultats volumineux.
 S'il est en théorie possible de requêter l'API sans paramétrage via cette
-fonction, il est fortement conseillé d'utiliser des arguments suplémentaires
+fonction, il est fortement conseillé d'utiliser des arguments supplémentaires
 pour restreindre les résultats.
 
 Il est ainsi possible de spécifier des arguments à la fonction, parmi ceux supportés

@@ -17,7 +17,7 @@ class PiezometrySession(BaseHubeauSession):
     DOC_URL = "https://hubeau.eaufrance.fr/page/api-piezometrie"
 
     def __init__(self, *args, **kwargs):
-        super().__init__(version="1.4.1", *args, **kwargs)
+        super().__init__(version="1.4.3", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 5000
@@ -123,6 +123,13 @@ class PiezometrySession(BaseHubeauSession):
         try:
             params["code_bss"] = self.list_to_str_param(
                 kwargs.pop("code_bss"), 200
+            )
+        except KeyError:
+            pass
+
+        try:
+            params["bss_id"] = self.list_to_str_param(
+                kwargs.pop("bss_id"), 200
             )
         except KeyError:
             pass
@@ -264,12 +271,3 @@ class PiezometrySession(BaseHubeauSession):
             pass
 
         return df
-
-
-# if __name__ == "__main__":
-#     import logging
-
-#     logging.basicConfig(level=logging.WARNING)
-#     with PiezometrySession() as session:
-#         df = session.get_chronicles(code_bss="07548X0009/F")
-#         # df = session.get_realtime_chronicles()

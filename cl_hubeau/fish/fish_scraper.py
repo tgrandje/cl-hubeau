@@ -3,6 +3,7 @@
 low level class to collect data from the fish API from
 hub'eau
 """
+
 import pandas as pd
 
 from cl_hubeau.session import BaseHubeauSession
@@ -18,7 +19,7 @@ class FishSession(BaseHubeauSession):
 
     def __init__(self, *args, **kwargs):
 
-        super().__init__(version="v1", *args, **kwargs)
+        super().__init__(version="v1.1", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau
         self.size = 5000

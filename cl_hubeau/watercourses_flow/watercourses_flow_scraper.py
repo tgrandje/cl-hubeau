@@ -17,7 +17,7 @@ class WatercoursesFlowSession(BaseHubeauSession):
 
     def __init__(self, *args, **kwargs):
 
-        super().__init__(version="1.1.0", *args, **kwargs)
+        super().__init__(version="1.2.0", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau piezo's doc
         self.size = 1000
@@ -293,12 +293,3 @@ class WatercoursesFlowSession(BaseHubeauSession):
         )
 
         return df
-
-
-# if __name__ == "__main__":
-#     with WatercoursesFlowSession() as session:
-#         # df = session.get_stations(code_departement="59", format="geojson")
-#         # df = session.get_campaigns(code_campagne=[12])
-#         df = session.get_observations(code_station="F6640008")
-
-#         print(df)

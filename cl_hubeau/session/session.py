@@ -114,6 +114,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
     CACHE_NAME = os.path.join(DIR_CACHE, CACHE_NAME)
     RATELIMITER_PATH = os.path.join(DIR_CACHE, RATELIMITER_NAME)
     ALLOWABLE_CODES = [200, 206, 400]
+    MAX_COUNT_ROWS = 20_000
 
     def __init__(
         self,
@@ -439,7 +440,8 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
                     warnings.warn(
                         "This API's version is not consistent with the "
                         "expected one from cl_hubeau package: "
-                        "unexpected behaviour may occur."
+                        "unexpected behaviour may occur. "
+                        f"found {js['api_version']}, expected {self.version}"
                     )
             except KeyError:
                 log_only_once(url)
@@ -449,7 +451,7 @@ class BaseHubeauSession(CacheMixin, LimiterMixin, Session):
         page = "page" if "page" in js["first"] else "cursor"
 
         count_rows = js["count"]
-        if count_rows > 20_000:
+        if count_rows > self.MAX_COUNT_ROWS:
             if not (time_start and time_end):
                 raise ValueError(
                     "this request won't be handled by hubeau "

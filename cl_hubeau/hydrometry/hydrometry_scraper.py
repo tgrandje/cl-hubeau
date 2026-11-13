@@ -220,6 +220,13 @@ class HydrometrySession(BaseHubeauSession):
         params = {}
 
         try:
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
+        except KeyError:
+            pass
+
+        try:
             params["bbox"] = self.list_to_str_param(
                 kwargs.pop("bbox"), None, 4
             )
@@ -317,6 +324,13 @@ class HydrometrySession(BaseHubeauSession):
         """
 
         params = {}
+
+        try:
+            params["format"] = self._ensure_val_among_authorized_values(
+                "format", kwargs, {"json", "geojson"}
+            )
+        except KeyError:
+            pass
 
         try:
             params["bbox"] = self.list_to_str_param(

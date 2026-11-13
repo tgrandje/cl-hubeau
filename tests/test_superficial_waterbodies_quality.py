@@ -170,9 +170,15 @@ def test_get_stations_live():
 
 def test_get_operations_live():
     data = superficial_waterbodies_quality.get_all_operations(
-        code_region="06",
+        code_region="06",  # Mayotte
         date_debut_prelevement="2020-01-01",
         date_fin_prelevement="2020-06-01",
+        fields=[
+            "code_station",
+            "code_support",
+            "date_prelevement",
+            "code_prelevement",
+        ],
     )
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) == 40
@@ -197,3 +203,7 @@ def test_get_analyses_live():
     )
     assert isinstance(data, gpd.GeoDataFrame)
     assert len(data) >= 800
+
+
+if __name__ == "__main__":
+    test_get_operations_live()

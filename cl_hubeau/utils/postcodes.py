@@ -66,24 +66,25 @@ def _get_postcodes(
         raise ValueError("code_reg & code_dep are mutually exclusive")
 
     url = (
-        "https://datanova.laposte.fr/data-fair/"
-        "api/v1/datasets/laposte-hexasmal/raw"
+        "https://data.laposte.fr/data-fair/api/v1/datasets/laposte-hexasmal/"
+        "metadata-attachments/base-officielle-codes-postaux.parquet"
     )
 
     session = Session()
     session.proxies.update(
         {
-            "https": os.environ.get("https_proxy", None),
-            "http": os.environ.get("http_proxy", None),
+            "https": os.environ.get("https_proxy"),
+            "http": os.environ.get("http_proxy"),
+            "no_proxy": os.environ.get("no_proxy"),
         }
     )
 
     r = session.get(url)
     obj = BytesIO(r.content)
-    df = pd.read_csv(obj, sep=";", encoding="cp1252", dtype="str")
+    df = pd.read_parquet(obj)
 
-    df = df[["#Code_commune_INSEE", "Code_postal"]].rename(
-        {"#Code_commune_INSEE": "code_commune", "Code_postal": "code_postal"},
+    df = df[["code_commune_insee", "code_postal"]].rename(
+        {"code_commune_insee": "code_commune"},
         axis=1,
     )
     cols = ["CODE", "CODE_DEP", "CODE_REG"]
