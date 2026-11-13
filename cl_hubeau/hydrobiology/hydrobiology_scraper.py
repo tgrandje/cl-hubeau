@@ -2,9 +2,24 @@
 """
 low level class to collect data from the hydrobiology API from hub'eau
 """
+
 import pandas as pd
 from cl_hubeau.session import BaseHubeauSession
 from cl_hubeau.exceptions import UnexpectedArguments
+
+
+def set_25_000_threshold(func):
+    def wrapper(self, *args, **kwargs):
+        # Note: change threshold as it is only upgraded for stations endpoint
+        self.MAX_COUNT_ROWS = 25_000
+        try:
+            return func(self, *args, **kwargs)
+        except Exception:
+            raise
+        finally:
+            self.MAX_COUNT_ROWS = 20_000
+
+    return wrapper
 
 
 class HydrobiologySession(BaseHubeauSession):
@@ -15,7 +30,7 @@ class HydrobiologySession(BaseHubeauSession):
     DOC_URL = "https://hubeau.eaufrance.fr/page/api-hydrobiologie"
 
     def __init__(self, *args, **kwargs):
-        super().__init__(version="1.0.0", *args, **kwargs)
+        super().__init__(version="1.1.0", *args, **kwargs)
 
         # Set default size for API queries, based on hub'eau hydrobio's doc
         self.size = 5000
@@ -145,6 +160,7 @@ class HydrobiologySession(BaseHubeauSession):
 
         return df
 
+    @set_25_000_threshold
     def get_stations(self, **kwargs):
         """
         Lister les Stations

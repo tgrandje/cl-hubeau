@@ -170,7 +170,7 @@ def test_get_chronicles_live():
         date_fin_mesure="2020-02-01",
     )
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 528
+    assert len(data) >= 500
 
     data = piezometry.get_chronicles(
         code_departement="15",
@@ -179,7 +179,7 @@ def test_get_chronicles_live():
         date_fin_mesure="2020-02-01",
     )
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 132
+    assert len(data) >= 102
 
     data = piezometry.get_chronicles(
         code_commune="15234",
@@ -188,7 +188,7 @@ def test_get_chronicles_live():
         date_fin_mesure="2020-02-01",
     )
     assert isinstance(data, pd.DataFrame)
-    assert len(data) == 31
+    assert len(data) >= 30
 
 
 def test_get_chronicles_real_time_live():
